@@ -13,6 +13,16 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-11 23:00 – GitHub-Anmeldung über den Browser (fertig)
+
+- Ansage: „Wir brauchen kein Access-Token […] Wir können uns ganz normal im Browser anmelden […] Mach das.“
+- Plan: GitHub CLI (`gh`) über Homebrew installieren, `gh auth login --web` (Anmeldung im Browser mit Einmal-Code),
+  `gh auth setup-git` (git nimmt für github.com den Zugang von `gh`), danach Push mit dem normalen `git` prüfen.
+- Stand 23:25: FERTIG. `gh` 2.103.3 installiert (`brew install gh`), angemeldet als `codergod1337` über den Browser
+  (Einmal-Code auf github.com/login/device; der erste Versuch scheiterte, weil der Nutzer den Code nicht sah und den Tab
+  schloss, beim zweiten stand der Code vorher im Chat). `gh auth setup-git` hat in `~/.gitconfig` für github.com den
+  Helfer `gh auth git-credential` eingetragen. Ab jetzt: einfach `git push`, ohne Schlüsselbund-Fenster.
+
 ## 2026-11-11 22:16 – Projekt nach GitHub (fertig, auf GitHub)
 
 - Ansage: „ich habe jetzt auf GitHub ein Repo erstellt, da müssten wir jetzt unseren geistigen Erguss noch hinpushen.
@@ -41,6 +51,9 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
   bis der Nutzer „Immer erlauben“ klickt. Beim ersten Push wurde erlaubt: `main` auf GitHub steht auf dem ersten Commit
   (883 Dateien). Der zweite Push (nur dieser Protokoll-Stand) wurde im Dialog abgebrochen (Fehler -128); der Commit
   liegt lokal und geht mit dem nächsten Push mit.
+- Stand 22:55: Auch der Protokoll-Commit ist gepusht, lokal und GitHub sind gleich. Geklärt: Der GitHub-Zugang liegt
+  seit dem 2026-08-31 im Schlüsselbund (`github.com`, Account `codergod1337`); der Dialog beim Push will das
+  Anmeldepasswort des Mac und „Immer erlauben“, nicht das GitHub-Passwort.
 - OFFEN: seine Entscheidung, ob das Repo öffentlich bleibt; ob
   `mounts/nginx/conf/default.conf` mit hinein soll.
 
