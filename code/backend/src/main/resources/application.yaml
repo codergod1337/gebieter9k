@@ -1,0 +1,541 @@
+# Gesamte Konfiguration des Backends.
+#
+# Umgebungsvariablen werden ausschließlich hier eingelesen. Klassen lesen nur die
+# Schlüssel dieser Datei (spring.* bzw. gebiter.*), nie direkt eine Umgebungsvariable.
+#
+# Die Werte kommen aus der gemeinsamen .env neben compose.yaml (code/.env), damit
+# Ports, Benutzer und Passwörter nur an einer Stelle stehen. Der Pfad ist relativ
+# zum Arbeitsverzeichnis code/backend (IntelliJ, ./mvnw). Fehlt die Datei, gelten
+# echte Umgebungsvariablen gleichen Namens (z. B. später im Container). Eine echte
+# Umgebungsvariable geht immer vor denselben Schlüssel in der .env.
+#
+# Netzwerk-Profil: Die Umgebungsvariable NETWORK_PROFILE wählt, unter welchem Host das
+# Backend Postgres, Solr und SFTP erreicht. Sie steht nicht in der .env, backend/start.sh
+# erkennt sie bei jedem Start. ${POSTGRES_HOST_${NETWORK_PROFILE}} wird bei LAN zu
+# POSTGRES_HOST_LAN (zu Hause, IP des Pi), bei WEB zu POSTGRES_HOST_WEB (unterwegs,
+# SSH-Tunnel auf localhost). Fehlt das Profil (Start ohne start.sh) oder ist es unbekannt,
+# bricht der Start ab. Im Log steht dann der unaufgelöste Platzhalter, z. B.
+# UnknownHostException: ${POSTGRES_HOST_${NETWORK_PROFILE}}.
+
+spring:
+  application:
+    name: gebiter9k
+  config:
+    import: "optional:file:../.env[.properties]"
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST_${NETWORK_PROFILE}}:${POSTGRES_HOST_PORT}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
+  # E-Mail über SMTP: Die Zugangsdaten stehen in der .env (SMTP_*), damit sich Anbieter leicht durchprobieren lassen
+  # (Admin-Tab „Mail-Test“). Fehlt SMTP_HOST, startet das Backend trotzdem, erst der Versand meldet, was fehlt.
+  # Port 587 mit STARTTLS (SMTP_STARTTLS=true) oder Port 465 mit SSL (SMTP_STARTTLS=false, SMTP_SSL=true).
+  mail:
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    default-encoding: UTF-8
+    properties:
+      "[mail.smtp.auth]": true
+      "[mail.smtp.starttls.enable]": ${SMTP_STARTTLS:true}
+      "[mail.smtp.starttls.required]": ${SMTP_STARTTLS:true}
+      "[mail.smtp.ssl.enable]": ${SMTP_SSL:false}
+      # Millisekunden: Antwortet der Server nicht, gibt der Versand nach 10 s auf, statt den Request festzuhalten
+      "[mail.smtp.connectiontimeout]": 10000
+      "[mail.smtp.timeout]": 10000
+      "[mail.smtp.writetimeout]": 10000
+
+  servlet:
+    multipart:
+      # Aus: Spring würde jeden Multipart-Request erst komplett in Temp-Dateien schreiben, bevor der Controller ihn sieht.
+      # Der Upload in den File-Kern liest seinen Body selbst als Strom (MultipartStreamReader), Grenzen unter
+      # gebiter.file.upload-*. Einen anderen Multipart-Endpunkt gibt es nicht.
+      enabled: false
+
+  jpa:
+    # Datenbankzugriffe enden mit der Service-Transaktion, nicht erst nach dem
+    # Rendern der Antwort – sonst laufen Lazy-Loads unbemerkt im Controller.
+    open-in-view: false
+    hibernate:
+      # Entwicklungsphase: Hibernate legt Tabellen an und ergänzt neue Spalten selbst.
+      # Es löscht und ändert nichts Bestehendes – auch keine Prüfregeln. Kommt z. B. ein neuer
+      # Wert ins Enum Visibility, muss die check-Regel der Spalte von Hand angepasst werden.
+      # Vor dem Livebetrieb auf versionierte Migrationen (Flyway) umstellen.
+      ddl-auto: update
+
+  jackson:
+    mapper:
+      # Request Bodies werden immer über den parameterlosen Konstruktor der Entities eingelesen,
+      # nie über deren fachliche Konstruktoren. Die prüfen schon (z. B. die Key-Regel) und würden
+      # einen Body mit nur einer id ablehnen. Geprüft wird, wenn der Service den Eintrag anlegt.
+      # Ohne Parameternamen kann Jackson die fachlichen Konstruktoren nicht zuordnen. Records
+      # funktionieren trotzdem, ihre Feldnamen kennt Jackson auch so.
+      detect-parameter-names: false
+
+gebiter:
+  jwt:
+    # Wie lange ein ausgestelltes JWT gilt (wie im Vorlageprojekt). Den Schlüssel zum Signieren
+    # gibt es hier bewusst nicht: Das Paar entsteht bei jedem Start neu und liegt nur im Speicher.
+    validity: 31m
+    # Nach so langer Zeit ab Ausstellung erneuert das Frontend die Sitzung (Termin kommt vom Server, F5 ändert ihn nicht).
+    # Zugleich der Takt, in dem die Online-Zeit für Achievements gebucht wird (Nutzer 2026-11-09: Viertelstunde).
+    renewal-interval: 15m
+    # Name des Claims, in dem die AccessRole-Keys des Users im JWT stehen.
+    roles-claim: roles
+    # Name des Claims mit dem Key seiner AccessRoleCollection. Fehlt, wenn er keine hat.
+    access-role-collection-claim: arc
+    # Name des Claims mit dem Platz der Sitzung (1 bis login.max-sessions), für die Anzeige im Benutzermenü.
+    session-number-claim: session
+    # Länge des RSA-Schlüsselpaars in Bit.
+    rsa-key-size: 2048
+  language:
+    # Diese Sprache muss jeder mehrsprachige Text haben (JSON je Sprachkürzel, z. B. {"de": "Admin"}).
+    # Weitere Sprachen kommen später dazu.
+    default-code: de
+    # Diese Sprachen darf ein mehrsprachiger Rich-Text haben (kommagetrennt); vorerst nur Deutsch.
+    active-codes: de
+  accessrole:
+    # Key und Anzeigename (in der Standardsprache) des Rechts, das der Start-Runner sicherstellt und
+    # dem Admin zuweist.
+    admin-key: ADMIN
+    admin-display-name: Admin
+    # Das Recht jedes normalen Users. Er bekommt es über die Start-Collection.
+    user-key: USER
+    user-display-name: User
+    # Verwaltet Dateien (Modul File-Manager), ist aber kein Admin: seine Endpunkte liegen unter /api/file-manager/**.
+    # Für ihn gilt die Grenze an Dateien je User nicht. Angelegt per SQL am 2026-11-08, nicht vom Start-Runner.
+    file-manager-key: FILE_MANAGER
+  accessrolecollection:
+    # Mit dieser Position (Collection) startet jeder neue User: ein normaler User. Der Start-Runner legt sie an, sie
+    # enthält nur das Recht USER. Nicht verwechseln mit dem Rang: „Leibeigener“ ist Rang 1, nur zur Anzeige.
+    default-key: BUERGER
+    default-display-name: Bürger
+    # Die Collection mit allen Rechten, wie in der Vorlage. Der Start-Runner legt sie mit ADMIN und
+    # USER an, neue Rechte nimmt der Admin selbst auf.
+    almighty-key: ALLMAECHTIGER
+    almighty-display-name: Der Allmächtige
+  admin-users:
+    # Das Admin-Konto für den ersten Start (Nutzer 2026-11-11): Nach einem Reset der Datenbank braucht es einen User, mit
+    # dem sich ein Import fahren lässt. Der Start-Runner fasst das Konto NUR an, wenn force an ist: Umgebungsvariable
+    # FORCE_ADMIN=true (z. B. in der .env neben compose.yaml), Standard false.
+    # - force an: Bei JEDEM Start wird das Konto angelegt, falls es fehlt, wieder aktiv gesetzt, falls es gelöscht ist,
+    #   sein Passwort auf das Startpasswort gesetzt, seine Authenticator-App entfernt und es in das Recht ADMIN
+    #   eingetragen. Es meldet sich dann nur mit dem Passwort an und richtet die App bei der ersten Anmeldung neu ein.
+    # - force aus: Der Runner prüft das Konto gar nicht, es bleibt, wie es ist (auch gelöscht oder nicht vorhanden).
+    # Nur für den ersten Start gedacht und danach wieder auszuschalten: Solange force an ist, kann sich nach jedem
+    # Neustart jeder mit dem Startpasswort anmelden und seine eigene App einrichten.
+    force: ${FORCE_ADMIN:false}
+    guid: 77777777-7777-7777-7777-777777777777
+    username: alice
+    email: alice
+    # Gesetzt nur mit force: erst SHA-256 wie im Frontend, davon dann BCrypt.
+    start-password: "123"
+  login:
+    # So lange gilt eine 2FA-Wartezeile (Passwort stimmt, Code fehlt noch), danach beginnt die Anmeldung von vorn. Reicht
+    # auch, um bei der ersten Anmeldung die Authenticator-App einzurichten.
+    two-factor-validity: 10m
+    # Byte Zufall je Login-Token (Anmeldeschein, Refresh-Token). Daran hängt, dass niemand einen Token
+    # errät: nie kleiner.
+    token-bytes: 32
+    # Wie viele Sitzungen (Browser, Geräte) ein User gleichzeitig haben darf (wie in der Vorlage). Bei einer weiteren
+    # Anmeldung endet die Sitzung, die am längsten nicht erneuert wurde.
+    max-sessions: 3
+    # So viele falsche Codes aus der Authenticator-App je Anmeldung, dann von vorn mit dem Passwort (2FA ist Pflicht,
+    # seit 2026-11-08 ohne den simulierten Bestätigungslink).
+    max-failed-codes: 5
+  refresh-token:
+    # So lange gilt ein Refresh-Token (wie in der Vorlage). Jede Erneuerung tauscht ihn und beginnt von vorn: Wer
+    # die Seite mindestens alle 14 Tage öffnet, bleibt angemeldet, auch über Neustarts von Browser und Backend.
+    validity: 14d
+  cookie:
+    jwt-name: gebiter_jwt
+    refresh-token-name: gebiter_refresh
+    # Der Browser schickt den Refresh-Token nur an diesen Pfad: Abholen, Erneuern und Abmelden der Sitzung.
+    refresh-token-path: /api/share/session
+    # Mit TLS auf true, dann schickt der Browser die Cookies nur noch verschlüsselt. Lokal ohne
+    # TLS muss es false bleiben, sonst kommen sie gar nicht an.
+    secure: false
+  cors:
+    # Woher das Frontend im Browser kommen darf. Beim Entwickeln greift das nicht: Der Vite-Server reicht /api als Proxy
+    # weiter und nimmt den Origin-Header heraus (vite.config.ts), für Spring ist dann jede Anfrage gleicher Herkunft.
+    origins: http://localhost:3000
+  solr:
+    url: http://${SOLR_HOST_${NETWORK_PROFILE}}:${SOLR_HOST_PORT}/solr
+    username: ${SOLR_USER}
+    password: ${SOLR_PASSWORD}
+    # Die Kerne, die das Backend kennt, kommagetrennt, Key-Regel. Nur hier, nicht in Postgres; ihre Felder stehen in
+    # Postgres (solr_field, SolrManager).
+    core-keys: FILE
+    # Export eines ganzen Kerns (Backup, GET /api/admin/solr-core/export/<KERN>): so viele Dokumente je Seite, und die
+    # Fassung des Dateiformats für das spätere Einspielen.
+    export:
+      batch-size: 200
+      format-version: 1
+    # Endungen der Zwillingsfelder, die Solr per copyField füllt: Vervollständigung beim Tippen und Ngram (jedes Stück
+    # ab 3 Zeichen trifft). Kein Feldname darf so enden.
+    suggest-twin-suffix: Suggest
+    ngram-twin-suffix: Ngram
+    # Das Suchgewicht eines Feldes (SolrField.searchWeight), im SolrManager per Schieberegler: -1 heißt nicht durchsucht,
+    # die Suchwörter erreichen das Feld nicht; 0 heißt durchsucht, aber ohne Punkte; 1 bis 10 ist der Faktor des Feldes
+    # in der Freitextsuche (Solr edismax qf feld^gewicht, kein Exponent). Das Frontend nennt denselben Bereich
+    # (SOLR_FIELD_SEARCH_WEIGHT_MIN/MAX in solr/SolrField.ts).
+    search-weight:
+      min: -1
+      max: 10
+    # Der SolrJ-Client je Kern (HttpJettySolrClient, wie in der Vorlage): Verbindungsaufbau, Antwort, Leerlauf.
+    client:
+      connection-timeout: 10s
+      request-timeout: 60s
+      idle-timeout: 120s
+    # Schema-Abgleich Postgres → Solr (SolrSchemaSyncService): Lädt ein Kern noch (Containerstart, Nachladen nach einer
+    # Änderung), wartet der Abgleich so lange und versucht es so oft, bevor er den Fehler meldet.
+    sync:
+      core-loading-attempts: 10
+      core-loading-wait: 3s
+    # Referenzen (die Hooks der Vorlage): Jede Referenz ist in JEDEM Kern ein Feld mit genau diesen Einstellungen. Je
+    # Kern änderbar sind nur „Wer liest“ und Suchgewicht, das Suchgewicht hier ist der Startwert. Den Wert setzt der
+    # Client (client-value-accepted), ganz freiwillig. Nicht nachträglich
+    # ändern: Ein anderer Typ heißt Neuaufbau der Kerne.
+    reference-field:
+      type: STRING
+      indexed: true
+      stored: true
+      multi-valued: true
+      doc-values: true
+      suggest-twin: true
+      client-value-accepted: true
+      search-weight: 2
+    # Die Referenz für beliebige Markierungen an einem Dokument, wie wtf in der Vorlage (z. B. PROFILE_BANNER,
+    # TEST_DATA). Der Start-Runner legt sie an, falls sie fehlt; danach pflegt sie der Admin im SolrManager.
+    flag-reference:
+      key: wtf
+      display-name: WTF
+      description: Beliebige Markierungen an einem Dokument, an denen Code und Masken es wiederfinden, z. B. PROFILE_BANNER.
+  # Dateispeicher per SFTP (Paket de.gebiter.sftp), wie in der Vorlage. Alles, was den Server betrifft, kommt aus der
+  # .env: Für den Wechsel auf ein NAS ändern sich nur SFTP_HOST_LAN/SFTP_HOST_WEB und SFTP_HOST_KEY. Der Server muss
+  # dem User denselben root-dir zeigen.
+  sftp:
+    host: ${SFTP_HOST_${NETWORK_PROFILE}}
+    port: ${SFTP_HOST_PORT}
+    user: ${SFTP_USER}
+    password: ${SFTP_PASSWORD}
+    # Öffentlicher Host-Key des Servers, Typ und Schlüssel: Nur genau dieser Server wird akzeptiert (Host-Key-Pinning
+    # gegen Man-in-the-Middle).
+    host-key: ${SFTP_HOST_KEY}
+    # Gesetzt: Anmeldung mit diesem privaten Schlüssel statt mit dem Passwort. Leer: Passwort.
+    private-key-path: ${SFTP_PRIVATE_KEY_PATH:}
+    # Wurzel aus Sicht des SFTP-Users. Im Container ist das sein chroot-Ordner (Compose: sftproot).
+    root-dir: /sftproot
+    # Der Verbindungsbroker: so viele Verbindungen dürfen insgesamt gleichzeitig ausgeliehen sein
+    max-connections: 10
+    # so viele davon ein einzelner User: Wer zwanzig Dateien auf einmal hochlädt, blockiert nicht alle anderen
+    max-connections-per-users: 2
+    # so viele Verbindungen hält der Broker offen, damit die erste Übertragung nicht auf den Handschlag wartet
+    min-idle-connections: 1
+    # Verbindungsaufbau und Anmeldung
+    connect-timeout: 15s
+    # so lange darf eine einzelne Antwort des Servers ausbleiben
+    socket-timeout: 10m
+    # so lange wartet ein Aufrufer auf einen freien Platz, dann bekommt er eine Absage
+    borrow-timeout: 30s
+    # unbenutzte Verbindungen über min-idle-connections hinaus werden nach dieser Zeit geschlossen
+    idle-timeout: 10m
+    # war eine Verbindung länger unbenutzt, fragt das Ausleihen erst beim Server nach, ob sie noch lebt
+    check-alive-after: 5s
+    # Keepalive an den Server, damit Firewalls und der Server untätige Verbindungen nicht wegräumen
+    keepalive-interval: 60s
+    # so oft räumt der Broker auf und wärmt vor (auch: neuer Versuch, wenn der Server beim Start fehlte)
+    housekeeping-interval: 30s
+    # Ablage JJJJ/MM/TT[_n]/<sha256>.bin: ab so vielen Dateien am Tag wird ein weiterer Ordner _n aufgemacht
+    max-files-per-directory: 10000
+    # Ordner, die es auf dem Server schon gibt, merkt sich der Service; bei dieser Zahl leert er die Liste
+    max-known-directories: 10000
+    # längster erlaubter relativer Pfad
+    max-path-length: 500
+    # Endung einer fertigen Datei und einer Datei, die gerade geschrieben wird
+    file-suffix: .bin
+    part-suffix: .part
+    # so lange soll ein Aufrufer nach 503 oder 429 warten, bevor er es noch einmal versucht (Header Retry-After)
+    retry-after-seconds: 30
+  # E-Mail: Absender und Vorbelegung des Empfängers der Test-Mail. Die Test-Mail darf nur der Admin schicken (Admin-Tab
+  # „Mail-Test“, Profil „Sicherheit“), so wird der Versand kein offenes Relais.
+  mail:
+    # Leer: das Konto selbst (spring.mail.username). Die meisten Anbieter verlangen genau das.
+    from: ${MAIL_FROM:}
+    # Vorbelegung und Empfänger, wenn keiner eingegeben ist
+    test-recipient: ${MAIL_TEST_RECIPIENT:}
+  # Authenticator-App (TOTP nach RFC 6238), erklärt in docu/konzept-2fa-totp.md. Google, Microsoft und jede andere
+  # TOTP-App lesen denselben QR-Code. Vorerst nur im Profil testbar, der Login fragt noch nicht danach.
+  totp:
+    # steht in der App über dem Code
+    issuer: gebiter9k
+    # Länge eines neuen Geheimnisses (RFC 4226 empfiehlt 20 Bytes = 160 Bit)
+    secret-bytes: 20
+    # So rechnen alle Apps standardmäßig: 6 Stellen, alle 30 Sekunden neu
+    code-digits: 6
+    period: 30s
+    # So viele 30-Sekunden-Schritte davor und danach gelten auch noch (Uhr am Handy geht etwas falsch)
+    allowed-time-step-drift: 1
+    # AES-256-Schlüssel für die Geheimnisse in der Datenbank, Base64 aus 32 Bytes (openssl rand -base64 32). Wer ihn
+    # wechselt, macht alle eingerichteten Apps ungültig (neu einrichten). Fehlt er, geht nur das Einrichten nicht.
+    encryption-key: ${TOTP_ENCRYPTION_KEY:}
+    # fest für AES-GCM: 12 Bytes Startwert, 128 Bit Prüfsumme
+    encryption-iv-bytes: 12
+    encryption-tag-bits: 128
+    # Sperre beim Login (Vorgabe des Nutzers 2026-11-08): nach so vielen falschen Codes am Stück, über alle Anmeldungen
+    # hinweg, nimmt der Login so lange keinen Code an, auch keinen richtigen. Ein angenommener Code setzt zurück. Je
+    # Anmeldung gilt zusätzlich gebiter.login.max-failed-codes.
+    max-failed-codes-in-a-row: 20
+    lock-duration: 30m
+  tika:
+    # Texterkennung (OCR) in der Auswertung einer Datei. Tika nutzt Tesseract, wenn es installiert ist (Mac: Homebrew,
+    # Pi: Paket im Container). Bei Bildern läuft sie auf einer verkleinerten Kopie (gebiter.file.text-recognition-*): Im
+    # Original brauchte sie auf dem Pi für ein 51-Megapixel-Foto 92 s (gemessen 2026-11-09). Die Auswertung läuft im
+    # Hintergrund, nie im Upload selbst. Der erkannte Text eines Bildes kommt ins Feld tikaFileDescription.
+    ocr-enabled: true
+    # Sprachen für Tesseract, mit + verbunden (z. B. deu+eng). Deutsch braucht auf dem Mac: brew install tesseract-lang
+    ocr-language: eng
+    # Länger darf die Texterkennung einer Datei nicht dauern, danach gibt es keinen erkannten Text
+    ocr-timeout: 120s
+  # HEIF-Bilder (HEIC vom iPhone, auch das Standbild eines Live Photos): Kein Browser außer Safari zeigt sie, Java liest
+  # sie nicht. Viewer und Auswertung wandeln sie deshalb mit heif-dec aus libheif in JPEG (Mac: brew install libheif;
+  # Debian/Pi: apt install libheif-examples libheif-plugin-libde265). Gespeichert und heruntergeladen wird das Original.
+  heif:
+    # Diese Typen (laut Tika) gelten als HEIF
+    mime-types: image/heic,image/heif
+    # Der Befehl von libheif, der HEIF in JPEG wandelt, im PATH oder mit vollem Pfad
+    decoder-command: heif-dec
+    # JPEG-Qualität 0 bis 100
+    jpeg-quality: 90
+    # Länger darf das Umwandeln eines Bildes nicht dauern (36 Megapixel brauchen auf dem Mac ~0,5 s, gemessen 2026-11-08)
+    decoder-timeout: 30s
+  # Der File-Kern: Dateien hochladen, ansehen, ändern (Paket de.gebiter.file). Die Bytes liegen auf dem SFTP, alle
+  # Metadaten im Solr-Kern. Konzept: docu/konzept-file-kern.md.
+  # Das Gästebuch (Paket guestbook): Einträge und Kommentare werden nie geändert, nur gelöscht; Smileys sind beliebige
+  # Standard-Emojis, je User und Ziel jedes Emoji einmal, nicht zurücknehmbar.
+  guestbook:
+    # So viele Einträge kommen je Seite, die neuesten zuerst (Nutzer 2026-11-09: höchstens 10 untereinander, dann blättern).
+    page-size: 10
+    # Höchstlänge eines Eintrags und eines Kommentars in Zeichen.
+    entry-text-max-length: 4000
+    comment-text-max-length: 2000
+  # Das Profilbild in UsersDetail, zweimal (Nutzer 2026-11-09): groß fürs Profil (profileImageBase64Png, size-pixels)
+  # und klein als Abklatsch für Avatare im Gästebuch, in Listen und später im Chat (profileImageSmallBase64Png,
+  # small-size-pixels). Beide nach derselben Regel wie die Dateivorschau: PNG im Quadrat, das Bild ganz eingepasst,
+  # Seitenverhältnis bleibt, mittig, der Rest transparent, nichts abgeschnitten, nichts vergrößert. Der Browser schneidet
+  # zu und rechnet beide, das Backend prüft nur noch (ein PNG laut Kennung und Tika, genau diese Maße aus dem Kopf der
+  # Datei, erst dann dekodieren, höchstens max-size bzw. small-max-size). Das Frontend nennt dieselben Maße (PROFILE_IMAGE_SIZE_PIXELS, PROFILE_IMAGE_SMALL_SIZE_PIXELS in
+  # users/UsersDetail.ts).
+  # Galerien im Profil (Paket gallery, Konzept docu/konzept-galerie.md): Titel und Beschreibung legt der User fest, so
+  # viele Bilder zeigt eine Seite der Galerie.
+  gallery:
+    title-max-length: 100
+    description-max-length: 2000
+    file-page-size: 24
+  # Die Sichtbarkeit neuer User (Nutzer 2026-11-09): Standard sind öffentliche Profile, also alle, auch ohne Anmeldung.
+  users:
+    default-profile-visibility: ANY
+    default-friend-list-visibility: ANY
+    # Das Passwort eines Users, den der Admin anlegt (Administration, Tab „User“, „neuer User“), wenn er keins eingibt
+    # (Nutzer 2026-11-11): erst SHA-256 wie im Frontend, davon dann BCrypt. Eine Authenticator-App hat der neue User
+    # noch nicht, er richtet sie bei der ersten Anmeldung ein. Wer sich registriert, wählt sein Passwort selbst.
+    start-password: "123"
+    # Name und Avatar mehrerer User in einer Anfrage auflösen (POST /api/users/avatar/resolve), z. B. für eine Liste von
+    # Usern: höchstens so viele GUIDs auf einmal.
+    avatar-resolve-max-guids: 100
+  # Der Status-Text im Profilkopf (UsersDetail.statusText), z. B. was man gerade macht; setzt nur der User selbst.
+  profile-status-text:
+    max-length: 160
+  # Der Text der Box „Über mich“ im Profil (UsersDetail.aboutText), mehrsprachiger Rich-Text; setzt nur der User selbst,
+  # im kleinen Popup. max-length zählt den sichtbaren Text je Sprache.
+  profile-about-text:
+    max-length: 2000
+  # Tätigkeiten, für die es Punkte gibt (PointActivity, Nutzer 2026-11-09). Die Keys nutzt der Code, der sie auslöst; der
+  # Start-Runner legt fehlende mit diesen Vorgaben an, danach pflegt der Admin Namen und Punkte (Modul „Achievements &
+  # Markt“). Neue Punkte gelten nie rückwirkend.
+  point-activity:
+    guestbook-entry-written:
+      key: GUESTBOOK_ENTRY_WRITTEN
+      display-name: Gästebucheintrag geschrieben
+      reward-points: 2
+    guestbook-comment-written:
+      key: GUESTBOOK_COMMENT_WRITTEN
+      display-name: Gästebuch-Kommentar geschrieben
+      reward-points: 1
+    gallery-upload:
+      key: GALLERY_UPLOAD
+      display-name: Bild in eine Galerie hochgeladen
+      reward-points: 20
+  # Das Kontobuch der Punkte (UsersPointBooking, Nutzer 2026-11-09): so viele Buchungen je Seite des Kontoauszugs.
+  users-point-booking:
+    page-size: 20
+  # Der Gebietermarkt (Nutzer 2026-11-10): Bei einem Kauf behält der Markt diesen Anteil des Preises als Gebühr ein, in
+  # Prozent, abgerundet auf ganze Punkte; der Rest geht an den Verkäufer. Die Gebühr verschwindet aus dem Umlauf.
+  shop:
+    market-fee-percent: 10
+  # Achievements (Nutzer 2026-11-09): geprüft wird nur bei jeder neuen Zeile im Protokoll achievement_tracking.
+  achievement:
+    online-presence:
+      # Online-Zeit, gebucht bei Login und Token-Verlängerung, nur mit der Uhr des Servers. Früher als min-interval nach
+      # der letzten Buchung wird nichts gebucht (F5, weitere Tabs und Browser, Skripte): höchstens eine Buchung je
+      # Viertelstunde, nie mehr als die echte Zeit.
+      min-interval: 14m
+      # Länger als max-gap keine Spur des Users (Tab zu, Rechner schläft): Die Serie beginnt neu bei 0.
+      max-gap: 17m
+  # Rich-Text (Nutzer 2026-11-09): fett, kursiv, Überschriften 1 bis 3, Absatz, Zeilenumbruch, Trennlinie; keine Farben.
+  # Nur diese Tags überleben das Bereinigen (RichTextService, jsoup), Attribute nie. Das Frontend hält dieselbe Liste
+  # (components/richTextHtml.ts). Kommagetrennt, weil @Value eine YAML-Liste nicht als einen Wert liest.
+  rich-text:
+    allowed-tags: p,div,br,strong,b,em,i,h1,h2,h3,hr
+    # Höchstlänge des HTMLs je Sprache samt Tags, für jedes Rich-Text-Feld: Die Längen der Felder zählen den sichtbaren
+    # Text, das hier verhindert, dass leere Auszeichnungen die Datenbank füllen.
+    max-html-length: 20000
+  users-contact:
+    # Höchstlänge einer Kontaktangabe (UsersContact.contactValue) in Zeichen, z. B. Straße oder Instagram-Kennung. Jede
+    # Angabe hat ihre eigene Sichtbarkeit (Nutzer 2026-11-09).
+    value-max-length: 150
+  # Wie schnell das Standard-Banner des Profils driftet (UsersDetail.bannerDriftSpeedPercent), in Prozent des Tempos aus
+  # dem Theme: 0 steht still, leer gilt 100. Höchstens max-percent (Nutzer 2026-11-09: höchstens 50 % schneller).
+  profile-banner-drift:
+    max-percent: 150
+  # Groß 600 × 600 (Nutzer 2026-11-09): Im Profilkopf wird es beim Zeigen 268 CSS-Pixel groß, auf Bildschirmen mit
+  # doppelter Pixeldichte 536 echte Pixel; 600 bleibt dort scharf. Ein Foto als PNG in 600 × 600 braucht bis gut 1 MB.
+  profile-image:
+    size-pixels: 600
+    max-size: 2MB
+    small-size-pixels: 96
+    small-max-size: 64KB
+  file:
+    # Der Solr-Kern der Dateien, er muss in gebiter.solr.core-keys stehen.
+    solr-core-key: FILE
+    # So viele aktive Dateien darf ein normaler User haben. ADMIN und FILE_MANAGER zählen nicht. Gezählt wird in Solr.
+    max-files-per-users: 100
+    # Upload: so groß darf eine Datei höchstens sein (Vorgabe des Nutzers: bis 100 GB).
+    upload-max-file-size: 100GB
+    # Upload: so groß darf der Teil data (JSON mit den Feldern) höchstens sein.
+    upload-max-data-size: 1MB
+    # Upload: so viel wird je Schritt vom Netz gelesen und in den Puffer geschrieben; Kopfzeilen eines Teils müssen
+    # hineinpassen.
+    upload-buffer-size: 1MB
+    # Der Upload-Puffer auf der Platte des Backends: Hier landet jede Datei zuerst, bis der Hintergrund-Thread sie auf
+    # den SFTP gebracht und ausgewertet hat. Beim Entwickeln (Mac) neben den anderen Mounts, relativ zu code/backend;
+    # im Container setzt compose.yaml FILE_STAGING_DIR. Nie /tmp: Auf dem Pi liegt /tmp im Arbeitsspeicher.
+    staging-directory: ${FILE_STAGING_DIR:../../mounts/staging}
+    # Höchstens so viel darf im Upload-Puffer liegen, laufende Uploads mitgezählt (Vorgabe des Nutzers: ~200 GB).
+    staging-max-size: 200GB
+    # Höchstens so viele Zeichen Volltext je Datei, der Rest fällt weg. Schützt Speicher und Solr vor Riesentexten.
+    # Eine Größengrenze für Tika gibt es nicht: Es bekommt den Pfad und springt über, was es nicht braucht.
+    tika-max-text-characters: 10000000
+    # Vorschaubild: Kantenlänge des Quadrats in Pixeln, das Bild steht eingepasst und mittig darin, der Rest ist transparent.
+    preview-size-pixels: 200
+    # Beim Dekodieren für die Vorschau bleibt die kurze Seite mindestens so lang: Ein 24-Megapixel-Foto wird gleich
+    # verkleinert gelesen und frisst nicht ~100 MB Speicher.
+    preview-decode-min-short-side-pixels: 400
+    # Texterkennung bei Bildern auf einer verkleinerten Kopie (JPEG, nach EXIF gedreht): lange Seite höchstens so viele
+    # Pixel. Gemessen 2026-11-09 auf dem Pi 5 mit einem Foto 8791 x 5860 ohne Text: Original 92 s, 4000 px 2,2 s,
+    # 3000 px 0,9 s. Ein Brief in derselben Auflösung wird bei 4000 px fehlerfrei gelesen, bei 3000 px mit ersten Fehlern.
+    text-recognition-max-long-side-pixels: 4000
+    # JPEG-Qualität dieser Kopie, 0 bis 1
+    text-recognition-jpeg-quality: 0.92
+    # Auflösen (Liste der Dateien, z. B. einer FileClass): so viele Dateien je Seite.
+    resolve-page-size: 50
+    # Diese Typen zeigt der Viewer im Browser (inline). Alles andere geht nur als Download, damit der Browser nie etwas
+    # ausführt, das jemand hochgeladen hat (z. B. HTML oder SVG mit Skripten). Firefox spielt mkv ab Version 145.
+    # HEIF-Bilder (gebiter.heif.mime-types) bekommt der Viewer als JPEG, sie stehen deshalb nicht hier.
+    inline-mime-types: image/png,image/jpeg,video/mp4,video/webm,video/x-matroska
+    # Die Werte des Feldes status (Nutzer 2026-11-09): aktiv; deaktiviert (in der Suche, aber gesperrt: nichts mehr
+    # ändern); archiviert (für normale User nur noch lesbar); gelöscht (Soft Delete, nur noch der Admin über seine
+    # Endpunkte). Lesen dürfen User alles außer gelöscht, ändern nur aktiv.
+    status-active: ACTIVE
+    status-deactivated: DEACTIVATED
+    status-archived: ARCHIVED
+    status-deleted: DELETED
+    # Die Sichtbarkeit einer neuen Datei, bis sie in eine Galerie kommt: NONE, nur der Autor sieht sie.
+    default-visibility: NONE
+    # Die Werte des Feldes analysisStatus: Die Auswertung (Tika samt OCR, EXIF, Vorschau) läuft nach dem Upload im
+    # Hintergrund, eine Datei nach der anderen.
+    analysis-status-pending: PENDING
+    analysis-status-done: DONE
+    analysis-status-failed: FAILED
+    # So oft sieht der Hintergrund-Thread im Upload-Puffer nach, ob dort noch Arbeit liegt (nach einem Neustart oder
+    # wenn der SFTP kurz weg war). Neue Uploads stößt der Upload selbst sofort an.
+    analysis-pending-scan-interval: 5m
+    # Hängende Auswertungen (Nutzer 2026-11-11): Einmal am Tag um analysis-retry-time (Uhrzeit in der Zeitzone
+    # analysis-retry-time-zone; der Container läuft in UTC) sucht der Hintergrund-Thread Dateien, die noch auf PENDING
+    # stehen, obwohl ihr Upload länger her ist als analysis-retry-min-age, und die weder im Upload-Puffer noch in der
+    # Warteschlange stehen: Um die kümmert sich sonst niemand mehr. Er holt sie vom SFTP und wertet sie ein zweites Mal
+    # aus. Scheitert auch das, bekommt die Datei FAILED, und ein Admin muss sie sich ansehen. 05:00 und 5h heißen
+    # zusammen: um fünf Uhr früh alles, was vor Mitternacht hochgeladen wurde.
+    analysis-retry-time: "05:00"
+    analysis-retry-time-zone: Europe/Berlin
+    analysis-retry-min-age: 5h
+    # Stimmen zu Dateien (FileCheer: begeistert und angewidert): So viele User nennt der Stand der Stimmen je Richtung
+    # höchstens beim Namen, die neuesten zuerst; die Zahl aller Stimmen steht daneben. So bleibt die Antwort klein, auch
+    # wenn eine Datei Tausende Stimmen hat (Nutzer 2026-11-11: nicht alle User laden).
+    cheer-shown-users-max: 15
+    # „Alle laden“ in der Sprechblase der Stimmen: Die Oberfläche holt alle User einer Richtung seitenweise nach, eine
+    # Seite nach der anderen; so viele GUIDs hat eine Seite. Nicht größer als gebiter.users.avatar-resolve-max-guids:
+    # Zu jeder Seite fragt sie gleich die Namen ab.
+    cheer-users-page-size: 100
+    # Den Stand der Auswertung fragt die Upload-Liste für höchstens so viele Dateien auf einmal ab (wie die Liste groß ist).
+    analysis-progress-max-ids: 25
+    # So viele User darf der Autor einer Datei höchstens zum Bearbeiten freigeben.
+    editor-users-max-count: 20
+    # Vervollständigung von Feldwerten, z. B. Tags (FileDocumentSearchService): gesucht wird im Suggest-Zwilling erst ab
+    # min-length Zeichen (wie minGramSize des Feldtyps code_suggest), die Facette liest die facet-limit häufigsten Werte
+    # der gefundenen Dateien, zurück gehen höchstens result-limit Vorschläge.
+    field-value-search:
+      min-length: 3
+      facet-limit: 500
+      result-limit: 10
+    # Die Felder des Kerns, mit denen das Backend rechnet. Angelegt werden sie im SolrManager; wer dort einen umbenennt,
+    # ändert ihn auch hier.
+    field:
+      id: id
+      sftp-path: sftpPath
+      author-users-guid: authorUsersGuid
+      file-class-key: fileClassKey
+      reader-access-role-keys: readerAccessRoleKeys
+      writer-access-role-keys: writerAccessRoleKeys
+      status: status
+      file-name: fileName
+      file-extension: fileExtension
+      mime-type: mimeType
+      file-size-bytes: fileSizeBytes
+      uploaded-at: uploadedAt
+      last-changed-at: lastChangedAt
+      cheer-up-count: cheerUpCount
+      cheer-down-count: cheerDownCount
+      preview-base64-png: previewBase64Png
+      searchable-text: searchableText
+      image-width: imageWidth
+      image-height: imageHeight
+      captured-at: capturedAt
+      camera-model: cameraModel
+      gps-latitude: gpsLatitude
+      gps-longitude: gpsLongitude
+      # Was Tika gelesen hat (Texterkennung eines Bildes, Inhalt eines Dokuments), ohne Leerzeilen. Die Beschreibung des
+      # Users steht getrennt davon in fileDescription (ein Client-Feld, nur in der Felddefinition).
+      tika-file-description: tikaFileDescription
+      analysis-status: analysisStatus
+      # Wann ein Durchlauf über alle Dateien (z. B. neu indizieren) die Datei zuletzt angefasst hat, wie cursorDate in der
+      # Vorlage: der Zeiger, um alle Dateien der Reihe nach zu durchlaufen und nach einem Abbruch weiterzumachen.
+      cursor-date: cursorDate
+      # Wer die Datei sieht (Visibility: NONE nur der Autor, FRIENDS seine Freunde, AUTHENTICATED jeder Angemeldete, ANY
+      # alle). Setzt das Backend, später aus der Galerie; ADMIN und FILE_MANAGER sehen jede Datei.
+      visibility: visibility
+      # Bei FRIENDS die GUID des Autors, sonst leer: Der Lesefilter vergleicht sie mit der Freundesliste des Lesers aus
+      # dem Hauptspeicher (CurrentUsersProvider), ohne Postgres und ohne GUID-Listen im Dokument.
+      readable-for-friends-of-users-guid: readableForFriendsOfUsersGuid
+      # Die Galerie der Datei (genau eine, Nutzer 2026-11-09) und ihr Platz darin (Drag and Drop); setzt das Backend.
+      gallery-ids: galleryIds
+      gallery-listing-position: galleryListingPosition
+      # Die Beschreibung und die Tags des Users (Client-Felder), z. B. für die Felder je Bild beim Hochladen in eine
+      # Galerie und die Vervollständigung der Tags.
+      file-description: fileDescription
+      tags: tags
+      # Wer die Metadaten außer dem Autor noch bearbeiten darf (Nutzer 2026-11-09): GUIDs, die der Autor freigibt; diese
+      # User dürfen die Datei auch lesen. Setzt nur das Backend (PUT /api/file-document/editors).
+      editor-users-guids: editorUsersGuids

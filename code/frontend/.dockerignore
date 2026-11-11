@@ -1,0 +1,9 @@
+# Nicht in den Build des Images: Abhängigkeiten installiert npm ci frisch, das Zertifikat des Dev-Servers ist privat
+node_modules
+dist
+dist-ssr
+.cert
+.env.development
+.vscode
+.idea
+*.log

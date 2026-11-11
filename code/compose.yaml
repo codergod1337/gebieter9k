@@ -1,0 +1,257 @@
+# gebiter9k – der ganze Stack auf dem Pi: PostgreSQL, Solr, SFTP, Backend, Frontend (nginx)
+#
+#   Bauen:     docker compose build backend frontend
+#   Starten:   docker compose up -d --wait
+#   Status:    docker compose ps
+#   Stoppen:   docker compose down
+#
+# Beim Entwickeln laufen Backend (./start.sh) und Frontend (npm run dev) zusätzlich auf dem Mac und sprechen
+# Postgres, Solr und SFTP des Pi über das LAN an: eine Datenbank für beide (Vorgabe des Nutzers 2026-11-08).
+# Ablauf und Zertifikat: docu/setup.md, Abschnitt 5.16.
+#
+# Zugangsdaten stehen in .env (Vorlage: .env.example). Passwörter gehen als
+# Compose-Secrets in die Container: Sie liegen dort als Datei unter
+# /run/secrets/ und sind nicht als Umgebungsvariable per "docker inspect"
+# auslesbar.
+#
+# Die Daten liegen per Bind-Mount in ${MOUNTS_DIR} (Vorgabe ../mounts), also
+# außerhalb von code/. Ein "git clean" im Code-Verzeichnis erreicht sie nicht.
+
+name: gebiter9k
+
+# Docker-Logs je Container auf 5 × 20 MB = 100 MB begrenzen. Ohne Grenze wächst die
+# Log-Datei unbegrenzt. Vorgabe: die ganze Compose höchstens 500 MB. Docker kann nur je
+# Container begrenzen, deshalb höchstens 5 Container (postgres, solr, sftp, backend, frontend:
+# genau 5). Kommt ein sechster dazu, die Grenze je Container senken. Auf dem Pi
+# gilt dieselbe Grenze zusätzlich als Vorgabe in /etc/docker/daemon.json.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
+services:
+  postgres:
+    image: postgres:18.6
+    container_name: postgres
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 2g
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?in .env setzen}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB: ${POSTGRES_DB:?in .env setzen}
+      # Standardwerte für psql im Container, aus derselben .env: "docker exec -it postgres psql"
+      # verbindet sich damit ohne weitere Parameter. Das Passwort bleibt ein Secret (siehe unten).
+      PGUSER: ${POSTGRES_USER:?in .env setzen}
+      PGDATABASE: ${POSTGRES_DB:?in .env setzen}
+      # Wirkt nur beim allerersten Start (leeres Datenverzeichnis).
+      # builtin-Locale C.UTF-8: Sortierung hängt nicht von der glibc-Version des
+      # Images ab, ein Image-Update kann also keine Indizes ungültig machen.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale-provider=builtin --builtin-locale=C.UTF-8"
+    secrets:
+      - postgres_password
+    ports:
+      # Host-Port (Pi) -> Container-Port 5432, im LAN erreichbar. Von außen nicht: Die FritzBox gibt nur SSH frei.
+      - "${POSTGRES_HOST_PORT:?in .env setzen}:5432"
+    volumes:
+      # Ab Postgres 18 liegt der Bestand unter /var/lib/postgresql/<major>/docker,
+      # in den Mounts also unter postgres/18/ – das erleichtert spätere Upgrades.
+      - ${MOUNTS_DIR:-../mounts}/postgres:/var/lib/postgresql
+    healthcheck:
+      # -h 127.0.0.1: Während der Initialisierung lauscht Postgres nur am Unix-Socket.
+      # Über TCP meldet sich der Dienst also erst, wenn die Einrichtung fertig ist.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # Suchindex, aufgebaut wie in der Vorlage. Solr 10 startet ohne --user-managed im Cloud-Modus (ZooKeeper) und lädt
+  # keine Kerne von der Platte, daher das Flag. Kein eigenes Image: Das Basis-Configset (nur Feldtypen und
+  # Systemfelder) kommt als Nur-Lese-Mount aus docker/solr/configsets/gebiter9k, die Felder legt später das Backend per
+  # Schema-API an. Den Ordner eines Kerns legt die Startkette aus SOLR_CORES an, denn im user-managed Modus kann die
+  # API keinen Kern mit eigener Schemakopie anlegen; vorhandene Kerne bleiben unberührt.
+  solr:
+    image: solr:10.1.0
+    container_name: solr
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 2g
+    environment:
+      # Heap bewusst unter dem Limit: Lucene liest den Index über den
+      # Datei-Cache, der den Rest des Speichers nutzt.
+      SOLR_HEAP: 1g
+      # Wie in der Vorlage: höchstens 3000 Klauseln je Abfrage für den ganzen Knoten (die solrconfig.xml eines Kerns
+      # kann sie nicht überschreiten, beide stehen auf 3000) und ein Soft-Commit alle 10 s für jeden Kern. Das Backend
+      # committet nie selbst.
+      SOLR_OPTS: -Dsolr.max.booleanClauses=3000 -Dsolr.autoSoftCommit.maxTime=10000
+      # Eigener Name statt SOLR_USER: Das Entrypoint-Skript des Images löscht
+      # SOLR_USER, weil es den Namen intern für den Linux-Benutzer verwendet.
+      GEBITER9K_SOLR_USER: ${SOLR_USER:?in .env setzen}
+      # Kerne, kommagetrennt, z. B. FILE. Leer: noch keiner.
+      GEBITER9K_SOLR_CORES: ${SOLR_CORES:-}
+    secrets:
+      - solr_password
+    ports:
+      # Host-Port (Pi) -> Container-Port 8983, im LAN erreichbar. Von außen nicht: Die FritzBox gibt nur SSH frei.
+      - "${SOLR_HOST_PORT:?in .env setzen}:8983"
+    # Zweiter Name ohne Unterstrich, wie in der Vorlage: Java (java.net.URI) lehnt Unterstriche im Hostnamen ab. Ein
+    # Backend im Docker-Netz spricht später http://solrhost:8983/solr an.
+    networks:
+      default:
+        aliases:
+          - solrhost
+    volumes:
+      # Kerne mit Index und Schema, Logs und security.json. Gehört uid 8983, dem User solr im Container.
+      - ${MOUNTS_DIR:-../mounts}/solr:/var/solr
+      - ./docker/solr/configsets/gebiter9k:/opt/gebiter9k/configsets/gebiter9k:ro
+    # Startkette wie in der Vorlage ($$ ist ein Shell-$, ein einfaches $ würde Compose selbst auflösen):
+    # 1. Je Kern aus GEBITER9K_SOLR_CORES den Ordner /var/solr/data/<kern> aus dem Basis-Configset anlegen, nur wenn
+    #    er fehlt.
+    # 2. security.json für Basic Auth bei JEDEM Start neu schreiben: User aus der .env, Passwort aus dem Secret, so
+    #    gehasht, wie Solr es erwartet: base64(sha256(sha256(salz + passwort))) und base64(salz), durch Leerzeichen
+    #    getrennt. Ein neuer User oder ein neues Passwort in der .env gilt damit nach "docker compose up -d".
+    #    blockUnknown: Ohne Anmeldung geht nichts.
+    # 3. Solr im Vordergrund starten.
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        mkdir -p /var/solr/data
+        for core in $${GEBITER9K_SOLR_CORES//,/ }; do
+          precreate-core "$$core" /opt/gebiter9k/configsets/gebiter9k
+        done
+        password=$$(cat /run/secrets/solr_password)
+        salt=$$(tr -dc A-Za-z0-9 < /dev/urandom | head -c 32)
+        hex=$$(printf '%s%s' "$$salt" "$$password" | sha256sum | cut -c 1-64)
+        hex=$$(printf '%b' "$$(printf '%s' "$$hex" | sed 's/../\\x&/g')" | sha256sum | cut -c 1-64)
+        hash=$$(printf '%b' "$$(printf '%s' "$$hex" | sed 's/../\\x&/g')" | base64 -w 0)
+        saltb64=$$(printf '%s' "$$salt" | base64 -w 0)
+        cat > /var/solr/data/security.json <<EOF
+        {
+          "authentication": {
+            "class": "solr.BasicAuthPlugin",
+            "blockUnknown": true,
+            "realm": "gebiter9k Solr",
+            "forwardCredentials": false,
+            "credentials": { "$$GEBITER9K_SOLR_USER": "$$hash $$saltb64" }
+          },
+          "authorization": {
+            "class": "solr.RuleBasedAuthorizationPlugin",
+            "permissions": [ { "name": "all", "role": "admin" } ],
+            "user-role": { "$$GEBITER9K_SOLR_USER": "admin" }
+          }
+        }
+        EOF
+        chmod 600 /var/solr/data/security.json
+        exec solr-foreground --user-managed
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null -u \"$${GEBITER9K_SOLR_USER}:$$(cat /run/secrets/solr_password)\" http://localhost:8983/solr/admin/info/system"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  # Der Dateispeicher, wie in der Vorlage: atmoz/sftp, Alpine plus OpenSSH. Auf Docker Hub gibt es das Image nur für
+  # amd64, der Pi ist arm64, deshalb baut die Compose es aus dem Git-Repo mit festem Commit (am 2026-11-05 der neueste
+  # Stand von master). Ein User, in sein Home gesperrt (chroot); der Ordner darin heißt sftproot und ist aus seiner
+  # Sicht /sftproot: genau gebiter.sftp.root-dir in der application.yaml.
+  sftp:
+    build:
+      context: https://github.com/atmoz/sftp.git#46a8b3db48a99257249a79fcbdf1cd9f666e161b
+      dockerfile: Dockerfile-alpine
+    image: gebiter9k-sftp
+    container_name: sftp
+    restart: unless-stopped
+    logging: *default-logging
+    mem_limit: 256m
+    environment:
+      GEBITER9K_SFTP_USER: ${SFTP_USER:?in .env setzen}
+    secrets:
+      - sftp_password
+    # Anders als in der Vorlage (dort SFTP_USERS mit dem Passwort als Umgebungsvariable): Das Passwort kommt wie bei
+    # Postgres und Solr als Secret und ist per "docker inspect" nicht zu sehen. Vor dem Start des Images wird daraus
+    # die users.conf geschrieben, die das Entrypoint-Skript des Images beim ersten Start einliest
+    # (user:passwort:uid:gid:ordner). Ein neues Passwort gilt deshalb erst nach
+    # "docker compose up -d --force-recreate sftp".
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        mkdir -p /etc/sftp
+        printf '%s:%s:1001:100:sftproot\n' "$$GEBITER9K_SFTP_USER" "$$(cat /run/secrets/sftp_password)" > /etc/sftp/users.conf
+        chmod 600 /etc/sftp/users.conf
+        exec /entrypoint
+    ports:
+      # Host-Port (Pi) -> Container-Port 22, im LAN erreichbar. Von außen nicht: Die FritzBox gibt nur SSH frei.
+      - "${SFTP_HOST_PORT:?in .env setzen}:22"
+    # Alles zum Container liegt in ${MOUNTS_DIR}/sftp: der Host-Key direkt darin, die Dateien im Unterordner sftproot.
+    # Der Key liegt bewusst nicht im gemounteten Ordner, sonst sähe ihn der SFTP-User.
+    volumes:
+      - ${MOUNTS_DIR:-../mounts}/sftp/sftproot:/home/${SFTP_USER:?in .env setzen}/sftproot
+      # Fester Host-Key (chmod 600), damit er jedes "up" überlebt: Das Backend akzeptiert nur genau diesen Server
+      # (Host-Key-Pinning gegen Man-in-the-Middle, SFTP_HOST_KEY in der .env).
+      - ${MOUNTS_DIR:-../mounts}/sftp/ssh_host_ed25519_key:/etc/ssh/ssh_host_ed25519_key:ro
+
+  # Backend (Spring Boot), auf dem Pi der Live-Stand. Es liest dieselbe .env wie auf dem Mac, als Datei eingebunden
+  # (Spring importiert ../.env, im Container /.env): So bleiben die Passwörter aus der Umgebung und aus "docker inspect"
+  # heraus. Die Umgebung setzt nur, was im Container anders ist: Netzwerk-Profil DOCKER mit Dienstnamen und internen
+  # Ports, der Upload-Puffer auf der NVMe (nie /tmp, das liegt auf dem Pi im RAM), sichere Cookies (TLS macht nginx).
+  # Kein eigener Port nach außen: Nur nginx spricht mit dem Backend.
+  backend:
+    build:
+      context: ./backend
+    image: gebiter9k-backend
+    container_name: backend
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      NETWORK_PROFILE: DOCKER
+      POSTGRES_HOST_DOCKER: postgres
+      POSTGRES_HOST_PORT: "5432"
+      SOLR_HOST_DOCKER: solr
+      SOLR_HOST_PORT: "8983"
+      SFTP_HOST_DOCKER: sftp
+      SFTP_HOST_PORT: "22"
+      FILE_STAGING_DIR: /staging
+      GEBITER_COOKIE_SECURE: "true"
+    volumes:
+      - ./.env:/.env:ro
+      - ${MOUNTS_DIR:-../mounts}/staging:/staging
+    depends_on:
+      postgres:
+        condition: service_healthy
+      solr:
+        condition: service_healthy
+      sftp:
+        condition: service_started
+
+  # Frontend: nginx liefert die gebaute App aus und reicht /api an das Backend weiter. Hört auf 80 (leitet auf https um,
+  # außer der Prüfung von Let's Encrypt) und 443. Alles für nginx liegt in ${MOUNTS_DIR}/nginx: conf/default.conf,
+  # certs/ (fullchain.pem, privkey.pem), acme/ (Antworten für Let's Encrypt).
+  frontend:
+    build:
+      context: ./frontend
+    image: gebiter9k-frontend
+    container_name: frontend
+    restart: unless-stopped
+    logging: *default-logging
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${MOUNTS_DIR:-../mounts}/nginx/conf:/etc/nginx/conf.d:ro
+      - ${MOUNTS_DIR:-../mounts}/nginx/certs:/etc/nginx/certs:ro
+      - ${MOUNTS_DIR:-../mounts}/nginx/acme:/var/www/acme:ro
+    depends_on:
+      - backend
+
+secrets:
+  postgres_password:
+    environment: POSTGRES_PASSWORD
+  solr_password:
+    environment: SOLR_PASSWORD
+  sftp_password:
+    environment: SFTP_PASSWORD

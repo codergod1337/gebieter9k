@@ -1,0 +1,4035 @@
+/*
+ * base.css: wird immer geladen, wie basic.css der Vorlage. Hier steht nur, was in jedem Theme gleich bleibt:
+ * - Aufbau und Maße: Grundgerüst (Header, Subheader, Main, Footer), ContentBox, Matrix, Profil, Raster.
+ * - Badges und Embleme: die Badges der Rechte (eckig), dazu das Aussehen aus den Daten (BadgeLook) für die Pille der
+ *   Position, das Schild des Rangs und das Medaillon des Achievements.
+ * - Feste Farben: Signalfarben, Markenfarben, die Farben der Badges.
+ * Farben, die ein Theme bestimmt, nutzt base.css nur als Variable (z. B. --matrix-line).
+ *
+ * ALLES ANDERE IST AUSSEHEN UND STEHT IM THEME: Hintergrund, Header, Subheader, Footer, ContentBoxen, Tabellen, Knöpfe,
+ * Formulare, Hoverlays, Steuer-Symbole samt Animation, Toasts, Upload-Feld. Theme: public/themes/<name>.css, eingebunden
+ * über <link id="theme"> in index.html, später im Profil wählbar.
+ *
+ * Priorität: Bootstrap < base.css < Theme. Bootstrap und base liegen in CSS-Layern, das Theme liegt außerhalb und
+ * gewinnt damit immer, egal in welcher Reihenfolge der Browser die Dateien lädt. Achtung: Bootstrap-Utilities mit
+ * !important (z. B. bg-primary, mb-3, text-body-secondary) schlagen auch das Theme. Was ein Theme ändern können soll,
+ * bekommt deshalb eine eigene Klasse statt einer Bootstrap-Utility.
+ */
+@layer bootstrap, icons, base;
+
+@import 'bootstrap/dist/css/bootstrap.min.css' layer(bootstrap);
+@import 'bootstrap-icons/font/bootstrap-icons.min.css' layer(icons);
+/* Tabler (Umriss): Klassen ti ti-<name>. Die Schrift ist nach Kategorien geteilt, der Browser lädt nur, was er zeigt. */
+@import '@tabler/icons-webfont/dist/tabler-icons.min.css' layer(icons);
+/* Lucide: Klassen icon-<name>. Achtung: Lucide greift auf JEDE Klasse, die mit icon- beginnt; eigene Klassen nie so nennen. */
+@import 'lucide-static/font/lucide.css' layer(icons);
+
+/* Der Winkel des umlaufenden Regenbogenrands (Effekt RING). Registriert, damit der Browser ihn animieren kann. */
+@property --badge-look-ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@layer base {
+  /* ===== Was immer gleich bleibt: Maße, Signalfarben, Farben der Badges ===== */
+  :root {
+    --header-height: 3.5rem;
+    --subheader-height: 2.75rem;
+    --main-max-width: 80rem;
+    --main-padding: 1.5rem;
+
+    /* Signalfarben, in jedem Theme gleich */
+    --signal-success: #15803d;
+    --signal-warning: #d97706;
+    --signal-danger: #b91c1c;
+    --signal-info: #0369a1;
+
+    /* Badge eines Rechts (eckig), in jedem Theme gleich. Positionen, Ränge und Achievements zeichnet der BadgeLook. */
+    --access-role-badge-bg: #2563eb;
+    --access-role-badge-text: #ffffff;
+  }
+
+  /*
+   * ===== Grundgerüst: Header, Main, Footer =====
+   * Die ganze Seite scrollt. Header und Subheader bleiben oben stehen, der Footer steht am Ende der Seite, nicht am
+   * Bildschirmrand: Bei wenig Inhalt füllt Main den Platz, bei viel Inhalt kommt der Footer erst ganz unten. Hintergrund
+   * und Farben bestimmt das Theme.
+   */
+  #root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    flex: none;
+    display: flex;
+    align-items: center;
+    height: var(--header-height);
+    padding: 0 1rem;
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: inherit;
+    font-size: 1.125rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .header-brand:hover {
+    color: inherit;
+  }
+
+  /* „Zurück zu …“ neben der Marke (OriginBackButton): Symbol und Name der Seite; Farben im Theme */
+  .header-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    margin-left: 1rem;
+    white-space: nowrap;
+  }
+
+  .header-back-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* auf dem Handy nur der Pfeil, der Name stünde der Marke und dem Menü im Weg */
+  @media (max-width: 575.98px) {
+    .header-back-text {
+      display: none;
+    }
+  }
+
+  /* Rechts im Header: die eigene Position (ARC) und das Benutzermenü */
+  .header-session {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-left: auto;
+  }
+
+  /* „Online (N)“ links von der Position: Punkt und Zahl, auf dem Handy nur kompakt */
+  .header-online-users {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .header-online-users-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+  }
+
+  /* Die Knöpfe im Header: nur Symbol, kein Text, kein Pfeil. Rand, Hover und Animation bestimmt das Theme. */
+  .header-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .header-icon-button:focus-visible {
+    outline: none;
+  }
+
+  /* Die eigene Position: das Badge selbst ist der Knopf */
+  .header-position {
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .header-position:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  /* Die Klappe des Benutzermenüs, ein Bootstrap-Dropdown: Lage und Breite hier, das Aussehen im Theme */
+  .users-menu-panel.dropdown-menu {
+    width: 18rem;
+    margin-top: 0.5rem;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* Die Box mit E-Mail und Sitzung oben in der Klappe */
+  .users-menu-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.85rem 1rem;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .users-menu-head-sub {
+    font-size: 0.8125rem;
+    opacity: 0.75;
+  }
+
+  .users-menu-list {
+    display: flex;
+    flex-direction: column;
+    padding: 0.35rem;
+  }
+
+  .users-menu-panel .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem 0.65rem;
+    border-radius: 0.375rem;
+    color: inherit;
+    font-size: 0.9375rem;
+  }
+
+  /* Handy: die Klappe über die ganze Breite unter dem Header */
+  @media (max-width: 767.98px) {
+    .users-menu-panel.dropdown-menu {
+      width: calc(100vw - 1rem);
+    }
+  }
+
+  /* Ohne eigenen Abstand, damit der Subheader über die volle Breite reicht */
+  .main {
+    flex: 1 0 auto;
+  }
+
+  /*
+   * Der Subheader: Ihn rendert allein das Modul, in dem man ist. Links die Statuszelle, daneben die Tabs. Er bleibt unter
+   * dem Header stehen. Passen nicht alle Tabs hin, wischt man die Leiste seitlich. Das Aussehen der Tabs (Abstände,
+   * Trennstriche, aktiver Tab) gestaltet das Theme, hier nur, was das Wischen braucht.
+   */
+  .subheader {
+    position: sticky;
+    top: var(--header-height);
+    z-index: 1020;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: var(--subheader-height);
+    padding: 0 1rem;
+  }
+
+  .subheader-status {
+    flex: none;
+    margin-right: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .subheader-tabs.nav {
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .subheader-tabs .nav-link {
+    position: relative;
+    flex: none;
+    color: inherit;
+    white-space: nowrap;
+  }
+
+  /* Der Inhalt steht mittig mit höchstens --main-max-width Breite */
+  .main-content {
+    padding-block: var(--main-padding);
+    padding-inline: max(var(--main-padding), calc((100% - var(--main-max-width)) / 2));
+  }
+
+  /* Immer da, unabhängig vom Modul, am Ende der Seite */
+  .footer {
+    position: relative;
+    flex: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 1.5rem;
+    padding: 0.5rem var(--main-padding);
+    font-size: 0.8125rem;
+  }
+
+  /*
+   * ===== ContentBox: contentbox, contentbox-header, contentbox-main, contentbox-footer =====
+   * Eine Bootstrap-Card mit eigenen Klassen, damit ein Theme sie komplett anders gestalten kann. Hier nur Abstände und
+   * Schriftgrößen, Farben, Rahmen, Rundung und Schatten kommen aus dem Theme. Der Fuß ist immer da.
+   */
+  .contentbox {
+    margin-bottom: 1rem;
+  }
+
+  .contentbox-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .contentbox-title {
+    font-weight: 600;
+  }
+
+  .contentbox-footer {
+    font-size: 0.875rem;
+  }
+
+  /*
+   * ===== Rich-Text (components/RichTextEditor, RichTextView): Werkzeugleiste, Feld und Anzeige. Editor und Anzeige
+   * teilen sich die Maße der Auszeichnungen, so sieht man beim Schreiben, was später steht. Farben im Theme. =====
+   */
+  :root {
+    --rich-text-editor-min-height: 10rem;
+    --rich-text-editor-compact-min-height: 3.5rem;
+  }
+
+  /* Mehrsprachig: je Sprache die Flagge vor Werkzeugleiste und Feld (vorerst nur Deutsch) */
+  .multilingual-rich-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .multilingual-rich-text-language {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 0.5rem;
+  }
+
+  .multilingual-rich-text-flag {
+    display: inline-flex;
+    align-items: center;
+    height: 2rem;
+  }
+
+  .multilingual-rich-text-field {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .multilingual-rich-text-count {
+    margin-top: 0.25rem;
+  }
+
+  .rich-text-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .rich-text-tool {
+    min-width: 2.1rem;
+  }
+
+  .rich-text-toolbar-separator {
+    align-self: stretch;
+    width: 1px;
+    margin: 0 0.25rem;
+  }
+
+  .rich-text-editor {
+    position: relative;
+    min-height: var(--rich-text-editor-min-height);
+    overflow-wrap: anywhere;
+  }
+
+  .rich-text-editor.rich-text-editor-compact {
+    min-height: var(--rich-text-editor-compact-min-height);
+  }
+
+  /* der Hinweis im leeren Feld, über der ersten Zeile */
+  .rich-text-editor.is-empty::before {
+    content: attr(data-placeholder);
+    position: absolute;
+    top: 0.375rem;
+    left: 0.75rem;
+    right: 0.75rem;
+    pointer-events: none;
+  }
+
+  .rich-text-view,
+  .rich-text-editor {
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+
+  .rich-text-view :is(p, div),
+  .rich-text-editor :is(p, div) {
+    margin: 0 0 0.6rem;
+  }
+
+  .rich-text-view h1,
+  .rich-text-editor h1 {
+    margin: 1rem 0 0.5rem;
+    font-size: 1.6rem;
+    font-weight: 700;
+  }
+
+  .rich-text-view h2,
+  .rich-text-editor h2 {
+    margin: 0.9rem 0 0.45rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+  }
+
+  .rich-text-view h3,
+  .rich-text-editor h3 {
+    margin: 0.8rem 0 0.4rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+
+  .rich-text-view hr,
+  .rich-text-editor hr {
+    margin: 1rem 0;
+  }
+
+  .rich-text-view > :first-child,
+  .rich-text-editor > :first-child {
+    margin-top: 0;
+  }
+
+  .rich-text-view > :last-child,
+  .rich-text-editor > :last-child {
+    margin-bottom: 0;
+  }
+
+  /*
+   * ===== Scrollbares Popup mit Formular (Modal mit scrollable, darin <Form> um Kopf, Inhalt und Fuß) =====
+   * Bootstrap begrenzt die Höhe über die Flex-Spalte von modal-content; ein Formular dazwischen bricht sie, dann scrollt
+   * der Inhalt nicht und wird samt „Speichern“ abgeschnitten (Kontakt-Popup, Nutzer 2026-11-09). Das Formular reicht die
+   * Spalte durch: Der Inhalt scrollt, Kopf und Fuß bleiben stehen.
+   */
+  .modal-dialog-scrollable .modal-content > form {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* ===== Badge eines Rechts, in jedem Theme gleich: eckig. Die Pille der Position zeichnet der BadgeLook. ===== */
+  .access-role-badge {
+    display: inline-block;
+    margin-right: 0.25rem;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    vertical-align: baseline;
+  }
+
+  .access-role-badge {
+    border-radius: 0.25rem;
+    background: var(--access-role-badge-bg);
+    color: var(--access-role-badge-text);
+  }
+
+  /* ===== Rechte zum Anklicken (AccessRoleToggleList) wie in der Vorlage: gewählt voll, sonst blass und durchgestrichen ===== */
+  .access-role-toggle-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .access-role-toggle {
+    padding: 0.125rem;
+    border: 2px dashed transparent;
+    border-radius: 0.375rem;
+    background: none;
+    opacity: 0.3;
+    filter: grayscale(1);
+    cursor: pointer;
+  }
+
+  .access-role-toggle:hover {
+    opacity: 0.6;
+  }
+
+  .access-role-toggle.access-role-toggle-active {
+    border-style: solid;
+    border-color: var(--contentbox-border);
+    opacity: 1;
+    filter: none;
+  }
+
+  .access-role-toggle:disabled {
+    cursor: default;
+  }
+
+  /* ===== Auswahl eines Rechts (AccessRolePicker) wie die Hook-Suche der Vorlage: je Recht eine Klickzeile ===== */
+  .access-role-picker-list {
+    display: flex;
+    flex-direction: column;
+    margin-top: 0.5rem;
+  }
+
+  .access-role-picker-entry {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.3rem 0.25rem;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .access-role-picker-entry:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  .access-role-picker-key {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.8rem;
+    opacity: 0.8;
+  }
+
+  /* Das Badge ist inline-block, die Durchstreichung des Knopfes käme nicht bei ihm an */
+  .access-role-toggle .access-role-badge {
+    margin-right: 0;
+    text-decoration: line-through;
+  }
+
+  .access-role-toggle.access-role-toggle-active .access-role-badge {
+    text-decoration: none;
+  }
+
+
+  /*
+   * ===== Matrix (components/Matrix), wie in der Vorlage =====
+   * Ohne ContentBox direkt unter dem Subheader, bündig an beiden Rändern. Sie füllt den Bildschirm unter Header und
+   * Subheader und scrollt in sich, so bleiben Kopfzeile und erste Spalte stehen. Darunter folgt der Footer.
+   * Verschoben wird auch mit gedrückter rechter Maustaste. Die Farben kommen aus dem Theme (--matrix-*).
+   */
+  .main-matrix {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--header-height) - var(--subheader-height));
+    color: var(--matrix-text);
+  }
+
+  .matrix-message {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-height: 2rem;
+    padding: 0.25rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  /* Ohne gezeichnete Rollbalken: bedient wird mit Mausrad, Finger oder rechter Maustaste */
+  .matrix-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+
+  .matrix-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .matrix-scroll.panning {
+    cursor: grabbing;
+    user-select: none;
+  }
+
+  /* Malen mit gedrückter linker Maustaste */
+  .matrix-scroll.painting,
+  .matrix-scroll.painting * {
+    cursor: crosshair;
+    user-select: none;
+  }
+
+  /* Werkzeuge in der Ecke, z. B. der Pinsel: oben rechts über der Diagonale, die Beschriftung der Spalten rutscht darunter */
+  .matrix-corner-tools {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.5rem;
+  }
+
+  .matrix-corner-tools ~ .matrix-corner-columns {
+    top: 2.4rem;
+  }
+
+  .matrix-brushes {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .matrix-brush {
+    min-width: 1.75rem;
+    height: 1.75rem;
+    padding: 0 0.35rem;
+    border: 1px solid var(--matrix-line);
+    border-radius: 0.375rem;
+    background: var(--matrix-head-bg);
+    color: var(--matrix-text);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .matrix-brush:hover {
+    border-color: var(--matrix-active);
+  }
+
+  .matrix-brush.active {
+    border-color: var(--matrix-active);
+    background: var(--matrix-active);
+    color: var(--matrix-head-bg);
+  }
+
+  .matrix-brush:focus-visible {
+    outline: 2px solid var(--matrix-active);
+    outline-offset: 2px;
+  }
+
+  /*
+   * Nie overflow: hidden an der Tabelle: Sie würde zum Scroll-Container, und die sticky-Zellen klebten an ihr statt an
+   * .matrix-scroll. clip beschneidet die Streifen des Fadenkreuzes genauso, ohne Scroll-Container zu werden.
+   */
+  .matrix {
+    border-collapse: collapse;
+    white-space: nowrap;
+    overflow: clip;
+  }
+
+  .matrix th,
+  .matrix td {
+    padding: 0.3rem 0.45rem;
+  }
+
+  /* Die Kopfzeile bleibt stehen. Trennstrich als inset-Schatten, border-collapse verschluckt Ränder an sticky-Zellen. */
+  .matrix thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: var(--matrix-head-bg);
+    box-shadow: inset 0 -2px 0 var(--matrix-line);
+  }
+
+  .matrix-column-head {
+    vertical-align: bottom;
+    text-align: center;
+    border-left: 1px solid color-mix(in srgb, var(--matrix-line) 60%, transparent);
+  }
+
+  /* Senkrecht, von unten nach oben lesbar: So passen alle Spalten nebeneinander */
+  .matrix-column-head-content {
+    display: inline-block;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+
+  .matrix-column-head .access-role-badge {
+    margin-right: 0;
+    padding: 0.65rem 0.3rem;
+  }
+
+  /* senkrecht: die lange Seite läuft jetzt von unten nach oben, also die Polster tauschen */
+  .matrix-column-head .badge-look {
+    margin-right: 0;
+    padding: 0.8rem 0.32rem;
+  }
+
+  /* Zeilenkopf mit Griff, wenn sich die Zeilen verschieben lassen */
+  .matrix-row-head-sortable {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  /* Die erste Spalte bleibt stehen, unter der Kopfzeile (2) und der Ecke (4) */
+  .matrix-row-head {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: var(--matrix-head-bg);
+    box-shadow: inset -2px 0 0 var(--matrix-line);
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .matrix-row-head-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .matrix-chip {
+    padding: 0 0.4rem;
+    border: 1px solid var(--matrix-line);
+    border-radius: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  /* Die Ecke, diagonal geteilt: unten links stehen die Zeilen, oben rechts die Spalten. Fest in beide Richtungen. */
+  .matrix thead th.matrix-corner {
+    left: 0;
+    z-index: 4;
+    min-width: 12rem;
+    height: 6rem;
+    background-image: linear-gradient(
+      to top right,
+      transparent calc(50% - 1px),
+      var(--matrix-line) calc(50% - 1px),
+      var(--matrix-line) calc(50% + 1px),
+      transparent calc(50% + 1px)
+    );
+  }
+
+  .matrix-corner-rows,
+  .matrix-corner-columns {
+    position: absolute;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .matrix-corner-rows {
+    bottom: 0.4rem;
+    left: 0.5rem;
+  }
+
+  .matrix-corner-columns {
+    top: 0.4rem;
+    right: 0.5rem;
+  }
+
+  .matrix tbody td,
+  .matrix tbody th {
+    border-bottom: 1px solid color-mix(in srgb, var(--matrix-line) 50%, transparent);
+  }
+
+  /* Die ganze Zelle ist der Knopf: ein kleiner Klickfleck in der Mitte ließe sich nicht erraten */
+  .matrix td.matrix-cell {
+    position: relative;
+    padding: 0;
+    text-align: center;
+    border-left: 1px solid color-mix(in srgb, var(--matrix-line) 60%, transparent);
+  }
+
+  .matrix-cell-button {
+    display: block;
+    width: 100%;
+    min-width: 2.25rem;
+    padding: 0.3rem 0.45rem;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .matrix-cell-button:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--matrix-active) 20%, transparent);
+  }
+
+  .matrix-cell-button:focus-visible {
+    outline: 2px solid var(--matrix-active);
+    outline-offset: -2px;
+  }
+
+  .matrix-cell-button:disabled {
+    cursor: progress;
+  }
+
+  /* Fadenkreuz: Zeile und Spalte der Zelle unter der Maus färben sich leicht mit */
+  .matrix tbody tr:hover td,
+  .matrix tbody tr:hover th {
+    background-color: color-mix(in srgb, var(--matrix-active) 8%, transparent);
+  }
+
+  /* auf der stehenden Spalte deckend, sonst schienen die Zellen darunter durch */
+  .matrix tbody tr:hover .matrix-row-head {
+    background-color: color-mix(in srgb, var(--matrix-active) 8%, var(--matrix-head-bg));
+  }
+
+  /* Die Spalte: ein Streifen nach oben und unten, die Tabelle (overflow: clip) schneidet ihn ab */
+  .matrix td.matrix-cell:hover::after,
+  .matrix thead th.matrix-column-head:hover::after {
+    content: '';
+    position: absolute;
+    top: -10000px;
+    right: 0;
+    bottom: -10000px;
+    left: 0;
+    background-color: color-mix(in srgb, var(--matrix-active) 8%, transparent);
+    pointer-events: none;
+  }
+
+  .matrix-mark {
+    color: var(--matrix-active);
+    font-weight: 700;
+  }
+
+  /* noch nicht vom Backend bestätigt: schraffiert, das Zeichen blass. Ist keine Zelle mehr schraffiert, ist alles
+     gespeichert. */
+  .matrix td.matrix-cell-pending {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      color-mix(in srgb, var(--matrix-pending) 28%, transparent) 0 3px,
+      transparent 3px 7px
+    );
+  }
+
+  .matrix td.matrix-cell-pending .matrix-cell-button > * {
+    opacity: 0.5;
+  }
+
+  /* Kopfzeile einer Gruppe (z. B. FileClass × Endung): hebt sich ab, ihre Zellen zählen „2/4“. Deckend, darunter
+     scrollen die Zeilen. */
+  .matrix tr.matrix-group-row > th,
+  .matrix tr.matrix-group-row > td {
+    background-color: var(--matrix-group-bg);
+    color: var(--matrix-group-text);
+  }
+
+  .matrix-group-count {
+    font-weight: 400;
+    opacity: 0.75;
+  }
+
+  /* Endungen unter ihrer Gruppe eingerückt */
+  .matrix-extension-head {
+    padding-left: 0.75rem;
+    font-weight: 400;
+  }
+
+  .matrix-count {
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0.7;
+  }
+
+  .matrix-count-full {
+    color: var(--matrix-active);
+    opacity: 1;
+  }
+
+  /*
+   * ===== Profil (src/profile), nach der Vorlage =====
+   * Oben der Profilkopf mit Titelbild, Profilbild, Name und Kennzahlen, darunter zwei Spalten: schmal Kontakt, Konto,
+   * Einstellungen und Sicherheit, breit Über mich, Achievements, Galerie, Gästebuch, Freunde und Rechte. Farben des
+   * Titelbilds und des Online-Rings kommen aus dem Theme (--profile-*).
+   */
+  .profile {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* Den Abstand zwischen den Boxen macht das Raster */
+  .profile .contentbox {
+    margin-bottom: 0;
+  }
+
+  /* Profilkopf: das Titelbild reicht bis an den Rand der ContentBox */
+  .profile-hero .contentbox-main {
+    padding: 0;
+  }
+
+  /*
+   * Das Banner liegt hinter dem ganzen Inhalt der Box (das Canvas füllt es ganz aus): oben 12rem frei, genug, dass das
+   * Profilbild beim Zeigen darauf ganz im Banner wächst; unten liegt der Streifen mit Profilbild und Name darauf. Der
+   * freie Teil ist Innenabstand des Banners: Als Außenabstand des Streifens rutschte er aus dem Banner heraus (die
+   * Elemente davor sind absolut positioniert), und darüber stünde der weiße Grund der Box. Der Verlauf steht da, bis
+   * das Bild gezeichnet ist.
+   */
+  .profile-banner {
+    /* die Maße des Profilkopfs an einer Stelle; das Theme darf sie ändern */
+    --profile-banner-free-height: 12rem;
+    --profile-strip-height: 8.75rem;
+    --profile-strip-padding-top: 0.9rem;
+    --profile-strip-padding-left: 1.5rem;
+    --profile-avatar-base-size: 10rem;
+    --profile-avatar-frame-inset: 6px;
+    --profile-avatar-base-left: 1.5rem;
+    --profile-avatar-hover-gap: 1.625rem;
+    --profile-avatar-base-frame-size: calc(var(--profile-avatar-base-size) + 2 * var(--profile-avatar-frame-inset));
+    --profile-avatar-hover-frame-size: calc(
+      var(--profile-banner-free-height) + var(--profile-strip-height) - 2 * var(--profile-avatar-hover-gap)
+    );
+    position: relative;
+    padding-top: var(--profile-banner-free-height);
+    background: linear-gradient(135deg, var(--profile-cover-from), var(--profile-cover-to));
+  }
+
+  .profile-cover-canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Die Plakette oben rechts im Titelbild, vorerst der Punktestand */
+  .profile-cover-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.35rem 0.85rem 0.35rem 0.35rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    line-height: 1.2;
+  }
+
+  .profile-cover-badge-ring {
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border: 3px solid transparent;
+    border-radius: 50%;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * Der Streifen unten auf dem Banner: Profilbild, daneben Name und Info. Das Profilbild ragt nach oben über die
+   * Trennlinie ins Banner. Durchscheinen, Farben und Linie macht das Theme.
+   */
+  .profile-identity {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    /* feste Mindesthöhe: So steht die Unterkante des Banners fest, und das große Profilbild hat unten genau den Abstand */
+    min-height: var(--profile-strip-height);
+    padding: var(--profile-strip-padding-top) var(--profile-strip-padding-left) 1.25rem;
+  }
+
+  @media (max-width: 575.98px) {
+    .profile-identity {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+  }
+
+  /*
+   * Das Profilbild im Profilkopf: nur Lage und Größe. Es sitzt mit seiner Mitte auf der Trennlinie des Streifens. Die
+   * Form (Rahmen, Passepartout, Platte, Winkel, Klemmen) bestimmt das Theme, so kann ein anderes Theme eine ganz andere
+   * Form wählen (Nutzer 2026-11-09). Das Bild ist --profile-avatar-base-size groß, der Rahmen des Themes gibt je Seite
+   * --profile-avatar-frame-inset dazu.
+   *
+   * Beim Zeigen auf ein Profilbild wächst es, bis die Maus es verlässt (das 600er-Bild bleibt scharf, auch bei doppelter Pixeldichte; ohne Bild bleibt
+   * es, wie es ist). Groß hat sein Rahmen oben, links und unten genau --profile-avatar-hover-gap Abstand zum Rand des
+   * Banners (Nutzer 2026-11-09), und es schiebt den Text daneben nach rechts.
+   */
+  .profile-avatar-wrap {
+    --profile-avatar-size: var(--profile-avatar-base-size);
+    z-index: 1;
+    /* die Mitte in Grundgröße auf die Linie */
+    margin-top: calc(-1 * (var(--profile-avatar-base-frame-size) / 2 + var(--profile-strip-padding-top)));
+    margin-left: var(--profile-avatar-base-left);
+    transition: margin 0.3s ease;
+  }
+
+  /* groß: oben, links und unten derselbe Abstand zum Rand des Banners */
+  .profile-avatar-wrap:hover:has(.users-avatar-with-image) {
+    --profile-avatar-size: calc(var(--profile-avatar-hover-frame-size) - 2 * var(--profile-avatar-frame-inset));
+    margin-top: calc(-1 * (var(--profile-banner-free-height) - var(--profile-avatar-hover-gap) + var(--profile-strip-padding-top)));
+    margin-left: calc(var(--profile-avatar-hover-gap) - var(--profile-strip-padding-left));
+  }
+
+  /* alles, was mitwächst (Platte, Rahmen, Winkel), liegt vor den Klemmen */
+  .profile-avatar-figure {
+    position: relative;
+    z-index: 1;
+  }
+
+  .profile-avatar-wrap .users-avatar-large {
+    width: var(--profile-avatar-size);
+    height: var(--profile-avatar-size);
+    border: 0;
+    border-radius: 0;
+    transition:
+      width 0.3s ease,
+      height 0.3s ease;
+  }
+
+  /*
+   * Die Klemmen sitzen auf der Trennlinie an den Kanten des Rahmens in Grundgröße und bleiben dort, auch wenn das Bild
+   * wächst; sie liegen hinter ihm. Ihre Form bestimmt das Theme.
+   */
+  .profile-avatar-clamp {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    pointer-events: none;
+  }
+
+  .profile-avatar-clamp-left {
+    left: calc(var(--profile-strip-padding-left) + var(--profile-avatar-base-left));
+  }
+
+  .profile-avatar-clamp-right {
+    left: calc(var(--profile-strip-padding-left) + var(--profile-avatar-base-left) + var(--profile-avatar-base-frame-size));
+  }
+
+  /* das Profilbild mit Platte, Winkeln und dem Knopf „Neues Bild“ */
+  .profile-avatar-wrap {
+    position: relative;
+    flex: none;
+  }
+
+  /*
+   * „Neues Bild“ oben rechts im Profilbild (Nutzer 2026-11-09): nur beim Zeigen darauf, also im großen Zustand, oder
+   * mit der Tastatur. Es blendet ein und gleitet leicht von oben herein, erst nachdem das Bild gewachsen ist; beim
+   * Verlassen geht es sofort. Animiert werden nur Deckkraft und Verschiebung, das rechnet die Grafikkarte, nichts ruckelt.
+   * Es liegt vor dem Bild (z-index 2), die Form macht das Theme.
+   */
+  .profile-avatar-upload {
+    position: absolute;
+    z-index: 2;
+    top: calc(var(--profile-avatar-frame-inset) + 0.6rem);
+    right: calc(var(--profile-avatar-frame-inset) + 0.6rem);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(-0.4rem);
+    pointer-events: none;
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .profile-avatar-wrap:hover .profile-avatar-upload,
+  .profile-avatar-upload:focus-visible {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    transition:
+      opacity 0.25s ease 0.2s,
+      transform 0.25s ease 0.2s;
+  }
+
+  /* auf dem Handy gibt es kein Zeigen: der Knopf steht immer da */
+  @media (hover: none) {
+    .profile-avatar-upload {
+      opacity: 1;
+      transform: none;
+      pointer-events: auto;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .profile-avatar-upload,
+    .profile-avatar-wrap:hover .profile-avatar-upload {
+      transform: none;
+      transition: opacity 0.15s ease;
+    }
+  }
+
+  /* ===== Profil „Einstellungen“: je Einstellung Beschriftung und Sichtbarkeit, darunter abgesetzt, was später kommt ===== */
+  .profile-setting {
+    margin-bottom: 1rem;
+  }
+
+  .profile-settings-later {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid transparent;
+  }
+
+  /* ===== UsersAvatar: Profilbild oder Initialen auf dem Verlauf aus der GUID; Schatten und Rahmenfarbe im Theme ===== */
+  .users-avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    overflow: hidden;
+    background: var(--users-avatar-bg, var(--profile-cover-to));
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  .users-avatar-small {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    font-size: 0.75rem;
+  }
+
+  .users-avatar-medium {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    font-size: 0.875rem;
+  }
+
+  .users-avatar-large {
+    width: 8.5rem;
+    height: 8.5rem;
+    border: 4px solid var(--contentbox-bg);
+    border-radius: 1.4rem;
+    font-size: 2.9rem;
+  }
+
+  /* privates Profil: der Smiley groß mittig im Avatar */
+  .users-avatar-anonymous {
+    font-size: 1.15rem;
+    font-weight: 400;
+  }
+
+  .users-avatar-large.users-avatar-anonymous {
+    font-size: 4.5rem;
+  }
+
+  /* Popup „Profilkopf einstellen“: die Vorschau des Avatars neben den beiden Farbwählern */
+  .profile-head-avatar-colors {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .profile-head-color-field {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  /* der Link auf ein Profil (Name, Avatar): ohne Unterstreichung, der Avatar bleibt ein Block; Hover im Theme */
+  .users-profile-link {
+    display: inline-flex;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* das Profilbild füllt den Avatar, die Rundung schneidet overflow am Avatar */
+  .users-avatar-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* ===== Emojis: die Schriften mit farbigen Emojis zuerst, damit jedes System sie bunt zeigt ===== */
+  .emoji-text {
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif;
+  }
+
+  /* ===== EmojiPicker: Suchfeld, Gruppen als Reiter, darunter das Raster; Hover und gewählte Gruppe im Theme ===== */
+  .emoji-picker-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+  }
+
+  .emoji-picker-group {
+    padding: 0.2rem 0.4rem;
+    border: 1px solid transparent;
+    border-radius: 0.4rem;
+    background: none;
+    font-size: 1.25rem;
+    line-height: 1.2;
+    cursor: pointer;
+  }
+
+  .emoji-picker-heading {
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .emoji-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+    height: 18rem;
+    overflow-y: auto;
+    align-content: start;
+  }
+
+  .emoji-picker-emoji {
+    padding: 0.3rem;
+    border: 0;
+    border-radius: 0.4rem;
+    background: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .emoji-picker-emoji:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  /* unter dem Raster das Emoji, auf das man zeigt, groß mit seinem Namen; die Höhe bleibt, damit nichts springt */
+  .emoji-picker-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .emoji-picker-preview-emoji {
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  /* ===== Gästebuch: Schreibfeld, Einträge als Karten, Kommentare als Verlauf, Smileys als Pillen ===== */
+  .guestbook-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .guestbook-entry {
+    padding: 0.75rem 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.75rem;
+  }
+
+  .guestbook-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .guestbook-head-text {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .guestbook-time {
+    display: block;
+    font-size: 0.8rem;
+    opacity: 0.7;
+  }
+
+  /* der Text so, wie er geschrieben wurde: Zeilenumbrüche bleiben, lange Wörter brechen um */
+  .guestbook-text {
+    margin: 0.5rem 0;
+  }
+
+  /* Pillen mit Zahl: die Smileys des Gästebuchs und die Stimmen einer Datei (FileCheerBar) sehen gleich aus */
+  .guestbook-reactions,
+  .file-cheer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .guestbook-reaction,
+  .file-cheer-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.1rem 0.55rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: none;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    cursor: pointer;
+  }
+
+  .guestbook-reaction:disabled,
+  .file-cheer-button:disabled {
+    cursor: default;
+  }
+
+  .guestbook-reaction-count,
+  .file-cheer-count {
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .guestbook-comments {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+    padding-left: 0.9rem;
+    border-left: 2px solid transparent;
+  }
+
+  .guestbook-comment {
+    min-width: 0;
+  }
+
+  /* Text und Smileys eines Kommentars stehen unter dem Namen, eingerückt um den kleinen Avatar samt Abstand */
+  .guestbook-comment .guestbook-text,
+  .guestbook-comment .guestbook-reactions {
+    margin-left: 2.6rem;
+  }
+
+  .guestbook-comment .guestbook-text {
+    margin-top: 0.15rem;
+    margin-bottom: 0.35rem;
+  }
+
+  /* Schreibfeld und Antwortfeld: der Rich-Text-Editor nimmt die Breite, der Knopf steht rechts unten daneben */
+  .guestbook-text-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+
+  .guestbook-text-form > .multilingual-rich-text {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  @media (max-width: 575.98px) {
+    .guestbook-text-form {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+
+  /* die Seitenzahlen mittig unter den Einträgen */
+  .guestbook-pager {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+
+  /* beim Blättern rollt die Seite hierher: so weit unter Header und Subheader, dass der Kopf der Box zu sehen ist */
+  .guestbook-box {
+    scroll-margin-top: calc(var(--header-height) + var(--subheader-height) + 1rem);
+  }
+
+  /* ===== PageNavigation: Seitenzahlen einer Liste (Bootstrap-Pagination), Farben im Theme ===== */
+  .page-navigation {
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 0;
+  }
+
+  /* ===== ImageCropUploadPopup: Dropzone, dann Werkzeugzeile und die gemessene Bühne des Zuschnitts ===== */
+  .image-upload-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    height: calc(80vh - 10rem);
+    min-height: 16rem;
+  }
+
+  .image-upload-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    flex: none;
+  }
+
+  .image-upload-stage {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  /* die Zuschnitt-Bühne (ImageCropper): das Maximal-Rechteck, der Rand außerhalb des Bildes als Schachbrett */
+  .image-cropper-stage {
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    /* der Finger zieht den Ausschnitt, nicht die Seite */
+    touch-action: none;
+  }
+
+  .image-cropper-stage.image-cropper-stage-ready {
+    background-color: #e6e6e6;
+    background-image:
+      linear-gradient(45deg, #bfbfbf 25%, transparent 25%, transparent 75%, #bfbfbf 75%),
+      linear-gradient(45deg, #bfbfbf 25%, transparent 25%, transparent 75%, #bfbfbf 75%);
+    background-size: 16px 16px;
+    background-position:
+      0 0,
+      8px 8px;
+  }
+
+  .image-cropper-mask {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.5);
+    pointer-events: none;
+  }
+
+  .image-cropper-frame {
+    position: absolute;
+    border: 2px solid var(--image-cropper-accent, #ffffff);
+    pointer-events: none;
+  }
+
+  .image-cropper-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    transform: translate(-50%, -50%);
+    background: var(--image-cropper-accent, #ffffff);
+    border: 2px solid #ffffff;
+    border-radius: 3px;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.6);
+    pointer-events: none;
+  }
+
+  .profile-identity-text {
+    min-width: 0;
+  }
+
+  .profile-name {
+    margin: 0;
+    font-size: 1.875rem;
+    font-weight: 700;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
+  .profile-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    margin-top: 0.4rem;
+  }
+
+  .profile-online {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.05rem 0.6rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--profile-online) 14%, transparent);
+    color: var(--profile-online);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .profile-online-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--profile-online);
+  }
+
+  .profile-info {
+    max-width: 60ch;
+    margin: 0.65rem 0 0;
+    font-size: 1.0625rem;
+    opacity: 0.75;
+  }
+
+  /* Kennzahlen im Fuß des Profilkopfs */
+  .profile-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 2rem;
+    padding-block: 0.35rem;
+  }
+
+  .profile-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  /* eine Kennzahl zum Anklicken (z. B. zum Gästebuch springen): sieht aus wie die anderen, Hover im Theme */
+  .profile-stat-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .profile-stat > .bi {
+    color: var(--profile-online);
+    font-size: 1.15rem;
+  }
+
+  .profile-stat-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+  }
+
+  .profile-stat-label,
+  .profile-field-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+
+  .profile-stat-value {
+    color: var(--contentbox-text);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Darunter zwei Spalten, auf schmalen Schirmen untereinander */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  @media (max-width: 991.98px) {
+    .profile-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .profile-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-width: 0;
+  }
+
+  /* Kennzeichnet alles, was noch nicht echt ist: Platzhalter zum Hinschieben. Signalfarbe, in jedem Theme gleich. */
+  .profile-dummy-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0 0.5rem;
+    border: 1px dashed var(--signal-warning);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--signal-warning) 10%, #ffffff);
+    color: color-mix(in srgb, var(--signal-warning) 70%, #000000);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .profile-private-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .profile-count-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    padding: 0 0.45rem;
+    border: 1px solid var(--contentbox-border);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Kontakt: Symbol in Markenfarben, in jedem Theme gleich */
+  .profile-contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .profile-contact-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .profile-contact-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.6rem;
+    background: var(--profile-contact-tint);
+    color: var(--profile-contact-ink);
+    font-size: 1.1rem;
+  }
+
+  .profile-contact-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .profile-contact-value {
+    overflow-wrap: anywhere;
+  }
+
+  /*
+   * Kontakt bearbeiten (Popup): je Angabe EINE Zeile, Bezeichnung | Feld | Sichtbarkeit; die Zeilen einer Gruppe teilen
+   * sich die Spalten (subgrid), so stehen Felder und Sichtbarkeiten bündig untereinander. Auf dem Handy die Bezeichnung
+   * darüber, Feld und Sichtbarkeit nebeneinander. Linien und Überschrift-Farbe im Theme.
+   */
+  .profile-contact-edit-group {
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr) auto;
+    column-gap: 1rem;
+  }
+
+  .profile-contact-edit-group + .profile-contact-edit-group {
+    margin-top: 1.25rem;
+  }
+
+  .profile-contact-edit-group-title {
+    grid-column: 1 / -1;
+    margin-bottom: 0.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .profile-contact-edit-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    align-items: center;
+    row-gap: 0.3rem;
+    padding: 0.45rem 0;
+  }
+
+  .profile-contact-edit-label {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 575.98px) {
+    .profile-contact-edit-group {
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 0.5rem;
+    }
+
+    .profile-contact-edit-label {
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* Bezeichnung und Wert in zwei Spalten, z. B. im Konto */
+  .profile-fields {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.45rem 1rem;
+    align-items: baseline;
+    margin: 0;
+  }
+
+  .profile-fields dt {
+    font-size: 0.875rem;
+    font-weight: 400;
+    opacity: 0.75;
+  }
+
+  .profile-fields dd {
+    min-width: 0;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* Achievements: quadratische Embleme, gesperrte grau und blass (Vorgeschmack auf die AR-Embleme) */
+  .profile-achievements {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+    gap: 0.75rem;
+  }
+
+  .profile-achievement {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  /* Punktekonto: oben groß der Stand, darunter der Kontoauszug */
+  .profile-points-balance {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .profile-points-balance-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .profile-points-amount {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .profile-points-amount.is-incoming {
+    color: var(--signal-success);
+  }
+
+  .profile-points-amount.is-outgoing {
+    color: var(--signal-danger);
+  }
+
+  /* Das Medaillon aus dem Admin (AchievementBadge), oben rechts die Zahl der Abschlüsse; gesperrte grau */
+  .profile-achievement-medal {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+  }
+
+  .profile-achievement-count {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.6rem;
+    font-size: 0.68rem;
+  }
+
+  .profile-achievement.is-locked .profile-achievement-medal {
+    filter: grayscale(1);
+    opacity: 0.45;
+  }
+
+  .profile-achievement-hint {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: left;
+  }
+
+  .profile-achievement-hint-title {
+    font-weight: 700;
+  }
+
+  .profile-achievement-hint-progress {
+    font-style: italic;
+  }
+
+  .profile-achievements-empty {
+    margin: 0;
+    font-size: 0.875rem;
+    font-style: italic;
+  }
+
+  .profile-about-empty {
+    margin: 0;
+    font-size: 0.875rem;
+    font-style: italic;
+  }
+
+  /* Freunde-Box: Abschnitte (Anfragen an mich, Freunde, meine Anfragen), je User eine Zeile mit Aktionen rechts */
+  .profile-friends-section + .profile-friends-section {
+    margin-top: 1rem;
+  }
+
+  .profile-friends-title {
+    margin: 0 0 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .profile-friends-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+  }
+
+  .profile-friends-row-actions {
+    display: inline-flex;
+    gap: 0.4rem;
+  }
+
+  .profile-friends-pending {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+  }
+
+  .profile-friends-empty {
+    margin: 0;
+    font-size: 0.875rem;
+    font-style: italic;
+  }
+
+  /* Profil eines anderen, oben rechts: „Befreundet“ / „Anfrage gesendet“ als Badge, sonst die Knöpfe */
+  .profile-friendship-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+    cursor: help;
+  }
+
+  .profile-friendship-actions {
+    display: inline-flex;
+    gap: 0.4rem;
+  }
+
+  /*
+   * ===== Tika-Test (src/tikatest) =====
+   * Der erkannte Text eines Dokuments: Zeilenumbrüche bleiben, lange Zeilen brechen um, eigener Scrollbereich. Rahmen
+   * und Fläche bestimmt das Theme.
+   */
+  /* Der gelesene Text steht ganz da, ohne eigenen Scrollbereich: gescrollt wird die Seite (Wunsch des Nutzers 2026-11-08) */
+  .tika-probe-text {
+    margin: 0;
+    padding: 0.75rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  /*
+   * ===== Toasts (components/Toasts.tsx) =====
+   * Nur die Leiste unten rechts, das Aussehen der Toasts bestimmt das Theme komplett.
+   */
+  .signal-toast-stack {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 1900;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.625rem;
+    max-width: calc(100vw - 2rem);
+    /* die leere Leiste schluckt keine Klicks, nur die Toasts selbst */
+    pointer-events: none;
+  }
+
+  .signal-toast-stack > * {
+    pointer-events: auto;
+  }
+
+  /*
+   * ===== Icon-Manager (src/iconmanager) =====
+   * Das Raster der Symbole und die Großansicht. Rahmen, Flächen, Auswahl und Markierung bestimmt das Theme.
+   */
+  .symbol-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+    gap: 0.5rem;
+  }
+
+  .symbol-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    position: relative;
+    min-width: 0;
+    padding: 0.65rem 0.25rem 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: inherit;
+    font-size: 0.7rem;
+  }
+
+  .symbol-tile > .symbol-glyph {
+    font-size: 1.75rem;
+    line-height: 1;
+  }
+
+  .symbol-tile-name {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .symbol-preview {
+    font-size: 6rem;
+    line-height: 1;
+  }
+
+  /*
+   * ===== BadgeLook: das Aussehen aus den Daten, wie in der Vorlage, nur reichhaltiger =====
+   * Gleich für die Pille der Position (badge-look-pill), das Schild des Rangs (badge-look-tag, mit Stufe) und das
+   * Medaillon des Achievements (badge-look-medal). In jedem Theme gleich, deshalb hier und nicht im Theme.
+   *
+   * Aufbau von unten nach oben: der Verlauf als Hintergrund (badge-look-gradient-*), darüber die Struktur als Maske in
+   * ihrer Farbe (badge-look-structure-*), darüber je Effekt eine Ebene (badge-look-layer-*), ganz oben Symbol und Text
+   * (badge-look-content). Leuchten (::after) und Regenbogenrand (::before) hängen am Badge selbst und ragen hinaus.
+   *
+   * Die Farben kommen als --badge-look-* an das Badge (nur, wenn sie gesetzt sind). Fehlt eine, gilt der Standard hier;
+   * die --look-* darunter sind die aufgelösten Werte, mit denen alle Regeln rechnen.
+   */
+  .badge-look {
+    --look-start: var(--badge-look-start, #64748b);
+    --look-end: var(--badge-look-end, color-mix(in srgb, var(--look-start) 55%, #0b1220));
+    --look-text: var(--badge-look-text, #ffffff);
+    --look-text-shadow: var(--badge-look-text-shadow, rgb(15 23 42 / 0.6));
+    --look-border: var(--badge-look-border, color-mix(in srgb, var(--look-start) 55%, #000000));
+    --look-shadow: var(--badge-look-shadow, rgb(15 23 42 / 0.35));
+    --look-structure: var(--badge-look-structure, rgb(255 255 255 / 0.2));
+    /* die Kanten innen und der Schatten außen; Verläufe und Effekte setzen sie neu */
+    --look-inset: inset 0 1px 0 rgb(255 255 255 / 0.18);
+    --look-drop: 0 1px 2px var(--look-shadow), 0 2px 6px -2px var(--look-shadow);
+
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.25rem;
+    border: 1px solid var(--look-border);
+    background: linear-gradient(to bottom, var(--look-start), var(--look-end));
+    color: var(--look-text);
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    vertical-align: middle;
+    box-shadow: var(--look-inset), var(--look-drop);
+  }
+
+  .badge-look-content {
+    position: relative;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    text-shadow:
+      0 0 2px var(--look-text-shadow),
+      0 1px 2px var(--look-text-shadow);
+  }
+
+  .badge-look-symbol {
+    font-size: 1.15em;
+    line-height: 1;
+  }
+
+  /* Jede Ebene liegt genau auf dem Badge und schneidet an seiner Rundung ab */
+  .badge-look-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  /* ----- Formen ----- */
+  .badge-look-pill {
+    padding: 0.32rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+  }
+
+  .badge-look-tag {
+    padding: 0.2rem 0.7rem 0.2rem 0.2rem;
+    border-radius: 0.45rem;
+    font-size: 0.78rem;
+  }
+
+  /* Die Stufe links im Rang-Schild: eine eingelassene Plakette */
+  .badge-look-level {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.45rem;
+    height: 1.45rem;
+    padding: 0 0.25rem;
+    border-radius: 0.3rem;
+    background: rgb(0 0 0 / 0.3);
+    box-shadow:
+      inset 0 1px 3px rgb(0 0 0 / 0.45),
+      0 1px 0 rgb(255 255 255 / 0.18);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .badge-look-medal {
+    --look-inset: inset 0 2px 0 rgb(255 255 255 / 0.25), inset 0 0 0 3px rgb(0 0 0 / 0.18);
+    width: 3.1rem;
+    height: 3.1rem;
+    padding: 0;
+    border-width: 2px;
+    border-radius: 50%;
+    font-size: 1.45rem;
+  }
+
+  .badge-look-medal .badge-look-text {
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+  }
+
+  /* Die Kachel einer Dateiart (FileClass): großes Symbol, daneben der Name, wie die Kacheln der Vorlage */
+  .badge-look-tile {
+    padding: 0.55rem 0.95rem;
+    border-radius: 0.7rem;
+    font-size: 0.9rem;
+  }
+
+  .badge-look-tile .badge-look-content {
+    gap: 0.55em;
+  }
+
+  .badge-look-tile .badge-look-symbol {
+    font-size: 1.6em;
+  }
+
+  /* ----- Verläufe (BadgeGradient), grob von schlicht nach edel ----- */
+  .badge-look-gradient-flat {
+    background: var(--look-start);
+  }
+
+  .badge-look-gradient-linear {
+    background: linear-gradient(to bottom, var(--look-start), var(--look-end));
+  }
+
+  .badge-look-gradient-diagonal {
+    background: linear-gradient(135deg, var(--look-start), var(--look-end));
+  }
+
+  /* Wappen: hart schräg geteilt, auf der Teilung eine helle Linie */
+  .badge-look-gradient-split {
+    background:
+      linear-gradient(
+        115deg,
+        transparent 0 calc(50% - 1px),
+        rgb(255 255 255 / 0.55) calc(50% - 1px) calc(50% + 1px),
+        transparent calc(50% + 1px)
+      ),
+      linear-gradient(115deg, var(--look-start) 0 50%, var(--look-end) 50% 100%);
+  }
+
+  /* 3D gewölbt: oben aufgehellt, Wende knapp über der Mitte, Lichtkante oben, dunkle Kante unten */
+  .badge-look-gradient-bevel {
+    --look-inset: inset 0 1px 0 rgb(255 255 255 / 0.5), inset 0 -2px 0 rgb(0 0 0 / 0.3);
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--look-start) 65%, #ffffff) 0%,
+      var(--look-start) 48%,
+      var(--look-end) 100%
+    );
+  }
+
+  .badge-look-gradient-radial {
+    background: radial-gradient(
+      circle at 50% 30%,
+      color-mix(in srgb, var(--look-start) 75%, #ffffff),
+      var(--look-start) 35%,
+      var(--look-end) 100%
+    );
+  }
+
+  /* Metall: mehrere Stufen mit Glanzstreifen, darüber feine senkrechte Bürstung */
+  .badge-look-gradient-metal {
+    --look-inset: inset 0 1px 0 rgb(255 255 255 / 0.65), inset 0 -1px 0 rgb(0 0 0 / 0.3);
+    background:
+      repeating-linear-gradient(90deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 3px),
+      linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--look-start) 70%, #ffffff) 0%,
+        var(--look-start) 30%,
+        var(--look-end) 48%,
+        color-mix(in srgb, var(--look-start) 45%, #ffffff) 54%,
+        var(--look-start) 72%,
+        var(--look-end) 100%
+      );
+  }
+
+  /* Chrom: oben der helle Himmel, in der Mitte die harte Horizontlinie, unten der dunkle Boden mit Reflex */
+  .badge-look-gradient-chrome {
+    --look-inset: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 -1px 0 rgb(0 0 0 / 0.35);
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--look-start) 25%, #ffffff) 0%,
+      color-mix(in srgb, var(--look-start) 60%, #ffffff) 46%,
+      color-mix(in srgb, var(--look-end) 80%, #000000) 50%,
+      var(--look-end) 62%,
+      color-mix(in srgb, var(--look-start) 70%, #ffffff) 100%
+    );
+  }
+
+  .badge-look-gradient-conic {
+    background: conic-gradient(
+      from 210deg at 50% 50%,
+      var(--look-start),
+      var(--look-end),
+      color-mix(in srgb, var(--look-start) 65%, #ffffff),
+      var(--look-end),
+      var(--look-start)
+    );
+  }
+
+  /* Edelstein: Facetten aus schrägen Lichtkanten und dunklen Ecken über dem Verlauf */
+  .badge-look-gradient-gem {
+    --look-inset: inset 0 1px 0 rgb(255 255 255 / 0.55), inset 0 0 0 1px rgb(255 255 255 / 0.12);
+    background:
+      linear-gradient(118deg, transparent 0 28%, rgb(255 255 255 / 0.32) 28% 36%, transparent 36%),
+      linear-gradient(242deg, transparent 0 30%, rgb(255 255 255 / 0.18) 30% 42%, transparent 42%),
+      linear-gradient(62deg, rgb(0 0 0 / 0.28) 0 18%, transparent 18% 82%, rgb(0 0 0 / 0.28) 82%),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.18) 0 50%, rgb(0 0 0 / 0.12) 50%),
+      linear-gradient(135deg, var(--look-start), var(--look-end));
+  }
+
+  /* Polarlicht: weiche Farbwolken auf dunklem Grund */
+  .badge-look-gradient-aurora {
+    background:
+      radial-gradient(ellipse 70% 120% at 12% 10%, color-mix(in srgb, var(--look-start) 70%, #ffffff) 0, transparent 60%),
+      radial-gradient(ellipse 60% 120% at 88% 90%, var(--look-end) 0, transparent 65%),
+      radial-gradient(ellipse 50% 90% at 65% 0%, color-mix(in oklch, var(--look-start), var(--look-end)) 0, transparent 70%),
+      linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--look-start) 55%, #000000),
+        color-mix(in srgb, var(--look-end) 60%, #000000)
+      );
+  }
+
+  /* Prisma: der lange Weg durch den Farbkreis, also ein Regenbogen; ältere Browser nehmen den einfachen Verlauf */
+  .badge-look-gradient-prism {
+    background: linear-gradient(110deg, var(--look-start), var(--look-end));
+    background: linear-gradient(110deg in oklch longer hue, var(--look-start), var(--look-end));
+  }
+
+  /* ----- Strukturen (BadgeStructure): eine Maske in der Strukturfarbe über dem Verlauf ----- */
+  .badge-look-structure {
+    background-color: var(--look-structure);
+  }
+
+  .badge-look-structure-dots {
+    mask: radial-gradient(circle, #000 0 1.1px, transparent 1.6px) 0 0 / 6px 6px;
+  }
+
+  .badge-look-structure-stripes {
+    mask: repeating-linear-gradient(135deg, #000 0 3px, transparent 3px 8px);
+  }
+
+  .badge-look-structure-pinstripes {
+    mask: repeating-linear-gradient(90deg, #000 0 1px, transparent 1px 5px);
+  }
+
+  .badge-look-structure-grid {
+    mask:
+      linear-gradient(#000 1px, transparent 1px) 0 0 / 7px 7px,
+      linear-gradient(90deg, #000 1px, transparent 1px) 0 0 / 7px 7px;
+  }
+
+  .badge-look-structure-checker {
+    mask: conic-gradient(#000 25%, transparent 0 50%, #000 0 75%, transparent 0) 0 0 / 8px 8px;
+  }
+
+  .badge-look-structure-grain {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.8 -.6'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 120px 120px;
+  }
+
+  .badge-look-structure-brushed {
+    mask:
+      repeating-linear-gradient(0deg, #000 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(0deg, rgb(0 0 0 / 0.5) 0 1px, transparent 1px 7px);
+  }
+
+  .badge-look-structure-carbon {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cdefs%3E%3ClinearGradient id='v' x2='0' y2='1'%3E%3Cstop offset='0' stop-opacity='.95'/%3E%3Cstop offset='1' stop-opacity='.15'/%3E%3C/linearGradient%3E%3ClinearGradient id='h'%3E%3Cstop offset='0' stop-opacity='.95'/%3E%3Cstop offset='1' stop-opacity='.15'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='4' height='4' fill='url(%23v)'/%3E%3Crect x='4' y='4' width='4' height='4' fill='url(%23v)'/%3E%3Crect x='4' width='4' height='4' fill='url(%23h)'/%3E%3Crect y='4' width='4' height='4' fill='url(%23h)'/%3E%3C/svg%3E") 0 0 / 6px 6px;
+  }
+
+  .badge-look-structure-diamond {
+    mask:
+      repeating-linear-gradient(45deg, #000 0 1px, transparent 1px 7px),
+      repeating-linear-gradient(-45deg, #000 0 1px, transparent 1px 7px);
+  }
+
+  .badge-look-structure-honeycomb {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='13.856'%3E%3Cpath d='M4 0H12L16 6.928L12 13.856H4L0 6.928ZM16 6.928H24' fill='none' stroke='%23000' stroke-width='1.8'/%3E%3C/svg%3E") 0 0 / 14px 8.083px;
+  }
+
+  .badge-look-structure-waves {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='10'%3E%3Cpath d='M0 5Q5 0 10 5T20 5' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3C/svg%3E") 0 0 / 14px 7px;
+  }
+
+  .badge-look-structure-scales {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='12'%3E%3Cpath d='M0 12A8 8 0 0 1 16 12M-8 6A8 8 0 0 1 8 6M8 6A8 8 0 0 1 24 6' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3C/svg%3E") 0 0 / 12px 9px;
+  }
+
+  .badge-look-structure-circuit {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cpath d='M0 8H10L14 12V22H24L28 26V32M32 8H22L18 4V0M6 32V26L2 22H0M16 22V28' fill='none' stroke='%23000' stroke-width='1.3'/%3E%3Ccircle cx='14' cy='12' r='1.8'/%3E%3Ccircle cx='18' cy='4' r='1.8'/%3E%3Ccircle cx='16' cy='28' r='1.8'/%3E%3Ccircle cx='2' cy='22' r='1.8'/%3E%3C/svg%3E") 0 0 / 22px 22px;
+  }
+
+  .badge-look-structure-stars {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Cpath d='M5 1L6 4L9 5L6 6L5 9L4 6L1 5L4 4ZM15 11L15.6 13.4L18 14L15.6 14.6L15 17L14.4 14.6L12 14L14.4 13.4Z'/%3E%3C/svg%3E") 0 0 / 15px 15px;
+  }
+
+  .badge-look-structure-damask {
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='28'%3E%3Cpath d='M10 0C12 6 18 8 20 14C18 20 12 22 10 28C8 22 2 20 0 14C2 8 8 6 10 0Z' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3Cpath d='M10 9L12.5 14L10 19L7.5 14Z'/%3E%3Ccircle r='1.8'/%3E%3Ccircle cx='20' r='1.8'/%3E%3Ccircle cy='28' r='1.8'/%3E%3Ccircle cx='20' cy='28' r='1.8'/%3E%3C/svg%3E") 0 0 / 14px 19.6px;
+  }
+
+  /* ----- Effekte (BadgeEffect), beliebig kombinierbar ----- */
+
+  /* Glanzkante: die obere Hälfte wie Glas, beim Medaillon ein runder Lichtfleck */
+  .badge-look-layer-gloss {
+    z-index: 2;
+    background: linear-gradient(to bottom, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.12) 48%, transparent 52%);
+  }
+
+  .badge-look-medal .badge-look-layer-gloss {
+    background: radial-gradient(ellipse 80% 55% at 50% 18%, rgb(255 255 255 / 0.6), transparent 70%);
+  }
+
+  /* Prägung: die Schrift wie in Metall gedrückt */
+  .badge-look-effect-emboss .badge-look-content {
+    text-shadow:
+      0 -1px 0 rgb(0 0 0 / 0.55),
+      0 1px 0 rgb(255 255 255 / 0.35);
+  }
+
+  /* Zierrahmen: eine feine Linie innen, in Schriftfarbe, mit dunkler Fuge */
+  .badge-look-layer-frame {
+    inset: 2px;
+    z-index: 2;
+    border: 1px solid color-mix(in srgb, var(--look-text) 55%, transparent);
+    box-shadow:
+      inset 0 0 0 1px rgb(0 0 0 / 0.25),
+      0 0 0 1px rgb(0 0 0 / 0.2);
+  }
+
+  /* Nieten: links und rechts je ein Nietenkopf mit Glanzpunkt, beim Medaillon vier im Kreis */
+  .badge-look-layer-rivets {
+    --look-rivet: radial-gradient(
+      circle,
+      rgb(255 255 255 / 0.95) 0 0.7px,
+      color-mix(in srgb, var(--look-border) 50%, #d4d4d8) 1.1px 2px,
+      rgb(0 0 0 / 0.55) 2.3px,
+      transparent 2.8px
+    );
+    z-index: 2;
+    background:
+      var(--look-rivet) left 4px center / 6px 6px no-repeat,
+      var(--look-rivet) right 4px center / 6px 6px no-repeat;
+  }
+
+  .badge-look-medal .badge-look-layer-rivets {
+    background:
+      var(--look-rivet) center top 2px / 6px 6px no-repeat,
+      var(--look-rivet) center bottom 2px / 6px 6px no-repeat,
+      var(--look-rivet) left 2px center / 6px 6px no-repeat,
+      var(--look-rivet) right 2px center / 6px 6px no-repeat;
+  }
+
+  .badge-look-pill.badge-look-effect-rivets {
+    padding-inline: 1.1rem;
+  }
+
+  .badge-look-tag.badge-look-effect-rivets {
+    padding-right: 1.1rem;
+  }
+
+  .badge-look-tile.badge-look-effect-rivets {
+    padding-inline: 1.25rem;
+  }
+
+  /* schwebend: tiefer, weicher Schatten, leicht angehoben */
+  .badge-look-effect-deep {
+    --look-drop:
+      0 2px 3px rgb(0 0 0 / 0.3), 0 8px 16px -6px var(--look-shadow), 0 14px 22px -14px var(--look-shadow);
+    transform: translateY(-1px);
+  }
+
+  /* Lichtstreifen: läuft von links nach rechts darüber, dann eine Pause */
+  .badge-look-layer-shine {
+    z-index: 2;
+    background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / 0.7) 50%, transparent 62%) no-repeat;
+    background-size: 250% 100%;
+    animation: badge-look-shine 3.6s ease-in-out infinite;
+  }
+
+  @keyframes badge-look-shine {
+    0% {
+      background-position: 160% 0;
+    }
+
+    55%,
+    100% {
+      background-position: -60% 0;
+    }
+  }
+
+  /* Leuchten: ein Schein außen in der Schattenfarbe, der langsam pulsiert */
+  .badge-look-effect-glow::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: inherit;
+    box-shadow:
+      0 0 8px 1px var(--look-shadow),
+      0 0 18px 3px color-mix(in srgb, var(--look-shadow) 55%, transparent);
+    pointer-events: none;
+    animation: badge-look-glow 2.4s ease-in-out infinite alternate;
+  }
+
+  @keyframes badge-look-glow {
+    from {
+      opacity: 0.45;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Funkeln: zwei Sterne, die abwechselnd an den Kanten aufblitzen */
+  .badge-look-layer-sparkle {
+    z-index: 4;
+    overflow: visible;
+  }
+
+  .badge-look-layer-sparkle::before,
+  .badge-look-layer-sparkle::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 0L12 8L20 10L12 12L10 20L8 12L0 10L8 8Z' fill='%23fff'/%3E%3C/svg%3E") center / contain no-repeat;
+    filter: drop-shadow(0 0 2px rgb(255 255 255 / 0.95));
+    opacity: 0;
+    animation: badge-look-sparkle 2.2s ease-in-out infinite;
+  }
+
+  .badge-look-layer-sparkle::before {
+    top: -4px;
+    right: 12%;
+  }
+
+  .badge-look-layer-sparkle::after {
+    bottom: -4px;
+    left: 16%;
+    width: 8px;
+    height: 8px;
+    animation-delay: 1.1s;
+  }
+
+  @keyframes badge-look-sparkle {
+    0%,
+    100% {
+      opacity: 0;
+      transform: scale(0.3) rotate(0deg);
+    }
+
+    45% {
+      opacity: 1;
+      transform: scale(1) rotate(45deg);
+    }
+
+    70% {
+      opacity: 0;
+      transform: scale(0.4) rotate(90deg);
+    }
+  }
+
+  /* Holo-Schimmer: ein Regenbogen, der wie auf einer Holo-Karte darüberwandert */
+  .badge-look-layer-holo {
+    z-index: 2;
+    background: linear-gradient(
+      115deg,
+      transparent 15%,
+      rgb(255 0 140 / 0.45) 28%,
+      rgb(255 220 0 / 0.45) 38%,
+      rgb(0 255 160 / 0.45) 48%,
+      rgb(0 180 255 / 0.45) 58%,
+      rgb(180 0 255 / 0.45) 68%,
+      transparent 82%
+    );
+    background-size: 300% 100%;
+    mix-blend-mode: color-dodge;
+    animation: badge-look-holo 5s linear infinite;
+  }
+
+  @keyframes badge-look-holo {
+    from {
+      background-position: 0% 0;
+    }
+
+    to {
+      background-position: 300% 0;
+    }
+  }
+
+  /* Regenbogenrand: ein Ring knapp außen, dessen Farben rundherum laufen */
+  .badge-look-effect-ring::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    z-index: 4;
+    padding: 2px;
+    border-radius: inherit;
+    background: conic-gradient(
+      from var(--badge-look-ring-angle),
+      #ff2e63,
+      #ffb800,
+      #e9ff3b,
+      #2bff88,
+      #22d3ee,
+      #7c3aed,
+      #ff2e63
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    animation: badge-look-ring 3s linear infinite;
+  }
+
+  @keyframes badge-look-ring {
+    to {
+      --badge-look-ring-angle: 360deg;
+    }
+  }
+
+  /* Wer weniger Bewegung will, bekommt die Effekte still: Sterne stehen, nichts läuft */
+  @media (prefers-reduced-motion: reduce) {
+    .badge-look-layer-shine,
+    .badge-look-layer-holo,
+    .badge-look-effect-glow::after,
+    .badge-look-effect-ring::before {
+      animation: none;
+    }
+
+    .badge-look-layer-sparkle::before,
+    .badge-look-layer-sparkle::after {
+      opacity: 1;
+      animation: none;
+    }
+  }
+
+  /* ----- Editor des Aussehens ----- */
+
+  /* Die Live-Vorschau, wie in der Vorlage: dasselbe Badge auf hellem und auf dunklem Grund, fest in jedem Theme */
+  .badge-look-preview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 1rem;
+    overflow: hidden;
+    border: 1px dashed #94a3b8;
+    border-radius: 0.5rem;
+  }
+
+  .badge-look-preview-light,
+  .badge-look-preview-dark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 6.5rem;
+    padding: 1.25rem;
+  }
+
+  .badge-look-preview-light {
+    background: #ffffff;
+    color: #0f172a;
+  }
+
+  .badge-look-preview-dark {
+    background: #111827;
+    color: #f8fafc;
+  }
+
+  /* Bootstrap legt die legend quer über die ganze Breite und groß; hier steht sie in einer Zeile mit den Knöpfen */
+  .badge-look-fields-title {
+    float: none;
+    width: auto;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .badge-look-color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    gap: 0.75rem;
+  }
+
+  .badge-look-color {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .badge-look-color-picker {
+    width: 3rem;
+    height: 2rem;
+    padding: 0.15rem;
+  }
+
+  /* auf Standard: der Wähler zeigt nur einen Platzhalter, deshalb blass */
+  .badge-look-color-unset {
+    opacity: 0.35;
+  }
+
+  .badge-look-symbol-choice {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 1.25rem;
+  }
+
+  .badge-look-symbol-choice code {
+    font-size: 0.75rem;
+  }
+
+  /* Ein Achievement mit seinem Namen darunter, z. B. in der Vorschau */
+  .achievement-showcase {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .achievement-showcase-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  /*
+   * ===== Zentrale Tabelle (components/Table), wie in der Vorlage =====
+   * Mit festen Spaltenbreiten (TableColumn.width oder vom User gezogen) kommen die Breiten aus dem colgroup, nicht aus
+   * dem Inhalt. Was nicht passt, bricht in der Zelle um; ein Spaltenkopf bricht nie, er endet mit …
+   */
+  .data-table-fixed {
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .data-table-fixed td {
+    overflow-wrap: anywhere;
+  }
+
+  .data-table-fixed th {
+    position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Der Griff zum Ziehen der Breite am rechten Rand eines Kopfs */
+  .th-resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0.5rem;
+    height: 100%;
+    cursor: col-resize;
+    user-select: none;
+    touch-action: none;
+  }
+
+  /* Die Breite am Mauszeiger, solange eine Spalte gezogen wird; Farben im Theme */
+  .th-resize-readout {
+    position: fixed;
+    z-index: 2000;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+  }
+
+  /* Der Stern am Kopf: die Breite dieser Spalte hat der User gezogen, sie füllt nicht mehr auf */
+  .th-fixed-width {
+    margin-left: 0.25rem;
+    font-weight: 400;
+    opacity: 0.75;
+  }
+
+  /* Das Zahnrad im ersten Kopf: die Spalten einstellen */
+  .table-settings-button {
+    margin-left: 0.4rem;
+    padding: 0 0.15rem;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    line-height: 1;
+    opacity: 0.55;
+    cursor: pointer;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+
+  .table-settings-button:hover {
+    opacity: 1;
+  }
+
+  /* Die erste Kopfzelle: Text mit Ellipse, das Zahnrad rechts daneben bleibt sichtbar */
+  .th-first-inner {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+  }
+
+  .th-first-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Senkrechter Spaltenkopf: von unten nach oben gelesen, die Spalte bleibt schmal */
+  .data-table th.th-vertical {
+    vertical-align: bottom;
+    text-align: center;
+  }
+
+  .data-table .th-vertical-text {
+    display: inline-block;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  /* Der Griff in der ersten Spalte links, ihr Inhalt rechts daneben */
+  .drag-cell-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem;
+  }
+
+  /* Mobil: Zeile antippen zeigt alle Spalten im Popup */
+  .details-trigger {
+    cursor: pointer;
+  }
+
+  .details-list {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+  }
+
+  .details-list dt {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  .details-list dd {
+    margin: 0;
+  }
+
+  /* Eine Erklärung im Hoverlay (z. B. am Spaltenkopf): Titel, darunter die Absätze */
+  .hoverlay-explanation {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  /* Schieberegler (RangeSlider): links und rechts die Grenzen, dahinter das Zahlenfeld am selben Wert */
+  .range-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .range-slider-limit {
+    font-size: 0.8125rem;
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .range-slider-number {
+    width: 5rem;
+    flex-shrink: 0;
+  }
+
+  /* Ein Wert in einer Zelle, der per Klick ein kleines Popup zum Ändern öffnet (EditableCellButton) */
+  .editable-cell-button {
+    display: inline-block;
+    max-width: 100%;
+    padding: 0.1rem 0.25rem;
+    border: 1px dashed transparent;
+    border-radius: 0.25rem;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+  }
+
+  .editable-cell-button:disabled {
+    cursor: default;
+  }
+
+  /* ===== Drag and Drop (SortableArea): der Griff links, die gezogene Zeile hebt das Theme an ===== */
+  .drag-cell {
+    width: 1%;
+    white-space: nowrap;
+  }
+
+  .drag-handle {
+    padding: 0 0.25rem;
+    border: 0;
+    background: none;
+    color: inherit;
+    line-height: 1;
+    cursor: grab;
+    /* auf dem Handy zieht der Finger die Zeile, statt die Seite zu scrollen */
+    touch-action: none;
+  }
+
+  .sortable-row-dragging .drag-handle {
+    cursor: grabbing;
+  }
+
+  /* ===== ValuesInput: mehrere Werte als Chips in einem Feld (Tags, Referenzen). Das Feld selbst ist ein .form-control,
+     sein Aussehen und der Fokus kommen aus dem Theme; hier nur der Aufbau. ===== */
+  .values-input {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: calc(1.5em + 0.75rem + 2px);
+    cursor: text;
+  }
+
+  .values-input-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .values-input-field {
+    flex: 1 1 8rem;
+    min-width: 8rem;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  /* Die Vorschläge beim Tippen: direkt unter dem Feld im Fluss (nicht schwebend, damit keine Tabelle oder Box sie
+     abschneidet), je Vorschlag der Wert als Badge mit markierter Fundstelle und ein Hinweis daneben */
+  .values-input-suggestions {
+    display: flex;
+    flex-direction: column;
+    margin: 0.25rem 0 0;
+    padding: 0.25rem;
+    list-style: none;
+  }
+
+  .values-input-suggestion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.25rem 0.4rem;
+    border: 0;
+    background: none;
+    color: inherit;
+    text-align: left;
+  }
+
+  .values-input-suggestion-badge mark {
+    padding: 0;
+  }
+
+  .values-input-suggestion-hint {
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  /* ===== File-Manager: Upload-Liste ===== */
+  .file-upload-progress {
+    height: 0.4rem;
+    margin-top: 0.25rem;
+  }
+
+  /* ===== Auswahl der Dateiart (FileClassPicker): Kacheln, darüber das Suchfeld; Rahmen und Markierung im Theme ===== */
+  .file-class-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .file-class-picker-search {
+    max-width: 18rem;
+  }
+
+  .file-class-picker-tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .file-class-picker-tile {
+    padding: 3px;
+    border: 2px solid transparent;
+    border-radius: 0.9rem;
+    background: none;
+    line-height: 1;
+  }
+
+  .file-class-picker-tile .badge-look {
+    margin-right: 0;
+  }
+
+  /*
+   * ===== Upload-Liste (file/upload/FileUploadForm): EINE Liste je Datei von der Prüfung bis „ausgewertet“ =====
+   * Spalten: Datei, Stand, je Feld eine (Anzahl als --file-upload-field-count vom Aufrufer), Mülleimer. Auf schmalen
+   * Bildschirmen untereinander, dann steht die Bezeichnung über jedem Feld. Linien und Farben im Theme.
+   */
+  :root {
+    --file-upload-list-file-width: minmax(10rem, 1.1fr);
+    --file-upload-list-state-width: minmax(9rem, 1fr);
+    --file-upload-list-field-width: minmax(12rem, 1.6fr);
+    --file-upload-list-remove-width: 2.25rem;
+  }
+
+  .file-upload-list {
+    margin-top: 1rem;
+  }
+
+  .file-upload-list-head,
+  .file-upload-list-row {
+    display: grid;
+    grid-template-columns:
+      var(--file-upload-list-file-width) var(--file-upload-list-state-width)
+      repeat(var(--file-upload-field-count, 0), var(--file-upload-list-field-width))
+      var(--file-upload-list-remove-width);
+    align-items: start;
+    gap: 0.5rem 0.75rem;
+  }
+
+  .file-upload-list-head {
+    padding-bottom: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .file-upload-list-rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .file-upload-list-row {
+    padding: 0.6rem 0;
+  }
+
+  .file-upload-list-file {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .file-upload-list-file-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+
+  .file-upload-list-file-text {
+    min-width: 0;
+  }
+
+  .file-upload-list-file-name {
+    overflow-wrap: anywhere;
+  }
+
+  .file-upload-list-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    min-width: 0;
+  }
+
+  .file-upload-list-field {
+    min-width: 0;
+  }
+
+  /* die Bezeichnung über dem Feld nur auf schmalen Bildschirmen, sonst steht sie im Kopf */
+  .file-upload-list-field-label {
+    display: none;
+    margin-bottom: 0.2rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .file-upload-list-field-text {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+  }
+
+  .file-upload-list-field-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .file-upload-list-remove {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .file-upload-analysis-text {
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 991.98px) {
+    .file-upload-list-head {
+      display: none;
+    }
+
+    .file-upload-list-row {
+      grid-template-columns: minmax(0, 1fr) var(--file-upload-list-remove-width);
+    }
+
+    .file-upload-list-file {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .file-upload-list-remove {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .file-upload-list-state,
+    .file-upload-list-field {
+      grid-column: 1 / -1;
+    }
+
+    .file-upload-list-field-label {
+      display: block;
+    }
+  }
+
+  /* Der Haken blinkt beim Erscheinen zweimal auf: gespeichert, man kann weiter */
+  .file-upload-flash {
+    animation: file-upload-flash 0.45s ease-in-out 2;
+  }
+
+  @keyframes file-upload-flash {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.35;
+      transform: scale(1.12);
+    }
+  }
+
+  .file-analysis-hoverlay-table th {
+    padding-right: 0.6rem;
+    font-weight: 600;
+    white-space: nowrap;
+    vertical-align: top;
+  }
+
+  .file-analysis-hoverlay-table td {
+    max-width: 22rem;
+    overflow-wrap: anywhere;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .file-upload-flash {
+      animation: none;
+    }
+  }
+
+  /* ===== File-Manager: Vorschau-Platzhalter und Viewer (Farben im Theme) ===== */
+  .file-preview-placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .file-viewer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    overflow: auto;
+  }
+
+  .file-viewer-image-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
+  }
+
+  /* eingepasst: das ganze Bild auf einen Blick, unter Header und Subheader */
+  .file-viewer-image-fit {
+    max-width: 100%;
+    max-height: 75vh;
+    object-fit: contain;
+  }
+
+  .file-viewer-image-original {
+    max-width: none;
+    cursor: zoom-out;
+  }
+
+  .file-viewer-video {
+    width: 100%;
+    max-height: 75vh;
+  }
+
+  .file-viewer-loading {
+    align-self: stretch;
+    max-width: 32rem;
+    margin: 0 auto;
+  }
+
+  /* Word und Tabellen: die ganze Breite, eigener Scrollbereich. docx-preview zeichnet die Seiten selbst. */
+  .file-viewer-document {
+    align-self: stretch;
+    max-height: 75vh;
+    overflow: auto;
+  }
+
+  .file-viewer-sheet table {
+    border-collapse: collapse;
+  }
+
+  .file-viewer-sheet td,
+  .file-viewer-sheet th {
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--file-viewer-line);
+    white-space: nowrap;
+  }
+
+  /* Text roh, lange Zeilen brechen um */
+  .file-viewer-text {
+    align-self: stretch;
+  }
+
+  .file-viewer-text pre {
+    max-height: 75vh;
+    margin: 0;
+    padding: 1rem;
+    overflow: auto;
+    border: 1px solid var(--file-viewer-line);
+    border-radius: 0.375rem;
+    background-color: var(--file-viewer-text-bg);
+    color: var(--file-viewer-text-color);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  /* ===== Hoverlay: Lage und Aufbau des Inhalts; das Aussehen (Farben, Rand, Breite) bestimmt das Theme (.hoverlay) ===== */
+  .hoverlay-anchor {
+    display: inline-flex;
+  }
+
+  /* Hoverlay zum Hineinklicken (Hoverlay mit interactive): nimmt den Zeiger an, z. B. für ein Suchfeld und Links */
+  .hoverlay-interactive {
+    pointer-events: auto;
+  }
+
+  /* Liste mit Suchfeld (SearchableList): Suchfeld, darunter die Treffer je Zeile; lange Listen rollen in sich */
+  .searchable-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  /* innen Luft: Ring und Schein eines Avatars ragen über seine Kante, ohne Luft schneidet die rollende Liste sie ab */
+  .searchable-list-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    max-height: 16rem;
+    padding: 0.5rem;
+    overflow-y: auto;
+  }
+
+  /* Rechte im Hoverlay, z. B. einer Kachel oder einer Position: der Satz, darunter die Badges, dann die Hinweise */
+  .hoverlay-access-roles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .hoverlay-access-roles-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  /* ein Recht, das der User nicht hat */
+  .hoverlay-access-role-missing {
+    opacity: 0.4;
+  }
+
+  /* Dateiart im Hoverlay (FileClassHint): Beschreibung, darunter klein der Key, zuletzt ein Hinweis */
+  .file-class-hint {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .file-class-hint-key,
+  .file-class-hint-note {
+    font-size: 0.75rem;
+  }
+
+  /* ===== Kachel mit Hinweis oben rechts: Der Hinweis liegt außerhalb des Links und klickt nicht mit ===== */
+  .tile-frame {
+    position: relative;
+  }
+
+  .tile-corner {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.55rem;
+  }
+
+  /* das i: dezent, deutlich beim Zeigen auf die Kachel, Fragezeichen-Cursor wie bei einer Erklärung */
+  .tile-corner-hint {
+    display: inline-flex;
+    font-size: 0.95rem;
+    opacity: 0.5;
+    cursor: help;
+  }
+
+  .tile-frame:hover .tile-corner-hint,
+  .tile-corner-hint:focus-visible {
+    opacity: 1;
+  }
+
+  /* ===== Profil „Sicherheit“: je Zeile links Bezeichnung und Stand, rechts der Knopf ===== */
+  .profile-security-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .profile-security-row + .profile-security-row {
+    margin-top: 1rem;
+  }
+
+  /* ===== Authenticator-App einrichten: QR-Code immer schwarz auf weiß (sonst lesen ihn manche Kameras nicht) ===== */
+  .totp-steps {
+    padding-left: 1.25rem;
+  }
+
+  .totp-qr-code-area {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .totp-qr-code {
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    background-color: #fff;
+  }
+
+  .totp-secret {
+    font-family: var(--bs-font-monospace);
+    font-size: 1.05rem;
+    letter-spacing: 0.08em;
+    overflow-wrap: anywhere;
+    user-select: all;
+  }
+
+  .totp-code-input {
+    max-width: 10rem;
+    font-family: var(--bs-font-monospace);
+    font-size: 1.25rem;
+    letter-spacing: 0.15em;
+  }
+
+  /* Der Schlüssel zum Abschalten ohne Handy: wie er angezeigt wurde, in Viererblöcken */
+  .totp-secret-input {
+    font-family: var(--bs-font-monospace);
+    letter-spacing: 0.08em;
+  }
+
+  /* „Schlüssel notieren!“: Warnung mit blinkendem Ausrufezeichen (Farbe: Bootstrap-Alert danger im Theme) */
+  .totp-secret-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .totp-secret-warning-icon {
+    flex-shrink: 0;
+    font-size: 1.4rem;
+    line-height: 1;
+    animation: totp-secret-warning-blink 1s steps(2, jump-none) infinite;
+  }
+
+  @keyframes totp-secret-warning-blink {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0.15;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .totp-secret-warning-icon {
+      animation: none;
+    }
+  }
+
+  /* ===== Tab „Endungen“: je Gruppe eine Überschrift, die Tabellen untereinander mit gleichen Spalten ===== */
+  .file-extension-block + .file-extension-block {
+    margin-top: 1.5rem;
+  }
+
+  .file-extension-block-title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .file-extension-block-count {
+    font-weight: 400;
+    opacity: 0.7;
+  }
+
+  /* feste Breiten: Die Tabellen der Gruppen stehen untereinander, ihre Spalten genau übereinander */
+  .file-extension-table {
+    table-layout: fixed;
+  }
+
+  .file-extension-table .drag-cell {
+    width: 2.5rem;
+  }
+
+  .file-extension-table .file-extension-cell {
+    width: 8rem;
+  }
+
+  .file-extension-table .file-extension-preview-cell {
+    width: 8rem;
+  }
+
+  .file-extension-table .file-extension-actions-cell {
+    width: 6.5rem;
+  }
+
+  /*
+   * ===== StatusMark: ein Zustand als Zeichen statt als Enum-Wert, überall gleich (Signalfarben, in jedem Theme gleich) =====
+   */
+  .status-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    background: color-mix(in srgb, var(--status-mark-color) 12%, #ffffff);
+    color: color-mix(in srgb, var(--status-mark-color) 85%, #000000);
+    border: 1px solid color-mix(in srgb, var(--status-mark-color) 35%, #ffffff);
+  }
+
+  .status-mark-success {
+    --status-mark-color: var(--signal-success);
+  }
+
+  .status-mark-running {
+    --status-mark-color: var(--signal-info);
+  }
+
+  .status-mark-warning {
+    --status-mark-color: var(--signal-warning);
+  }
+
+  .status-mark-danger {
+    --status-mark-color: var(--signal-danger);
+  }
+
+  .status-mark-neutral {
+    --status-mark-color: #6b7280;
+  }
+
+  /* ===== UsersGuidName: Avatar und Name eines Users aus seiner GUID, wie der Autor im Gästebuch ===== */
+  .users-guid-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .users-guid-name-text {
+    overflow-wrap: anywhere;
+  }
+
+  /*
+   * ===== Seite einer Datei (file/document/FileDocumentDetailPage): links breit die Details in Abschnitten, rechts so
+   * schmal wie eine Bildkachel der Galerie Tags, Kachel und Beschreibung; unter 992 px untereinander, der Inhalt zuerst.
+   * Flächen, Linien und Farben im Theme. =====
+   */
+  :root {
+    /* Kachel: Vorschau 200 px, Innenabstand und Rahmen wie die Bildkachel der Galerie */
+    --file-detail-content-width: 14rem;
+    /* Lücke zwischen Abschnitten nebeneinander, in ihrer Mitte die senkrechte Trennlinie */
+    --file-detail-section-column-gap: 2rem;
+    /* Eine Zeile: Symbol, Bezeichnung, Wert, dazwischen die Lücke */
+    --file-detail-row-icon-size: 1.9rem;
+    --file-detail-row-label-width: 7.5rem;
+    --file-detail-row-gap: 0.6rem;
+    /* Platz für einen Zeitpunkt wie „08.11.2026, 02:51“ (in Firefox gemessen 8 rem, dazu etwas Luft) */
+    --file-detail-date-time-width: 8.5rem;
+    /*
+     * Ein Abschnitt ist mindestens so breit wie eine Zeile mit Zeitpunkt (Nutzer 2026-11-10): Sonst ragt das Datum hinaus
+     * und der Dateiname darüber bricht um, obwohl er neben „Hochgeladen“ und dem Datum in eine Zeile passt.
+     */
+    --file-detail-section-min-width: calc(
+      var(--file-detail-row-icon-size) + var(--file-detail-row-label-width) + var(--file-detail-date-time-width) + 2 *
+        var(--file-detail-row-gap)
+    );
+  }
+
+  .file-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--file-detail-content-width);
+    gap: 2rem;
+    align-items: start;
+  }
+
+  /* Rechts: Tags, Kachel, Beschreibung */
+  .file-detail-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.9rem;
+    min-width: 0;
+  }
+
+  .file-detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .file-tag {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .file-detail-tile {
+    display: grid;
+    place-items: center;
+    padding: 0.5rem;
+  }
+
+  .file-detail-tile img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.6rem;
+  }
+
+  .file-detail-tile-link {
+    display: block;
+  }
+
+  /* Ohne Vorschau: das Symbol der FileClass in Kachelgröße */
+  .file-detail-tile-symbol {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    width: 200px;
+    max-width: 100%;
+    aspect-ratio: 1;
+    border-radius: 0.6rem;
+    font-size: 4.5rem;
+    line-height: 1;
+  }
+
+  .file-detail-tile-extension {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+  }
+
+  /*
+   * Die Stimmen einer Datei (FileCheerBar: begeistert und angewidert) mittig unter dem Bild, auf der Seite der Datei und
+   * an jeder Bildkachel der Galerie; die Pillen selbst stehen beim Gästebuch. Die Mindesthöhe hält den Platz frei, bis
+   * die Stimmen nachgeladen sind: Die Kacheln springen dann nicht.
+   */
+  .file-cheer {
+    justify-content: center;
+    min-height: 2rem;
+  }
+
+  /*
+   * Sprechblase eines Smileys (FileCheerHint): oben die Bezeichnung und gleich daneben die Zahl, darunter was ein Klick bewirkt,
+   * dann die Liste der User und zuletzt „und n weitere“ mit dem Knopf „Alle laden“ bzw. der Spinner mit dem Fortschritt
+   */
+  .file-cheer-hint {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 13rem;
+  }
+
+  /* Bezeichnung und gleich daneben die Zahl, beide linksbündig */
+  .file-cheer-hint-title {
+    display: flex;
+    justify-content: flex-start;
+    align-items: baseline;
+    gap: 0.45rem;
+    padding-bottom: 0.3rem;
+  }
+
+  .file-cheer-hint-more {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .file-detail-description {
+    align-self: stretch;
+    margin: 0;
+    line-height: 1.55;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+
+  .file-detail-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: 0.875rem;
+  }
+
+  .file-detail-collapsible {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-weight: 600;
+  }
+
+  .file-detail-recognized-text-body {
+    padding: 0.8rem 1rem;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+
+  /* Links: die Details, oben die FileClass, darunter die Abschnitte, nebeneinander, soweit Platz ist */
+  .file-detail-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .file-detail-file-class {
+    display: flex;
+  }
+
+  .file-detail-sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--file-detail-section-min-width)), 1fr));
+    gap: 0 var(--file-detail-section-column-gap);
+    /* schneidet die Trennlinie vor dem ersten Abschnitt einer Zeile ab; Sprechblasen und Menüs liegen im body */
+    overflow-x: clip;
+  }
+
+  .file-detail-section {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-width: 0;
+    padding: 1rem 0;
+  }
+
+  /*
+   * Senkrechte Trennlinie links neben jedem Abschnitt, mitten in der Lücke, so hoch wie der Inhalt. Beim ersten
+   * Abschnitt einer Zeile (und auf dem Handy bei allen) liegt sie außerhalb und wird abgeschnitten.
+   */
+  .file-detail-sections > .file-detail-section::before {
+    content: '';
+    position: absolute;
+    top: 1rem;
+    bottom: 1rem;
+    left: calc(var(--file-detail-section-column-gap) / -2);
+  }
+
+  .file-detail-section-title {
+    margin: 0 0 0.15rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .file-detail-row {
+    display: grid;
+    grid-template-columns: var(--file-detail-row-icon-size) var(--file-detail-row-label-width) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--file-detail-row-gap);
+    min-width: 0;
+  }
+
+  .file-detail-row-icon {
+    display: grid;
+    place-items: center;
+    width: var(--file-detail-row-icon-size);
+    height: var(--file-detail-row-icon-size);
+    border-radius: 50%;
+    font-size: 0.9rem;
+  }
+
+  .file-detail-row-label {
+    font-size: 0.8rem;
+  }
+
+  .file-detail-row-value {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .file-detail-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .file-detail-access {
+    display: inline-flex;
+    gap: 0.4rem;
+  }
+
+  .file-detail-access-letter {
+    display: inline-grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 800;
+    cursor: help;
+  }
+
+  .file-detail-access-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .file-detail-access-legend-title {
+    font-weight: 700;
+  }
+
+  .file-detail-access-legend-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  /*
+   * Name und Typ der Datei im Raster der Zeilen darunter: das Symbol in der Spalte der Symbole, der Text über Bezeichnung
+   * und Wert, also genau so breit wie „Hochgeladen“ samt Datum. Umbrechen nur, wenn der Name länger ist.
+   */
+  .file-detail-file-identity {
+    display: grid;
+    grid-template-columns: var(--file-detail-row-icon-size) minmax(0, 1fr);
+    align-items: start;
+    column-gap: var(--file-detail-row-gap);
+    min-width: 0;
+  }
+
+  .file-detail-file-icon {
+    justify-self: center;
+    font-size: 1.6rem;
+    line-height: 1;
+  }
+
+  .file-detail-file-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .file-detail-file-name {
+    overflow-wrap: anywhere;
+  }
+
+  /*
+   * Der Dateiname läuft als Text über die ganze Breite; der Stift hängt ohne eigene Breite am letzten Zeichen, sonst
+   * bräche der Name um, obwohl er so breit wie „Hochgeladen“ samt Datum ist (Nutzer 2026-11-10).
+   */
+  .file-detail-file-text > .file-detail-editable {
+    display: block;
+    max-width: none;
+    /* rechts bündig mit dem Abschnitt, sonst schnitte die letzte Spalte den Rahmen ab */
+    margin-right: 0;
+  }
+
+  .file-detail-file-text > .file-detail-editable > .file-detail-editable-icon {
+    display: inline-block;
+    width: 0;
+    white-space: nowrap;
+  }
+
+  .file-detail-file-text > .file-detail-editable > .file-detail-editable-icon::before {
+    margin-left: 0.4rem;
+  }
+
+  .file-detail-file-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  /* Ein Feld zum Anklicken: sieht aus wie der Wert, der Stift erscheint beim Zeigen; Klick öffnet das Popup */
+  .file-detail-editable {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+    max-width: 100%;
+    margin: -0.2rem -0.35rem;
+    padding: 0.2rem 0.35rem;
+    border: 1px dashed transparent;
+    border-radius: 0.4rem;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+  }
+
+  .file-detail-content > .file-detail-editable {
+    align-self: stretch;
+  }
+
+  .file-detail-editable-icon {
+    flex: none;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    opacity: 0;
+  }
+
+  .file-detail-editable:hover .file-detail-editable-icon,
+  .file-detail-editable:focus-visible .file-detail-editable-icon {
+    opacity: 1;
+  }
+
+  .file-detail-empty {
+    font-size: 0.85rem;
+    font-style: italic;
+  }
+
+  /* Markierungen (Referenzen wie wtf) als Badges */
+  .file-detail-marks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .file-mark {
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  /* „E“ zum Anklicken für den, der freigeben darf */
+  .file-detail-access-letter-editable {
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .file-detail-access-legend-users {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .file-detail-access-legend-hint {
+    font-size: 0.8rem;
+    font-style: italic;
+  }
+
+  /* Popup „Bearbeiten freigeben“: Freunde und Bearbeiter zum Anhaken, untereinander */
+  .file-editors-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 22rem;
+    overflow-y: auto;
+  }
+
+  .file-editors-option {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.5rem;
+  }
+
+  @media (max-width: 991.98px) {
+    .file-detail {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.25rem;
+    }
+
+    /* auf dem Handy der Inhalt zuerst, die Kachel mittig */
+    .file-detail-content {
+      order: -1;
+      align-items: center;
+    }
+
+    .file-detail-tags {
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    :root {
+      --file-detail-row-label-width: 6rem;
+    }
+  }
+
+  /* Die Legende eines Stands in der Sprechblase: jeder Stand mit Erklärung, der aktuelle hervorgehoben */
+  .status-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 15rem;
+    max-width: 21rem;
+    text-align: left;
+  }
+
+  .status-legend-title {
+    font-weight: 700;
+  }
+
+  .status-legend-entry {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.5rem;
+  }
+
+  .status-legend-explanation {
+    font-size: 0.78rem;
+  }
+
+  .status-legend-mark {
+    display: inline-flex;
+    cursor: help;
+  }
+
+  .file-class-badge-described {
+    display: inline-flex;
+  }
+
+  .date-time-text {
+    white-space: nowrap;
+  }
+
+  /* Das Sichtbarkeits-Pill (components/VisibilityPicker): Symbol und Wort, ein Klick öffnet die Auswahl */
+  .visibility-picker-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.3rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .visibility-picker-menu {
+    min-width: 17rem;
+    padding: 0.35rem;
+  }
+
+  .visibility-picker-option {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: 0.5rem;
+    white-space: normal;
+  }
+
+  .visibility-picker-option-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+  }
+
+  .visibility-picker-option-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .visibility-picker-option-label {
+    font-weight: 600;
+  }
+
+  .visibility-picker-option-hint {
+    font-size: 0.8rem;
+  }
+
+  .visibility-picker-note {
+    max-width: 17rem;
+    padding: 0.4rem 0.6rem 0.2rem;
+    font-size: 0.75rem;
+    white-space: normal;
+  }
+
+
+  /*
+   * ===== Galerien (src/gallery): Kacheln der Galerien und der Bilder, Upload-Liste, Viewer =====
+   * Hier nur Lage und Maße; Rahmen, Flächen und Hover macht das Theme. Eine Kachel ist so breit, dass die Vorschau
+   * (Galerie 160 px, Bild 200 px) samt Innenabstand hineinpasst; auf dem Handy eine Spalte.
+   */
+  :root {
+    --gallery-tile-min-width: 12rem;
+    --gallery-image-tile-min-width: 13.5rem;
+    --gallery-tile-gap: 1rem;
+    --gallery-viewer-image-max-height: 75vh;
+  }
+
+  .gallery-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--gallery-tile-min-width)), 1fr));
+    gap: var(--gallery-tile-gap);
+  }
+
+  .gallery-tile {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .gallery-tile-link {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    padding: 0.75rem 0.75rem 0.5rem;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .gallery-tile-link > img,
+  .gallery-image-tile-button > img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .gallery-tile-title {
+    max-width: 100%;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .gallery-tile-meta {
+    font-size: 0.8rem;
+  }
+
+  .gallery-tile-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0 0.5rem 0.6rem;
+  }
+
+  .gallery-description {
+    margin-bottom: 1rem;
+  }
+
+  .gallery-images {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--gallery-image-tile-min-width)), 1fr));
+    gap: var(--gallery-tile-gap);
+  }
+
+  .gallery-image-tile {
+    min-width: 0;
+  }
+
+  /* Kopfzeile der Bildkachel: links der Griff (nur in der eigenen Galerie), daneben die Überschrift des Bildes */
+  .gallery-image-tile-head {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 2.1rem;
+    padding: 0.4rem 0.6rem 0;
+  }
+
+  .gallery-image-tile-handle {
+    flex: none;
+  }
+
+  /* Bildfläche: die Vorschau zum Anklicken, oben mittig darüber die Stimmen (FileCheerBar) */
+  .gallery-image-tile-picture {
+    position: relative;
+  }
+
+  /* die Zeile selbst lässt Klicks aufs Bild durch, nur die Smileys nehmen den Zeiger */
+  .gallery-image-tile-cheers {
+    position: absolute;
+    top: 0.9rem;
+    right: 0;
+    left: 0;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .gallery-image-tile-cheers > * {
+    pointer-events: auto;
+  }
+
+  .gallery-image-tile-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+    padding: 0.5rem;
+    border: 0;
+    background: none;
+    color: inherit;
+  }
+
+  /* die Aktionsleiste unter dem Bild (Info, Download, Stift), neben der Bildfläche, nie darin */
+  .gallery-image-tile-actions {
+    display: flex;
+    justify-content: center;
+    padding: 0 0.5rem 0.5rem;
+  }
+
+  .gallery-image-tile-name {
+    flex: 1;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.8rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gallery-pager {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+
+  /* der Viewer: das Bild eingepasst, unten Voriges, Herunterladen, Nächstes */
+  .gallery-viewer-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .gallery-viewer-image {
+    max-width: 100%;
+    max-height: var(--gallery-viewer-image-max-height);
+    object-fit: contain;
+  }
+
+  .gallery-viewer-footer {
+    justify-content: space-between;
+  }
+}

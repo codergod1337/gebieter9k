@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  Konfiguration jedes gebiter9k-Kerns, übernommen aus der Vorlage. Grundsatz: Solr dumm halten, kein Stemming und keine Sprachmagie im
+  Index, das Backend bereitet Texte vor dem Schreiben auf und baut jede Anfrage selbst.
+-->
+<config>
+
+    <luceneMatchVersion>10.0.0</luceneMatchVersion>
+
+    <dataDir>${solr.data.dir:}</dataDir>
+
+    <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+
+    <codecFactory class="solr.SchemaCodecFactory"/>
+
+    <!-- mutable: Das Backend legt die Felder per Schema-API an (SolrManager, Schritt 4). Solr schreibt dabei die
+         managed-schema.xml des Kerns neu. -->
+    <schemaFactory class="ManagedIndexSchemaFactory">
+        <bool name="mutable">true</bool>
+        <str name="managedSchemaResourceName">managed-schema.xml</str>
+    </schemaFactory>
+
+    <indexConfig>
+        <lockType>${solr.lock.type:native}</lockType>
+    </indexConfig>
+
+    <!-- updateLog ist Pflicht für Atomic Updates, _version_ und das Echtzeit-Lesen (/get). Hard-Commit alle 15 s ohne
+         neuen Searcher (Dauerhaftigkeit), Soft-Commit alle 10 s (Sichtbarkeit in Suche und Auflösen). Das Backend
+         committet nie selbst (User 2026-10-14: ein Soft-Commit je Dokument hat den Heap gesprengt). -->
+    <updateHandler class="solr.DirectUpdateHandler2">
+        <updateLog>
+            <str name="dir">${solr.ulog.dir:}</str>
+        </updateLog>
+        <autoCommit>
+            <maxTime>${solr.autoCommit.maxTime:15000}</maxTime>
+            <openSearcher>false</openSearcher>
+        </autoCommit>
+        <autoSoftCommit>
+            <maxTime>${solr.autoSoftCommit.maxTime:10000}</maxTime>
+        </autoSoftCommit>
+    </updateHandler>
+
+    <query>
+        <!-- 3000 statt 1024 (User 2026-10-07): Jedes Suchwort läuft über jedes Feld der qf samt Suggested-Zwilling, mit
+             vielen Hooks sind das schnell dreißig Klauseln je Wort. Wirkt nur bis zur Grenze des Knotens
+             (solr.max.booleanClauses in der Compose), beide stehen auf 3000. -->
+        <maxBooleanClauses>3000</maxBooleanClauses>
+        <filterCache size="512" initialSize="512" autowarmCount="0"/>
+        <queryResultCache size="512" initialSize="512" autowarmCount="0"/>
+        <documentCache size="512" initialSize="512" autowarmCount="0"/>
+        <enableLazyFieldLoading>true</enableLazyFieldLoading>
+        <queryResultWindowSize>20</queryResultWindowSize>
+        <useColdSearcher>false</useColdSearcher>
+    </query>
+
+    <requestDispatcher>
+        <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048000" formdataUploadLimitInKB="20480"/>
+    </requestDispatcher>
+
+    <!-- Bewusst ohne defType und df: Das Backend baut jede Anfrage selbst, mit dem Zugriffsfilter als fq. -->
+    <requestHandler name="/select" class="solr.SearchHandler">
+        <lst name="defaults">
+            <str name="echoParams">explicit</str>
+            <str name="rows">20</str>
+        </lst>
+    </requestHandler>
+
+</config>

@@ -1,0 +1,6 @@
+# Nur Quellen, Wrapper und pom.xml gehen in den Build des Images
+target
+.vscode
+.idea
+*.iml
+start.sh

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  Basis-Schema jedes gebiter9k-Kerns, übernommen aus der Vorlage. Welche Felder ein Kern hat, legt das Backend per
+  Schema-API an. Hier steht nur, was Solr schon beim Anlegen des Kerns braucht: die Feldtypen
+  (Namen wie in der Vorlage), der uniqueKey id und die beiden Systemfelder.
+  Bei der ersten Änderung per Schema-API schreibt Solr diese Datei neu, ohne Kommentare.
+-->
+<schema name="gebiter9k" version="1.7">
+
+    <uniqueKey>id</uniqueKey>
+
+    <!-- Feldtypen, Namen wie in SolrFieldType.java -->
+    <fieldType name="string"  class="solr.StrField"         sortMissingLast="true" docValues="true"/>
+    <fieldType name="boolean" class="solr.BoolField"        sortMissingLast="true" docValues="true"/>
+    <fieldType name="plong"   class="solr.LongPointField"   docValues="true"/>
+    <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+    <fieldType name="pdate"   class="solr.DatePointField"   docValues="true"/>
+
+    <!-- Zwei Texttypen (User 2026-10-09), sonst keine: text_edge für alles, was ein User tippt und beim Tippen wiederfinden
+         will, text_suche für den Volltext. -->
+
+    <!-- text_edge: an Leerzeichen und Satzzeichen zerlegt, klein, beim Indexieren dazu jeder Wortanfang ab 3 Zeichen
+         (EdgeNGram), die Anfrage ohne: „rech“ findet „Rechnung“ im Feld selbst, ohne Zwilling. Dateiname, Index, Beschreibung. -->
+    <fieldType name="text_edge" class="solr.TextField" positionIncrementGap="100">
+        <analyzer type="index">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.EdgeNGramFilterFactory" minGramSize="3" maxGramSize="30" preserveOriginal="true"/>
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+        </analyzer>
+    </fieldType>
+
+    <!-- text_ngram: wie text_edge, aber jedes Stück ab 3 Zeichen an jeder Stelle des Worts (NGram bis 50, das ganze Wort
+         bleibt): „schild“ und „folie“ finden „Typenschild 100x50 Polyesterfolie“. Nur für die wenigen Schlüsselfelder,
+         die jeder User sieht (User 2026-10-14: ARTIKEL name, DMS fileName und fileDescription), denn der Index wächst
+         mit jeder Wortlänge. Umlaute und ß vereinheitlicht vor dem Zerlegen, auf beiden Seiten: „schluessel“ trifft
+         „Schlüssel“. Die Anfrage zerlegt nicht, das getippte Wort muss als Stück im Wort stecken.
+         SolrSchemaSyncService legt ihn in Kernen an, die vor ihm entstanden sind, mit genau dieser Definition. -->
+    <fieldType name="text_ngram" class="solr.TextField" positionIncrementGap="100">
+        <analyzer type="index">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.GermanNormalizationFilterFactory"/>
+            <filter class="solr.NGramFilterFactory" minGramSize="3" maxGramSize="50" preserveOriginal="true"/>
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.GermanNormalizationFilterFactory"/>
+        </analyzer>
+    </fieldType>
+
+    <!-- text_suche: der Volltext. Jedes Wort einzeln, klein. Beim Indexieren wird jedes Kompositum ab 7 Zeichen
+         zusätzlich in seine Teile zerlegt (HyphenationCompoundWordTokenFilter: die deutschen Trennmuster
+         lang/hyph_de.xml liefern die möglichen Stellen, zerlegt wird nur in Teile, die im Wörterbuch
+         lang/compound_de.txt stehen, ein Fugen-s wird erkannt, je Stelle der längste Treffer, keine Teile von Teilen,
+         keine Überlappungen, das Original bleibt): „Eingangsrechnung“ liegt auch als eingang und rechnung im Index,
+         „Donaudampfschifffahrtsgesellschaft“ als donau, dampf, schifffahrt, gesellschaft. Danach deutsche
+         Normalisierung (ß, Umlaute) und Stammform: „Rechnungen“ findet „Rechnung“. Die Anfrage läuft ohne Zerlegung
+         durch dieselbe Normalisierung und Stammform. Synonyme kommen später aus Postgres beim Suchen dazu, nicht
+         hierher. Geprüft am 2026-10-09 gegen Lucene 10.5 mit genau diesen Parametern. -->
+    <fieldType name="text_suche" class="solr.TextField" positionIncrementGap="100">
+        <analyzer type="index">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.HyphenationCompoundWordTokenFilterFactory" hyphenator="lang/hyph_de.xml"
+                    dictionary="lang/compound_de.txt" minWordSize="7" minSubwordSize="4" maxSubwordSize="20"
+                    onlyLongestMatch="true" noSubMatches="true" noOverlappingMatches="true"/>
+            <filter class="solr.GermanNormalizationFilterFactory"/>
+            <filter class="solr.GermanLightStemFilterFactory"/>
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.GermanNormalizationFilterFactory"/>
+            <filter class="solr.GermanLightStemFilterFactory"/>
+        </analyzer>
+    </fieldType>
+
+    <!-- code_suggest: Suggest-Zwilling von String und Zahlen, der ganze Wert als ein Token, Präfixe ab 3 Zeichen. Texte
+         brauchen keinen Zwilling, text_edge kann das selbst. -->
+    <fieldType name="code_suggest" class="solr.TextField" positionIncrementGap="100">
+        <analyzer type="index">
+            <tokenizer class="solr.KeywordTokenizerFactory"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.EdgeNGramFilterFactory" minGramSize="3" maxGramSize="30" preserveOriginal="true"/>
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer class="solr.KeywordTokenizerFactory"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+        </analyzer>
+    </fieldType>
+
+    <!-- email_suggest: Suggest-Zwilling des Typs EMAIL (User 2026-10-13), wie code_suggest, aber jeder Anfang bis zur
+         vollen Länge der Adresse: 254 ist die längste erlaubte E-Mail-Adresse (RFC 5321). Die ganze Adresse klein
+         geschrieben ist damit immer ein Token, auch für das Auflösen ohne Groß- und Kleinschreibung. -->
+    <fieldType name="email_suggest" class="solr.TextField" positionIncrementGap="100">
+        <analyzer type="index">
+            <tokenizer class="solr.KeywordTokenizerFactory"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.EdgeNGramFilterFactory" minGramSize="3" maxGramSize="254" preserveOriginal="true"/>
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer class="solr.KeywordTokenizerFactory"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+        </analyzer>
+    </fieldType>
+
+    <!-- id: der uniqueKey muss beim Anlegen des Kerns da sein. stored und docValues zieht das Backend aus Postgres nach. -->
+    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
+
+    <!-- Systemfelder von Solr, nicht in Postgres: _version_ für Optimistic Concurrency, _root_ für geschachtelte Dokumente -->
+    <field name="_version_" type="plong"  indexed="false" stored="false" docValues="true"/>
+    <field name="_root_"    type="string" indexed="true"  stored="false" docValues="false"/>
+
+</schema>

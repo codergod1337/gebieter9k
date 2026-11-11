@@ -1,0 +1,14 @@
+# Zugangsdaten
+.env
+
+# Backend (Maven)
+backend/target/
+
+# Frontend (Node)
+frontend/node_modules/
+frontend/dist/
+
+# IDE und Betriebssystem
+.idea/
+*.iml
+.DS_Store

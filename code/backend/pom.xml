@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>4.1.2</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>de.gebiter</groupId>
+	<artifactId>gebiter9k</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>gebiter9k</name>
+	<description>gebiter9k Backend</description>
+	<url/>
+	<licenses>
+		<license/>
+	</licenses>
+	<developers>
+		<developer/>
+	</developers>
+	<scm>
+		<connection/>
+		<developerConnection/>
+		<tag/>
+		<url/>
+	</scm>
+	<properties>
+		<java.version>25</java.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+		<!-- E-Mail über SMTP (JavaMailSender, Jakarta Mail), Version aus Boot. Erst der Mail-Test im Admin, später der
+		     Versand der 2FA. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<!-- BCrypt für die Passwörter. -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-crypto</artifactId>
+		</dependency>
+		<!-- Wie im Vorlageprojekt: Filterkette, JWT aus Cookie oder Header prüfen (Resource Server), JWT ausstellen (Nimbus). -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
+		<!-- Wie im Vorlageprojekt: SFTP-Client für den Dateispeicher (gepflegter JSch-Fork, pure Java), siehe Paket
+		     de.gebiter.sftp. Version am 2026-11-05 über Maven Central geprüft (neueste stabile). -->
+		<dependency>
+			<groupId>com.github.mwiede</groupId>
+			<artifactId>jsch</artifactId>
+			<version>2.28.8</version>
+		</dependency>
+		<!-- Tika: liest Dateityp, Metadaten (auch EXIF) und Text aus Dateien, nur im Backend, nie in Solr. -->
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>4.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-parsers-standard-package</artifactId>
+			<version>4.2.0</version>
+			<!-- Seit Tika 4 eine reine Sammel-POM: zieht die Parser-Module, ein eigenes JAR gibt es nicht. -->
+			<type>pom</type>
+			<exclusions>
+				<!-- Doppelt sonst die Klassen von commons-logging, das Spring selbst mitbringt; beide führen zu SLF4J. -->
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>jcl-over-slf4j</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- SolrJ, der Java-Client für Solr, wie in der Vorlage: dieselbe Version wie der Container (solr:10.1.0). Der
+		     Jetty-Client ist in Solr 10 ein eigenes Modul (solr-solrj-jetty) und liefert HttpJettySolrClient
+		     (SolrClientRegistry). Nie der HttpJdkSolrClient: Der hängt nach einem Verbindungsabbruch für immer, ohne
+		     Fehler (SOLR-17707), Erkenntnis aus der Vorlage. -->
+		<dependency>
+			<groupId>org.apache.solr</groupId>
+			<artifactId>solr-solrj</artifactId>
+			<version>10.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.solr</groupId>
+			<artifactId>solr-solrj-jetty</artifactId>
+			<version>10.1.0</version>
+		</dependency>
+		<!-- JPEG-Leser für die Vorschaubilder (FilePreviewService), wie in der Vorlage: Der JPEG-Leser des JDK scheitert an
+		     CMYK-JPEGs und manchen Kamera-Dateien. Meldet sich selbst bei ImageIO an. -->
+		<dependency>
+			<groupId>com.twelvemonkeys.imageio</groupId>
+			<artifactId>imageio-jpeg</artifactId>
+			<version>3.15.3</version>
+		</dependency>
+		<!-- jsoup: bereinigt das HTML des Rich-Text-Editors (RichTextService) gegen eine Whitelist aus der YAML. Alles
+		     andere fliegt raus, Attribute immer; so kommt kein Skript, kein Event-Handler und kein Link in die Datenbank,
+		     auch nicht am Frontend vorbei (Nutzer 2026-11-09). -->
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>1.24.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

@@ -1,0 +1,2266 @@
+/*
+ * Standard-Theme (default): Bordeaux mit Neongelb. Eingebunden über <link id="theme"> in index.html, später im Profil
+ * gegen ein anderes Theme tauschbar: ein weiteres Theme ist eine weitere Datei in public/themes/ mit denselben Variablen
+ * und Regeln.
+ *
+ * Liegt außerhalb der CSS-Layer und gewinnt damit immer gegen base.css und Bootstrap. Das Theme bestimmt das ganze
+ * Aussehen: Hintergrund, Header, Subheader, Footer, ContentBoxen, Tabellen, Knöpfe, Formulare, Hoverlays, Steuer-Symbole
+ * samt Animation, Toasts, Upload-Feld. base.css liefert nur Aufbau, Maße, Badges und feste Farben.
+ *
+ * Farbregel: Neongelb steht nur auf dunklem Bordeaux (Schrift, Leuchten, Linien). Auf hellen Flächen tragen Bordeaux und
+ * ein gedecktes Oliv die Farbe, damit alles lesbar bleibt.
+ */
+:root {
+  /* ===== Palette ===== */
+  --bordeaux-950: #1d0409;
+  --bordeaux-900: #330716;
+  --bordeaux-800: #520c22;
+  --bordeaux-700: #6f1330;
+  --bordeaux-600: #8c1b3d;
+  --bordeaux-500: #a8284d;
+  --bordeaux-400: #c24a6b;
+  --bordeaux-300: #db8098;
+  --bordeaux-200: #eebcc9;
+  --bordeaux-100: #f8e1e7;
+  --bordeaux-50: #fdf3f5;
+  --neon-400: #e9ff3b;
+  --neon-300: #f1ff7a;
+  --neon-200: #f7ffb0;
+  --neon-100: #fbffd8;
+  --neon-600: #c4d900;
+  --neon-800: #6b6400;
+  --ink: #22070f;
+  --ink-muted: #6b4a53;
+  --paper: #fffdfd;
+  --canvas: #f7f0f2;
+  --line: #eedbe0;
+  --line-strong: #e4c3cc;
+  --neon-glow: rgb(233 255 59 / 0.55);
+  --bordeaux-shadow: rgb(52 8 26 / 0.18);
+
+  /* ===== Seite, Header, Subheader, Footer ===== */
+  --page-text: var(--ink);
+  --header-text: #fff3f6;
+  --subheader-text: var(--bordeaux-100);
+  --footer-text: var(--bordeaux-300);
+
+  /* ===== ContentBox ===== */
+  --contentbox-bg: var(--paper);
+  --contentbox-text: var(--ink);
+  --contentbox-border: var(--line);
+
+  /* ===== Matrix: steht ohne ContentBox auf dem Seitengrund. head-bg muss deckend sein, darunter scrollen die Zeilen. */
+  --matrix-text: var(--ink);
+  --matrix-head-bg: #fbf2f4;
+  --matrix-line: var(--line-strong);
+  --matrix-active: var(--bordeaux-600);
+  --matrix-pending: #8a7a82;
+  --matrix-group-bg: var(--bordeaux-100);
+  --matrix-group-text: var(--bordeaux-800);
+
+  /* ===== Profil: Titelbild (nur Hex, das Muster wird daraus gezeichnet) und der Ring für „online“ */
+  --profile-cover-from: #1d0409;
+  --profile-cover-to: #8c1b3d;
+  --profile-cover-glow: #e9ff3b;
+  /* das Muster des Standard-Banners: Kante eines Dreieck-Paars, wie weit und wie langsam die Eckpunkte driften (0: still) */
+  --profile-cover-cell-pixels: 58;
+  --profile-cover-drift-pixels: 24;
+  --profile-cover-drift-seconds: 14;
+  --profile-online: #8c1b3d;
+
+  /* ===== Upload-Feld (FileDropzone): ein Eyecatcher; beim Darüberziehen leuchtet es neongelb */
+  --file-dropzone-bg-from: var(--bordeaux-50);
+  --file-dropzone-bg-to: var(--neon-100);
+  --file-dropzone-border: var(--bordeaux-600);
+  --file-dropzone-text: var(--bordeaux-800);
+  --file-dropzone-accent: var(--bordeaux-700);
+  --file-dropzone-accent-hover: var(--bordeaux-800);
+  --file-dropzone-accent-text: var(--neon-300);
+  --file-dropzone-accent-glow: rgb(111 19 48 / 0.35);
+  --file-dropzone-drag-bg-from: var(--neon-100);
+  --file-dropzone-drag-bg-to: var(--neon-300);
+  --file-dropzone-drag-border: var(--bordeaux-600);
+  --file-dropzone-drag-glow: rgb(214 255 0 / 0.65);
+  --file-dropzone-disabled-bg: #f3eef0;
+  --file-dropzone-disabled-border: #c9b3ba;
+
+  /* ===== Bootstrap auf die Palette gestimmt ===== */
+  --bs-body-color: var(--ink);
+  --bs-body-color-rgb: 34, 7, 15;
+  --bs-body-bg: var(--paper);
+  --bs-secondary-color: rgb(34 7 15 / 0.66);
+  --bs-tertiary-bg: #fbf2f4;
+  --bs-border-color: var(--line);
+  --bs-primary: var(--bordeaux-600);
+  --bs-primary-rgb: 140, 27, 61;
+  --bs-link-color: var(--bordeaux-600);
+  --bs-link-color-rgb: 140, 27, 61;
+  --bs-link-hover-color: var(--bordeaux-800);
+  --bs-link-hover-color-rgb: 82, 12, 34;
+  --bs-focus-ring-color: var(--neon-glow);
+  --bs-code-color: var(--bordeaux-500);
+}
+
+/* =========================================================================================================== Seite */
+
+html {
+  scrollbar-color: var(--bordeaux-400) var(--canvas);
+}
+
+/* Ein warmer heller Grund, oben links ein Hauch Bordeaux, oben rechts ein Hauch Neon */
+body {
+  background:
+    radial-gradient(1200px 520px at 0% -10%, rgb(140 27 61 / 0.1), transparent 62%),
+    radial-gradient(900px 420px at 100% -5%, rgb(233 255 59 / 0.12), transparent 60%),
+    var(--canvas);
+  background-attachment: fixed;
+  color: var(--page-text);
+}
+
+::selection {
+  background: var(--neon-400);
+  color: var(--bordeaux-900);
+}
+
+/* ========================================================================================================== Header */
+
+/* Fast schwarzes Bordeaux nach Bordeaux, unten eine neongelbe Linie, die zur Mitte hin aufleuchtet */
+.header {
+  background: linear-gradient(100deg, var(--bordeaux-950) 0%, var(--bordeaux-800) 48%, var(--bordeaux-600) 100%);
+  color: var(--header-text);
+  box-shadow: 0 6px 18px -10px rgb(29 4 9 / 0.75);
+}
+
+.header::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--neon-400) 22%, var(--neon-200) 50%, var(--neon-400) 78%, transparent 100%);
+  box-shadow: 0 0 10px var(--neon-glow);
+  pointer-events: none;
+}
+
+/* „Zurück zu …“: neongelber Rand auf dunklem Bordeaux, beim Zeigen gefüllt */
+.header-back.btn {
+  border-color: var(--neon-400);
+  color: var(--neon-300);
+  background: transparent;
+}
+
+.header-back.btn:hover,
+.header-back.btn:focus-visible {
+  border-color: var(--neon-300);
+  background: var(--neon-400);
+  color: var(--bordeaux-950);
+  box-shadow: 0 0 10px var(--neon-glow);
+}
+
+.header-brand {
+  letter-spacing: 0.02em;
+  transition: text-shadow 0.2s ease;
+}
+
+.header-brand > .bi {
+  color: var(--neon-400);
+  filter: drop-shadow(0 0 6px var(--neon-glow));
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.header-brand:hover {
+  text-shadow: 0 0 12px rgb(233 255 59 / 0.45);
+}
+
+.header-brand:hover > .bi {
+  transform: translateY(-2px) scale(1.12);
+}
+
+/* Die Knöpfe im Header: dünner heller Rand; beim Hover neongelb mit Leuchten */
+.header-icon-button {
+  border-color: rgb(255 255 255 / 0.35);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.header-icon-button:hover,
+.header-icon-button:focus-visible,
+.header-icon-button[aria-expanded='true'] {
+  border-color: var(--neon-400);
+  background: rgb(233 255 59 / 0.12);
+  color: var(--neon-300);
+  box-shadow: 0 0 12px rgb(233 255 59 / 0.35);
+  transform: scale(1.08);
+}
+
+.header-position:focus-visible {
+  outline-color: var(--neon-400);
+}
+
+/* ===================================================================================================== Benutzermenü */
+
+.users-menu-panel.dropdown-menu {
+  border: 1px solid rgb(233 255 59 / 0.3);
+  border-radius: 0.75rem;
+  background: linear-gradient(150deg, rgb(29 4 9 / 0.96) 0%, rgb(111 19 48 / 0.96) 100%);
+  color: #fff3f6;
+  box-shadow:
+    0 18px 36px -14px rgb(29 4 9 / 0.75),
+    0 0 0 1px rgb(255 255 255 / 0.04);
+  backdrop-filter: blur(6px);
+}
+
+.users-menu-head {
+  border-bottom: 1px solid rgb(233 255 59 / 0.25);
+  background: linear-gradient(135deg, var(--bordeaux-900) 0%, var(--bordeaux-600) 100%);
+  color: #fff3f6;
+}
+
+.users-menu-head strong {
+  color: var(--neon-300);
+}
+
+.users-menu-panel .dropdown-item {
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    padding-left 0.15s ease;
+}
+
+.users-menu-panel .dropdown-item:hover,
+.users-menu-panel .dropdown-item:focus-visible {
+  padding-left: 0.85rem;
+  background: rgb(233 255 59 / 0.12);
+  color: var(--neon-300);
+}
+
+.users-menu-panel .dropdown-divider {
+  margin: 0.35rem 0.3rem;
+  border-color: rgb(255 255 255 / 0.18);
+  opacity: 1;
+}
+
+/* ======================================================================================================= Subheader */
+
+.subheader {
+  background: linear-gradient(100deg, var(--bordeaux-900) 0%, var(--bordeaux-700) 100%);
+  color: var(--subheader-text);
+  box-shadow: 0 8px 18px -12px rgb(29 4 9 / 0.7);
+}
+
+.subheader-status {
+  color: var(--neon-300);
+  text-shadow: 0 0 10px rgb(233 255 59 / 0.35);
+}
+
+/*
+ * Tabs: hauchdünne Trennstriche zwischen den Tabs (nicht vor dem ersten). Der aktive Tab ist eine neongelbe Pille mit
+ * dunkler Schrift. Neben dem aktiven und dem überfahrenen Tab verschwindet der Strich, die Fläche trennt dort schon.
+ */
+.subheader-tabs.nav {
+  gap: 0.5rem;
+}
+
+.subheader-tabs .nav-link {
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  transition:
+    background 0.15s ease-in-out,
+    color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
+}
+
+/* der Strich sitzt mittig in der Lücke (halber gap links vom Tab) */
+.subheader-tabs .nav-item + .nav-item .nav-link::before {
+  content: '';
+  position: absolute;
+  top: 25%;
+  bottom: 25%;
+  left: calc(-0.25rem - 0.5px);
+  width: 1px;
+  background: rgb(248 225 231 / 0.2);
+}
+
+.subheader-tabs .nav-link:hover {
+  background: rgb(255 255 255 / 0.1);
+  color: #ffffff;
+}
+
+.subheader-tabs .nav-link.active {
+  background: linear-gradient(135deg, var(--neon-300) 0%, var(--neon-400) 100%);
+  color: var(--bordeaux-900);
+  font-weight: 600;
+  box-shadow: 0 0 14px rgb(233 255 59 / 0.45);
+}
+
+.subheader-tabs .nav-link:hover::before,
+.subheader-tabs .nav-link.active::before,
+.subheader-tabs .nav-item:has(.nav-link:hover) + .nav-item .nav-link::before,
+.subheader-tabs .nav-item:has(.nav-link.active) + .nav-item .nav-link::before {
+  opacity: 0;
+}
+
+.subheader-tabs .nav-link:focus-visible {
+  outline: 2px solid var(--neon-400);
+  outline-offset: -2px;
+  box-shadow: none;
+}
+
+/* ========================================================================================================== Footer */
+
+.footer {
+  background: var(--bordeaux-950);
+  color: var(--footer-text);
+}
+
+.footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgb(233 255 59 / 0.7) 50%, transparent 100%);
+}
+
+.footer a {
+  color: var(--neon-300);
+}
+
+/* ====================================================================================================== ContentBox */
+
+/* Papierweiß, weich abgerundet, ein warmer Schatten. Im Kopf ein senkrechter Strich von Neon nach Bordeaux. */
+.contentbox {
+  overflow: hidden;
+  border: 1px solid var(--contentbox-border);
+  border-radius: 0.875rem;
+  background: var(--contentbox-bg);
+  color: var(--contentbox-text);
+  box-shadow:
+    0 1px 2px rgb(52 8 26 / 0.06),
+    0 10px 26px -14px var(--bordeaux-shadow);
+}
+
+.contentbox-header {
+  border-bottom: 1px solid var(--contentbox-border);
+  background: linear-gradient(180deg, var(--bordeaux-50) 0%, #f9e9ed 100%);
+  color: var(--bordeaux-800);
+}
+
+.contentbox-footer {
+  border-top: 1px solid #f2e3e7;
+  background: #fdf7f8;
+  color: var(--ink-muted);
+}
+
+/* Karten außerhalb der ContentBox (z. B. Login) */
+.card {
+  --bs-card-border-color: var(--line);
+  --bs-card-border-radius: 0.875rem;
+  --bs-card-bg: var(--paper);
+}
+
+/* ========================================================================================================= Tabellen */
+
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--ink);
+  --bs-table-border-color: #f2e3e7;
+  --bs-table-striped-bg: rgb(140 27 61 / 0.035);
+  --bs-table-striped-color: var(--ink);
+  --bs-table-hover-bg: rgb(233 255 59 / 0.22);
+  --bs-table-hover-color: var(--ink);
+}
+
+.table > thead > tr > th {
+  border-bottom: 2px solid var(--line-strong);
+  color: var(--bordeaux-700);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ========================================================================================================== Knöpfe */
+
+/* Der Hauptknopf (Speichern, Senden): Bordeaux im Verlauf, neongelbe Schrift; beim Hover leuchtet er auf */
+.btn-primary {
+  --bs-btn-color: var(--neon-300);
+  --bs-btn-bg: var(--bordeaux-700);
+  --bs-btn-border-color: var(--bordeaux-700);
+  --bs-btn-hover-color: var(--neon-400);
+  --bs-btn-hover-bg: var(--bordeaux-600);
+  --bs-btn-hover-border-color: var(--bordeaux-600);
+  --bs-btn-active-color: var(--neon-400);
+  --bs-btn-active-bg: var(--bordeaux-800);
+  --bs-btn-active-border-color: var(--bordeaux-800);
+  --bs-btn-disabled-color: var(--bordeaux-100);
+  --bs-btn-disabled-bg: var(--bordeaux-400);
+  --bs-btn-disabled-border-color: var(--bordeaux-400);
+  --bs-btn-focus-shadow-rgb: 233, 255, 59;
+  background-image: linear-gradient(135deg, var(--bordeaux-600) 0%, var(--bordeaux-800) 100%);
+  font-weight: 600;
+  box-shadow: 0 4px 14px -6px rgb(111 19 48 / 0.7);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease;
+}
+
+.btn-primary:hover {
+  background-image: linear-gradient(135deg, var(--bordeaux-500) 0%, var(--bordeaux-700) 100%);
+  box-shadow:
+    0 0 0 1px rgb(233 255 59 / 0.35),
+    0 6px 18px -6px rgb(233 255 59 / 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled,
+.btn-primary.disabled {
+  background-image: none;
+  box-shadow: none;
+}
+
+/* Abbrechen und Zurück: rosé, zurückhaltend */
+.btn-secondary {
+  --bs-btn-color: var(--bordeaux-800);
+  --bs-btn-bg: var(--bordeaux-100);
+  --bs-btn-border-color: var(--bordeaux-200);
+  --bs-btn-hover-color: var(--bordeaux-900);
+  --bs-btn-hover-bg: var(--bordeaux-200);
+  --bs-btn-hover-border-color: var(--bordeaux-300);
+  --bs-btn-active-color: var(--bordeaux-900);
+  --bs-btn-active-bg: var(--bordeaux-300);
+  --bs-btn-active-border-color: var(--bordeaux-300);
+  --bs-btn-disabled-color: var(--bordeaux-300);
+  --bs-btn-disabled-bg: var(--bordeaux-50);
+  --bs-btn-disabled-border-color: var(--bordeaux-100);
+  --bs-btn-focus-shadow-rgb: 140, 27, 61;
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--bordeaux-700);
+  --bs-btn-border-color: var(--line-strong);
+  --bs-btn-hover-color: var(--bordeaux-900);
+  --bs-btn-hover-bg: var(--bordeaux-100);
+  --bs-btn-hover-border-color: var(--bordeaux-300);
+  --bs-btn-active-color: var(--bordeaux-900);
+  --bs-btn-active-bg: var(--bordeaux-200);
+  --bs-btn-active-border-color: var(--bordeaux-300);
+  --bs-btn-disabled-color: #c9a7b0;
+  --bs-btn-disabled-border-color: #efdfe3;
+  --bs-btn-focus-shadow-rgb: 140, 27, 61;
+}
+
+/* Endgültig löschen im Popup: kräftiges Bordeaux-Rot */
+.btn-danger {
+  --bs-btn-color: #ffffff;
+  --bs-btn-bg: #b3123a;
+  --bs-btn-border-color: #b3123a;
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: #8f0c2c;
+  --bs-btn-hover-border-color: #8f0c2c;
+  --bs-btn-active-bg: #6f0922;
+  --bs-btn-active-border-color: #6f0922;
+  --bs-btn-focus-shadow-rgb: 179, 18, 58;
+  background-image: linear-gradient(135deg, #c8164a 0%, #8f0c2c 100%);
+}
+
+/*
+ * ===== Steuer-Symbole (control-button): Bearbeiten, Löschen, Neu, Kopieren =====
+ * Jedes hat seine eigene kleine Animation beim Hover: der Stift wackelt, der Mülleimer zittert, das Plus dreht sich,
+ * die Zwischenablage hüpft. So sieht man schon vor dem Klick, was passiert.
+ */
+.control-button {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.control-button > .bi {
+  display: inline-block;
+}
+
+.control-button:hover {
+  transform: translateY(-1px);
+}
+
+/* Bearbeiten: Oliv auf hell, beim Hover neongelb gefüllt mit dunkler Schrift */
+.control-button-edit {
+  --bs-btn-color: var(--neon-800);
+  --bs-btn-border-color: var(--neon-600);
+  --bs-btn-hover-color: var(--bordeaux-900);
+  --bs-btn-hover-bg: var(--neon-400);
+  --bs-btn-hover-border-color: var(--neon-600);
+  --bs-btn-active-color: var(--bordeaux-900);
+  --bs-btn-active-bg: var(--neon-300);
+  --bs-btn-active-border-color: var(--neon-600);
+  --bs-btn-focus-shadow-rgb: 196, 217, 0;
+}
+
+.control-button-edit:hover {
+  box-shadow: 0 0 12px var(--neon-glow);
+}
+
+.control-button-edit:hover > .bi {
+  animation: control-wiggle 0.5s ease-in-out;
+}
+
+/* Löschen: Bordeaux-Rot, beim Hover gefüllt */
+.control-button-delete {
+  --bs-btn-color: #b3123a;
+  --bs-btn-border-color: #e8a3b4;
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: #b3123a;
+  --bs-btn-hover-border-color: #b3123a;
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-active-bg: #8f0c2c;
+  --bs-btn-active-border-color: #8f0c2c;
+  --bs-btn-focus-shadow-rgb: 179, 18, 58;
+}
+
+.control-button-delete:hover {
+  box-shadow: 0 4px 12px -4px rgb(179 18 58 / 0.6);
+}
+
+.control-button-delete:hover > .bi {
+  animation: control-shake 0.4s ease-in-out;
+}
+
+/*
+ * NewEntityButton (das ganze Aussehen steht hier, base.css hat dafür nichts; Nutzer 2026-11-09): im Ruhezustand nur das
+ * Plus mit Bordeaux-Rand. Beim Zeigen darauf oder mit der Tastatur dreht sich das Plus mit kleinem Nachwippen, der Knopf
+ * fährt auseinander und zeigt den Namen: Bordeaux-Verlauf, neongelbe Schrift, leichtes Leuchten. Ein anderes Theme darf
+ * ihn ganz anders formen.
+ */
+.new-entity-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2rem;
+  min-width: 2rem;
+  padding: 0;
+  border: 1px solid var(--bordeaux-400);
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--bordeaux-700);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    padding 0.24s ease-in-out,
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.new-entity-button > .bi {
+  display: inline-block;
+  font-size: 1.05rem;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.new-entity-button:hover:not(:disabled),
+.new-entity-button:focus-visible:not(:disabled) {
+  padding: 0 0.85rem 0 0.55rem;
+  border-color: var(--bordeaux-700);
+  background: linear-gradient(135deg, var(--bordeaux-600) 0%, var(--bordeaux-800) 100%);
+  color: var(--neon-300);
+  box-shadow: 0 0 12px rgb(233 255 59 / 0.35);
+  transform: translateY(-1px);
+  outline: 0;
+}
+
+.new-entity-button:hover:not(:disabled) > .bi,
+.new-entity-button:focus-visible:not(:disabled) > .bi {
+  transform: rotate(90deg);
+}
+
+/* gedrückt: dunkler, sinkt zurück */
+.new-entity-button:active:not(:disabled) {
+  background: var(--bordeaux-800);
+  color: var(--neon-400);
+  transform: none;
+}
+
+/* gesperrt: blass, klappt nicht auf */
+.new-entity-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.new-entity-button-text {
+  display: inline-block;
+  max-width: 0;
+  margin-left: 0;
+  opacity: 0;
+  overflow: hidden;
+  font-size: 0.875rem;
+  transition:
+    max-width 0.24s ease-in-out,
+    margin-left 0.24s ease-in-out,
+    opacity 0.16s ease-in-out;
+}
+
+.new-entity-button:hover:not(:disabled) .new-entity-button-text,
+.new-entity-button:focus-visible:not(:disabled) .new-entity-button-text {
+  max-width: 24rem;
+  margin-left: 0.4rem;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .new-entity-button,
+  .new-entity-button > .bi,
+  .new-entity-button-text {
+    transition: none;
+  }
+}
+
+.control-button-copy:hover > .bi {
+  animation: control-hop 0.45s ease-out;
+}
+
+@keyframes control-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-14deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+@keyframes control-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-2px) rotate(-6deg);
+  }
+  40%,
+  80% {
+    transform: translateX(2px) rotate(6deg);
+  }
+}
+
+@keyframes control-hop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-4px);
+  }
+}
+
+/* ======================================================================================================= Formulare */
+
+.form-label {
+  color: var(--bordeaux-800);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.form-text {
+  color: var(--ink-muted);
+}
+
+.form-control,
+.form-select {
+  border-color: var(--line-strong);
+  background-color: var(--paper);
+  color: var(--ink);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* Im Fokus: Bordeaux-Rand und ein neongelber Schein */
+.form-control:focus,
+.form-select:focus,
+.values-input:focus-within {
+  border-color: var(--bordeaux-500);
+  box-shadow: 0 0 0 0.22rem var(--neon-glow);
+}
+
+/* Die Vorschläge beim Tippen: eine helle Liste mit Bordeaux-Kante; der gewählte (Pfeiltasten, Maus) neongelb hinterlegt */
+.values-input-suggestions {
+  border: 1px solid var(--line-strong);
+  border-radius: 0.5rem;
+  background: var(--paper);
+  box-shadow: 0 8px 18px -12px var(--bordeaux-shadow);
+}
+
+.values-input-suggestion {
+  border-radius: 0.375rem;
+}
+
+.values-input-suggestion:hover,
+.values-input-suggestion.active {
+  background: var(--neon-100);
+}
+
+.values-input-suggestion-badge {
+  background: var(--bordeaux-700);
+  color: #fff;
+}
+
+.values-input-suggestion-badge mark {
+  background: var(--neon-300);
+  color: var(--bordeaux-900);
+}
+
+.values-input-suggestion-hint {
+  color: var(--ink-muted);
+}
+
+.form-check-input {
+  border-color: var(--line-strong);
+}
+
+.form-check-input:focus {
+  border-color: var(--bordeaux-500);
+  box-shadow: 0 0 0 0.22rem var(--neon-glow);
+}
+
+.form-check-input:checked {
+  border-color: var(--bordeaux-600);
+  background-color: var(--bordeaux-600);
+}
+
+/* Schalter: an heißt Bordeaux mit neongelbem Knopf */
+.form-switch .form-check-input:checked {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23e9ff3b'/%3e%3c/svg%3e");
+}
+
+.input-group-text {
+  border-color: var(--line-strong);
+  background: var(--bordeaux-50);
+}
+
+/* ===================================================================================================== Hoverlay */
+
+/*
+ * Das Hoverlay (Komponente Hoverlay, Bootstrap-Tooltip mit der Klasse hoverlay), überall dasselbe: Bordeaux-Verlauf,
+ * helle Schrift, ein neongelber Hauch am Rand. Breit genug für eine Reihe Badges, Text linksbündig.
+ */
+.hoverlay {
+  --bs-tooltip-bg: var(--bordeaux-800);
+  --bs-tooltip-color: #fff3f6;
+  --bs-tooltip-opacity: 1;
+  --bs-tooltip-max-width: 22rem;
+  --bs-tooltip-font-size: 0.8125rem;
+}
+
+.hoverlay .tooltip-inner {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid rgb(233 255 59 / 0.4);
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, var(--bordeaux-900) 0%, var(--bordeaux-600) 100%);
+  box-shadow:
+    0 8px 20px -8px rgb(29 4 9 / 0.6),
+    0 0 10px rgb(233 255 59 / 0.2);
+  text-align: left;
+}
+
+/*
+ * Gedämpfter Text im Hoverlay (`text-body-secondary`, `text-secondary`): hell, Bootstraps Grau ist für hellen Grund
+ * gemacht. Über Bootstraps Variablen, nicht über `color … !important`: Bootstrap liegt in einer Schicht (`@layer`), und
+ * ein `!important` aus einer Schicht schlägt jedes `!important` von hier. So stand dort dunkles Grau auf Dunkelrot.
+ */
+.hoverlay {
+  --bs-secondary-color: var(--bordeaux-200);
+  --bs-secondary-rgb: 238, 188, 201;
+}
+
+.hoverlay code {
+  color: var(--neon-300);
+}
+
+/*
+ * Was in einem Hoverlay zum Hineinklicken steht (Liste mit Suchfeld, User, Knöpfe), überall gleich: weiß auf dem
+ * Bordeaux-Verlauf, die Akzente neongelb (Nutzer 2026-11-11).
+ */
+
+/* User: Name weiß, beim Zeigen neongelb; der Ring des Avatars neongelb statt Bordeaux */
+.hoverlay .users-guid-name a {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.hoverlay .users-guid-name a:hover,
+.hoverlay .users-guid-name a:focus-visible {
+  color: var(--neon-300);
+}
+
+.hoverlay .users-avatar-small {
+  box-shadow: 0 0 0 2px rgb(233 255 59 / 0.7);
+}
+
+.hoverlay .users-profile-link:hover .users-avatar-small,
+.hoverlay .users-profile-link:focus-visible .users-avatar-small {
+  box-shadow:
+    0 0 0 2px var(--neon-400),
+    0 0 8px var(--neon-glow);
+}
+
+/* Suchfeld: dunkel wie die Sprechblase, heller Text, beim Tippen eine neongelbe Kante */
+.hoverlay .form-control {
+  border-color: rgb(233 255 59 / 0.35);
+  background-color: rgb(29 4 9 / 0.45);
+  color: #ffffff;
+}
+
+.hoverlay .form-control::placeholder {
+  color: var(--bordeaux-200);
+  opacity: 1;
+}
+
+.hoverlay .form-control:focus {
+  border-color: var(--neon-400);
+  background-color: rgb(29 4 9 / 0.6);
+  box-shadow: 0 0 0 0.15rem rgb(233 255 59 / 0.25);
+  color: #ffffff;
+}
+
+/* Fundstelle einer Suche: neongelb mit dunkler Schrift */
+.hoverlay mark {
+  padding: 0;
+  background: var(--neon-400);
+  color: var(--bordeaux-950);
+}
+
+/* Hinweis unter einer Liste, z. B. „Kein User passt.“: weiß und kursiv */
+.searchable-list-note {
+  color: #fff3f6;
+  font-style: italic;
+}
+
+/* Knopf, z. B. „Alle laden“: Pille mit neongelber Kante, beim Zeigen neongelb gefüllt */
+.hoverlay .btn {
+  --bs-btn-color: var(--neon-300);
+  --bs-btn-border-color: var(--neon-400);
+  --bs-btn-hover-color: var(--bordeaux-950);
+  --bs-btn-hover-bg: var(--neon-400);
+  --bs-btn-hover-border-color: var(--neon-400);
+  --bs-btn-active-color: var(--bordeaux-950);
+  --bs-btn-active-bg: var(--neon-300);
+  --bs-btn-active-border-color: var(--neon-300);
+  --bs-btn-focus-shadow-rgb: 233, 255, 59;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.hoverlay .spinner-border {
+  color: var(--neon-400);
+}
+
+/*
+ * Sprechblase der Stimmen einer Datei (FileCheerHint): Bezeichnung und Zahl fett und neongelb (Nutzer 2026-11-11),
+ * darunter eine neongelbe Linie; was ein Klick bewirkt und „und n weitere“ weiß und kursiv.
+ */
+.file-cheer-hint-title {
+  border-bottom: 1px solid rgb(233 255 59 / 0.45);
+  color: var(--neon-400);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.file-cheer-hint-note {
+  color: #fff3f6;
+  font-style: italic;
+}
+
+/* Dateiart im Hoverlay: Key und Hinweis gedämpft unter der Beschreibung */
+.file-class-hint-key,
+.file-class-hint-note {
+  color: var(--bordeaux-200);
+}
+
+/* Das i oben rechts in einer Kachel */
+.tile-corner-hint {
+  color: var(--bordeaux-600);
+}
+
+/* ========================================================================================================== Popups */
+
+.modal-content {
+  overflow: hidden;
+  border: 0;
+  border-radius: 1rem;
+  box-shadow: 0 24px 60px -20px rgb(29 4 9 / 0.65);
+}
+
+.modal-header {
+  border-bottom: 2px solid var(--neon-400);
+  background: linear-gradient(100deg, var(--bordeaux-900) 0%, var(--bordeaux-600) 100%);
+  color: #fff3f6;
+}
+
+.modal-title {
+  color: var(--neon-300);
+}
+
+.modal-header .btn-close {
+  filter: invert(1) grayscale(1) brightness(2);
+}
+
+.modal-footer {
+  border-top-color: #f2e3e7;
+  background: #fdf7f8;
+}
+
+.modal-backdrop {
+  --bs-backdrop-bg: var(--bordeaux-950);
+  --bs-backdrop-opacity: 0.6;
+}
+
+/* ===================================================================================================== Listen etc. */
+
+.list-group {
+  --bs-list-group-border-color: var(--line);
+  --bs-list-group-bg: var(--paper);
+  --bs-list-group-color: var(--ink);
+}
+
+.spinner-border,
+.spinner-grow {
+  color: var(--bordeaux-600);
+}
+
+.btn .spinner-border {
+  color: inherit;
+}
+
+/* ============================================================================================== Kacheln (Startseite) */
+
+/* Papierweiße Kachel; beim Hover hebt sie sich, wird Bordeaux und das Symbol leuchtet neongelb */
+.home-tile {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper);
+  color: var(--bordeaux-800);
+  box-shadow: 0 6px 18px -12px var(--bordeaux-shadow);
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease,
+    color 0.22s ease;
+}
+
+.home-tile-icon {
+  color: var(--bordeaux-600);
+  font-size: 2.5rem;
+  line-height: 1;
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    color 0.22s ease,
+    filter 0.22s ease;
+}
+
+.home-tile:hover,
+.home-tile:focus-visible {
+  background: linear-gradient(135deg, var(--bordeaux-900) 0%, var(--bordeaux-600) 100%);
+  color: var(--neon-300);
+  box-shadow:
+    0 16px 30px -14px rgb(52 8 26 / 0.6),
+    0 0 0 1px rgb(233 255 59 / 0.4);
+  transform: translateY(-4px);
+}
+
+.home-tile:hover .home-tile-icon,
+.home-tile:focus-visible .home-tile-icon {
+  color: var(--neon-400);
+  filter: drop-shadow(0 0 8px var(--neon-glow));
+  transform: scale(1.12) rotate(-5deg);
+}
+
+/* ============================================================================================ Login und Registrierung */
+
+.form-card {
+  overflow: hidden;
+  border: 0;
+  box-shadow: 0 22px 50px -24px rgb(52 8 26 / 0.55);
+}
+
+.form-card::before {
+  content: '';
+  display: block;
+  height: 0.4rem;
+  background: linear-gradient(90deg, var(--bordeaux-800) 0%, var(--bordeaux-500) 60%, var(--neon-400) 100%);
+}
+
+.form-card-title {
+  color: var(--bordeaux-800);
+  font-weight: 700;
+}
+
+.form-card-title > .bi {
+  color: var(--bordeaux-600);
+}
+
+/* ========================================================================================================== Profil */
+
+/*
+ * Der Streifen mit Profilbild und Name auf dem Banner: dunkles Bordeaux, durchscheinend und weichgezeichnet, oben eine
+ * Leuchtlinie wie unter dem Header. Auf dem Dunkel darf Neongelb stehen.
+ */
+.profile-identity {
+  background: linear-gradient(180deg, rgb(29 4 9 / 0.3) 0%, rgb(29 4 9 / 0.55) 100%);
+  color: var(--header-text);
+  text-shadow: 0 1px 6px rgb(29 4 9 / 0.75);
+  backdrop-filter: blur(3px);
+}
+
+.profile-identity::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--neon-400) 22%, var(--neon-200) 50%, var(--neon-400) 78%, transparent 100%);
+  box-shadow: 0 0 10px var(--neon-glow);
+  pointer-events: none;
+}
+
+.profile-name {
+  color: #ffffff;
+  text-shadow: 0 1px 10px rgb(29 4 9 / 0.7);
+}
+
+.profile-email {
+  color: var(--bordeaux-200);
+}
+
+.profile-info {
+  color: var(--bordeaux-100);
+}
+
+/* ohne Status: der Hinweis leiser und schräg */
+.profile-info-empty {
+  font-style: italic;
+  opacity: 0.6;
+}
+
+/* Kennzahl zum Anklicken: beim Zeigen Bordeaux und unterstrichen */
+.profile-stat-link:hover .profile-stat-value,
+.profile-stat-link:focus-visible .profile-stat-value {
+  color: var(--bordeaux-700);
+  text-decoration: underline;
+}
+
+.profile-identity .profile-online {
+  background: rgb(233 255 59 / 0.12);
+  color: var(--neon-300);
+}
+
+.profile-cover-badge {
+  border-color: rgb(233 255 59 / 0.35);
+  background: rgb(29 4 9 / 0.55);
+  color: #fff3f6;
+  backdrop-filter: blur(4px);
+}
+
+.profile-cover-badge-ring {
+  border-color: var(--neon-400);
+  color: var(--neon-300);
+  box-shadow: 0 0 12px var(--neon-glow);
+}
+
+.users-avatar-large {
+  box-shadow:
+    0 0 0 3px var(--bordeaux-600),
+    0 0 0 6px rgb(233 255 59 / 0.55),
+    0 12px 30px rgb(29 4 9 / 0.3);
+}
+
+/*
+ * Profilbild im Profilkopf, die Form dieses Themes (Lage und Größe stehen in base.css): eckig wie ein technisches
+ * Bauteil. Rahmen, Passepartout und Bild als Lagen mit derselben Form, ein Quadrat, links oben und rechts unten
+ * abgefast; die Fase wird je Lage um 2px kleiner, damit die Schrägen parallel bleiben. Dahinter eine versetzte Platte
+ * mit diagonaler Schraffur, an den beiden anderen Ecken Ziel-Winkel, auf der Trennlinie zwei Klemmen. Rahmen 3px plus
+ * Passepartout 3px ergeben --profile-avatar-frame-inset. Es liegt auf dunklem Grund, Neongelb ist hier erlaubt.
+ */
+.profile-banner {
+  --profile-avatar-frame-inset: 6px;
+}
+
+.profile-avatar-wrap {
+  filter: drop-shadow(0 0 10px rgb(233 255 59 / 0.3)) drop-shadow(0 12px 22px rgb(29 4 9 / 0.6));
+}
+
+.profile-avatar-frame {
+  position: relative;
+  padding: 3px;
+  background: linear-gradient(135deg, var(--neon-200) 0%, var(--neon-400) 30%, var(--neon-800) 55%, var(--neon-400) 80%, var(--neon-200) 100%);
+  clip-path: polygon(22px 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%, 0 22px);
+}
+
+.profile-avatar-mat {
+  padding: 3px;
+  background: var(--bordeaux-950);
+  clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+}
+
+.profile-avatar-wrap .users-avatar-large {
+  box-shadow: none;
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
+}
+
+/* die versetzte Platte hinter dem Rahmen, nach rechts unten verschoben */
+.profile-avatar-echo {
+  position: absolute;
+  inset: 0;
+  transform: translate(10px, 10px);
+  background:
+    repeating-linear-gradient(135deg, rgb(233 255 59 / 0.45) 0 2px, transparent 2px 7px),
+    rgb(29 4 9 / 0.55);
+  clip-path: polygon(22px 0, 100% 0, 100% calc(100% - 22px), calc(100% - 22px) 100%, 0 100%, 0 22px);
+}
+
+/* die Ziel-Winkel an den Ecken ohne Fase, knapp außerhalb des Rahmens */
+.profile-avatar-bracket {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 0 solid var(--neon-300);
+  pointer-events: none;
+}
+
+.profile-avatar-bracket-top {
+  top: -9px;
+  right: -9px;
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+
+.profile-avatar-bracket-bottom {
+  bottom: -9px;
+  left: -9px;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+}
+
+/* „Neues Bild“: eckig wie der Rahmen, dunkles Glas mit Neonkante, beim Zeigen darauf neongelb gefüllt */
+.profile-avatar-upload {
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--neon-400);
+  border-radius: 0;
+  background: rgb(29 4 9 / 0.72);
+  color: var(--neon-300);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 0 10px rgb(233 255 59 / 0.35);
+}
+
+.profile-avatar-upload:hover,
+.profile-avatar-upload:focus-visible {
+  background: var(--neon-400);
+  color: var(--bordeaux-950);
+  outline: 0;
+}
+
+/* die Klemmen: mittig auf dem Punkt, wo die Trennlinie auf den Rahmen trifft */
+.profile-avatar-clamp {
+  width: 6px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  background: var(--neon-300);
+  box-shadow: 0 0 8px var(--neon-400);
+}
+
+.profile-private-chip {
+  background: linear-gradient(135deg, var(--bordeaux-800) 0%, var(--bordeaux-600) 100%);
+  color: var(--neon-300);
+}
+
+.profile-online-dot {
+  background: var(--neon-600);
+  box-shadow: 0 0 6px var(--neon-400);
+}
+
+/* „Online (N)“ im Header: neongelb auf dem dunklen Bordeaux des Headers, der Punkt leuchtet */
+.header-online-users {
+  color: var(--neon-300);
+}
+
+.header-online-users-dot {
+  background: var(--neon-400);
+  box-shadow: 0 0 6px var(--neon-400);
+}
+
+/* Freunde-Box: Titel wie die Abschnitte der Dateiseite, Zeilen durch feine Linien getrennt */
+.profile-friends-title {
+  color: var(--bordeaux-700);
+}
+
+.profile-friends-row + .profile-friends-row {
+  border-top: 1px solid var(--line);
+}
+
+/* Punktekonto: der Stand in Bordeaux */
+.profile-points-balance-value {
+  color: var(--bordeaux-800);
+}
+
+.profile-points-balance-label {
+  color: var(--ink-muted);
+}
+
+/* Zahl der Abschlüsse am Medaillon: Neon auf dunklem Bordeaux */
+.profile-achievement-count {
+  border: 1px solid var(--neon-400);
+  background: var(--bordeaux-900);
+  color: var(--neon-300);
+}
+
+.profile-friends-pending,
+.profile-friends-empty,
+.profile-about-empty,
+.profile-achievements-empty {
+  color: var(--ink-muted);
+}
+
+/* „Befreundet“: dunkles Bordeaux mit Neon; „Anfrage gesendet“ leiser, Papier mit Bordeaux-Rand */
+.profile-friendship-badge {
+  border: 1px solid var(--bordeaux-800);
+  background: linear-gradient(135deg, var(--bordeaux-900), var(--bordeaux-700));
+  color: var(--neon-300);
+}
+
+.profile-friendship-badge-pending {
+  border-color: var(--bordeaux-600);
+  background: var(--paper);
+  color: var(--bordeaux-700);
+}
+
+/* ======================================================================================================= Tika-Test */
+
+.tika-probe-text {
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: #fbf2f4;
+  color: var(--ink);
+}
+
+/* ==================================================================================================== Icon-Manager */
+
+.symbol-tile {
+  border-color: #f2e3e7;
+  background: var(--paper);
+  color: var(--bordeaux-900);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.symbol-tile:hover {
+  border-color: var(--bordeaux-400);
+  box-shadow: 0 6px 14px -8px rgb(52 8 26 / 0.45);
+  transform: translateY(-2px);
+}
+
+.symbol-tile:hover > .symbol-glyph {
+  color: var(--bordeaux-600);
+}
+
+.symbol-tile-selected,
+.symbol-tile-selected:hover {
+  border-color: var(--bordeaux-700);
+  background: linear-gradient(135deg, var(--bordeaux-700) 0%, var(--bordeaux-500) 100%);
+  color: var(--neon-300);
+  box-shadow: 0 0 0.75rem rgb(214 255 0 / 0.45);
+}
+
+.symbol-tile-selected:hover > .symbol-glyph {
+  color: var(--neon-400);
+}
+
+/* Zum Löschen markiert: schraffiert, durchgestrichen, mit einem roten Kreuz in der Ecke */
+.symbol-tile-marked,
+.symbol-tile-marked:hover {
+  border-color: #b3123a;
+  background:
+    repeating-linear-gradient(-45deg, rgb(179 18 58 / 0.08) 0 6px, transparent 6px 12px),
+    var(--paper);
+  color: #b3123a;
+}
+
+.symbol-tile-marked > .symbol-glyph {
+  opacity: 0.55;
+}
+
+.symbol-tile-marked .symbol-tile-name {
+  text-decoration: line-through;
+}
+
+.symbol-tile-marked::after {
+  content: '\2715';
+  position: absolute;
+  top: 0.2rem;
+  right: 0.3rem;
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: #b3123a;
+  color: #ffffff;
+  font-size: 0.6rem;
+  font-weight: 700;
+}
+
+.symbol-preview {
+  color: var(--bordeaux-600);
+  filter: drop-shadow(0 6px 14px rgb(140 27 61 / 0.25));
+}
+
+/*
+ * ===================================================================================================== Upload-Feld
+ * Jeder Upload sieht so aus: ein großes, auffälliges Feld zum Ablegen, mittendrin der Knopf zum Durchsuchen. Zieht man
+ * Dateien darüber, leuchtet es neongelb.
+ */
+.file-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 13rem;
+  padding: 2rem 1rem;
+  border: 3px dashed var(--file-dropzone-border);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, var(--file-dropzone-bg-from), var(--file-dropzone-bg-to));
+  color: var(--file-dropzone-text);
+  text-align: center;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+
+.file-dropzone-icon {
+  color: var(--file-dropzone-accent);
+  font-size: 3.25rem;
+  line-height: 1;
+  animation: file-dropzone-float 3s ease-in-out infinite;
+}
+
+.file-dropzone-text {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.file-dropzone-hint {
+  font-size: 0.875rem;
+}
+
+.file-dropzone-browse.btn {
+  padding: 0.55rem 1.4rem;
+  border-color: var(--file-dropzone-accent);
+  border-radius: 2rem;
+  background: linear-gradient(135deg, var(--bordeaux-600) 0%, var(--bordeaux-800) 100%);
+  color: var(--file-dropzone-accent-text);
+  font-weight: 600;
+  box-shadow: 0 0.25rem 0.75rem var(--file-dropzone-accent-glow);
+}
+
+.file-dropzone-browse.btn:hover,
+.file-dropzone-browse.btn:focus-visible {
+  border-color: var(--file-dropzone-accent-hover);
+  background: linear-gradient(135deg, var(--bordeaux-500) 0%, var(--bordeaux-700) 100%);
+  color: var(--neon-400);
+  box-shadow:
+    0 0 0 1px rgb(233 255 59 / 0.4),
+    0 6px 18px -6px var(--neon-glow);
+}
+
+.file-dropzone-drag-over {
+  border-style: solid;
+  border-color: var(--file-dropzone-drag-border);
+  background: linear-gradient(135deg, var(--file-dropzone-drag-bg-from), var(--file-dropzone-drag-bg-to));
+  box-shadow:
+    0 0 0 0.4rem var(--file-dropzone-drag-glow),
+    0 0 2rem var(--file-dropzone-drag-glow);
+  transform: scale(1.01);
+}
+
+.file-dropzone-drag-over .file-dropzone-icon {
+  color: var(--file-dropzone-drag-border);
+  animation: file-dropzone-bounce 0.6s ease-in-out infinite;
+}
+
+.file-dropzone-disabled {
+  border-color: var(--file-dropzone-disabled-border);
+  background: var(--file-dropzone-disabled-bg);
+  opacity: 0.7;
+}
+
+.file-dropzone-disabled .file-dropzone-icon {
+  animation: none;
+}
+
+@keyframes file-dropzone-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes file-dropzone-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.08);
+  }
+}
+
+/*
+ * ========================================================================================================== Toasts
+ * Jeder Toast ein Verlauf in Bordeaux, die Akzente (Symbol, Titel, Leuchten, Zeitbalken) je Art. Unten läuft ein Balken
+ * die Standzeit herunter (--signal-toast-duration kommt aus der Komponente); ruht die Maus darauf, hält er an
+ * (signal-toast-paused). Das Ausblenden (signal-toast-leaving) darf höchstens 300 ms dauern.
+ */
+.signal-toast {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 22rem;
+  max-width: 100%;
+  padding: 0.875rem 2.5rem 1.1rem 0.875rem;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 0.875rem;
+  background: var(--signal-toast-bg);
+  color: #fff0f4;
+  text-align: left;
+  box-shadow:
+    0 18px 40px -14px var(--signal-toast-glow),
+    0 6px 16px -6px rgb(0 0 0 / 0.5),
+    inset 0 1px 0 rgb(255 255 255 / 0.16);
+  animation: signal-toast-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  transition:
+    opacity 0.28s ease-in,
+    transform 0.28s ease-in;
+}
+
+/* ein neongelber Schimmer links oben, über dem Symbol; die Schrift liegt dort, wo er schon verblasst ist */
+.signal-toast::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 95% at 0% 0%, rgb(230 255 40 / 0.16) 0%, transparent 55%);
+  pointer-events: none;
+}
+
+/* geschafft: Bordeaux mit Neongelb */
+.signal-toast-success {
+  --signal-toast-bg: linear-gradient(135deg, #3d0615 0%, var(--bordeaux-700) 55%, var(--bordeaux-500) 100%);
+  --signal-toast-accent: var(--neon-400);
+  --signal-toast-glow: rgb(233 255 59 / 0.45);
+  --signal-toast-timer: linear-gradient(90deg, var(--neon-400) 0%, var(--neon-200) 50%, var(--neon-400) 100%);
+}
+
+/* schiefgegangen: fast schwarzes Bordeaux mit glühendem Rot-Orange */
+.signal-toast-error {
+  --signal-toast-bg: linear-gradient(135deg, #1a0207 0%, #4d0716 50%, #8a0f2d 100%);
+  --signal-toast-accent: #ff6a3d;
+  --signal-toast-glow: rgb(255 80 50 / 0.5);
+  --signal-toast-timer: linear-gradient(90deg, #ff6a3d 0%, #ffb23d 50%, #ff6a3d 100%);
+}
+
+/* zur Kenntnis: Bordeaux über Pflaume mit hellem Neongelb */
+.signal-toast-info {
+  --signal-toast-bg: linear-gradient(135deg, #2b0a1c 0%, #5e1a3b 50%, #84325a 100%);
+  --signal-toast-accent: var(--neon-300);
+  --signal-toast-glow: rgb(241 255 122 / 0.35);
+  --signal-toast-timer: linear-gradient(90deg, var(--neon-300) 0%, #ffe3ec 50%, var(--neon-300) 100%);
+}
+
+.signal-toast-icon {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  color: var(--signal-toast-accent);
+  box-shadow:
+    inset 0 0 0 1.5px var(--signal-toast-accent),
+    0 0 18px var(--signal-toast-glow);
+  font-size: 1.15rem;
+  line-height: 1;
+  animation: signal-toast-icon-pop 0.55s 0.12s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+.signal-toast-icon i::before,
+.signal-toast-close i::before {
+  vertical-align: 0;
+}
+
+.signal-toast-content {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: 0.1rem;
+}
+
+.signal-toast-title {
+  color: var(--signal-toast-accent);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 12px var(--signal-toast-glow);
+}
+
+.signal-toast-text {
+  margin-top: 0.2rem;
+  color: rgb(255 240 244 / 0.9);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.signal-toast-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgb(255 255 255 / 0.7);
+  font-size: 0.8rem;
+}
+
+.signal-toast-close:hover {
+  background: rgb(255 255 255 / 0.14);
+  color: var(--signal-toast-accent);
+}
+
+.signal-toast-close:focus-visible {
+  outline: 2px solid var(--signal-toast-accent);
+  outline-offset: 1px;
+}
+
+/* der ablaufende Balken unten */
+.signal-toast-timer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--signal-toast-timer);
+  box-shadow: 0 0 10px var(--signal-toast-glow);
+  transform-origin: left center;
+  animation: signal-toast-countdown var(--signal-toast-duration) linear forwards;
+}
+
+.signal-toast-paused .signal-toast-timer {
+  animation-play-state: paused;
+}
+
+.signal-toast-leaving {
+  opacity: 0;
+  transform: translateX(1.5rem) scale(0.98);
+}
+
+@keyframes signal-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(2rem) scale(0.96);
+  }
+}
+
+@keyframes signal-toast-icon-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+@keyframes signal-toast-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* ==================================================================================================== Drag and Drop */
+
+/* Der Griff: gedecktes Bordeaux, beim Zeigen voll und auf neongelbem Hauch */
+.drag-handle {
+  border-radius: 0.375rem;
+  color: var(--bordeaux-600);
+  opacity: 0.55;
+  transition:
+    opacity 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.drag-handle:hover,
+.drag-handle:focus-visible {
+  background-color: rgb(233 255 59 / 0.45);
+  opacity: 1;
+}
+
+.drag-handle:focus-visible {
+  outline: 2px solid var(--bordeaux-600);
+  outline-offset: 1px;
+}
+
+/* Die gezogene Zeile: neongelb hinterlegt, oben und unten eine Bordeaux-Kante, so sieht man, wo sie landet */
+.table > :not(caption) > .sortable-row-dragging > * {
+  --bs-table-bg-state: var(--neon-200);
+  border-top: 2px solid var(--bordeaux-600);
+  border-bottom: 2px solid var(--bordeaux-600);
+}
+
+.matrix .sortable-row-dragging > th,
+.matrix .sortable-row-dragging > td {
+  background-color: var(--neon-100);
+  box-shadow:
+    inset 0 2px 0 var(--bordeaux-600),
+    inset 0 -2px 0 var(--bordeaux-600);
+}
+
+/* ================================================================================================= Badge-Editor */
+
+/* Der Kasten um den Editor des Aussehens: ein Hauch Bordeaux, damit er sich vom übrigen Formular abhebt */
+.badge-look-fields {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.875rem;
+  background: linear-gradient(160deg, var(--bordeaux-50), var(--paper) 55%);
+}
+
+.badge-look-fields-title {
+  color: var(--bordeaux-700);
+}
+
+/* ======================================================================================= Weniger Bewegung gewünscht */
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-toast,
+  .signal-toast-icon,
+  .file-dropzone-icon,
+  .file-dropzone-drag-over .file-dropzone-icon,
+  .control-button:hover > .bi {
+    animation: none;
+  }
+
+  .home-tile,
+  .home-tile-icon,
+  .control-button,
+  .header-icon-button,
+  .btn-primary,
+  .symbol-tile,
+  .drag-handle,
+  .gallery-tile,
+  .gallery-image-tile {
+    transition: none;
+  }
+}
+
+/* ============================================================================================ Kontakt bearbeiten */
+
+/* Die Teile im Popup: Überschrift in Bordeaux, die Angaben durch feine Linien getrennt */
+.profile-contact-edit-group-title {
+  color: var(--bordeaux-700);
+}
+
+.profile-contact-edit-row + .profile-contact-edit-row {
+  border-top: 1px solid var(--line);
+}
+
+/* ================================================================================================ Seite einer Datei */
+
+/* Die Kachel wie die Bildkachel der Galerie: Papier, feine Linie, warmer Schatten; ohne Vorschau das Symbol der FileClass */
+.file-detail-tile {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper);
+  box-shadow: 0 6px 18px -12px var(--bordeaux-shadow);
+}
+
+.file-detail-tile:hover,
+.file-detail-tile:focus-within {
+  border-color: var(--bordeaux-600);
+  box-shadow:
+    0 16px 30px -14px rgb(52 8 26 / 0.6),
+    0 0 0 1px rgb(233 255 59 / 0.4);
+}
+
+.file-detail-tile-symbol {
+  background: var(--bordeaux-50);
+  color: var(--bordeaux-600);
+}
+
+.file-detail-tile-extension {
+  color: var(--bordeaux-800);
+}
+
+/* Die Beschreibung unter der Kachel */
+.file-detail-description {
+  color: var(--bordeaux-900);
+}
+
+.file-tag {
+  background: var(--bordeaux-700);
+  color: var(--neon-300);
+}
+
+.file-detail-add,
+.file-detail-collapsible {
+  color: var(--bordeaux-600);
+}
+
+.file-detail-add:hover,
+.file-detail-collapsible:hover {
+  color: var(--bordeaux-800);
+  text-decoration: underline;
+}
+
+.file-detail-recognized-text-body {
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--bordeaux-50);
+}
+
+/* Das Info-Panel: Abschnitte durch feine Linien getrennt, Symbole in hellem Bordeaux-Kreis */
+.file-detail-sections {
+  border-top: 1px solid var(--line);
+}
+
+.file-detail-section {
+  border-bottom: 1px solid var(--line);
+}
+
+/* senkrecht zwischen Abschnitten nebeneinander */
+.file-detail-sections > .file-detail-section::before {
+  border-left: 1px solid var(--line);
+}
+
+.file-detail-section-title {
+  color: var(--bordeaux-700);
+}
+
+.file-detail-row-icon {
+  background: var(--bordeaux-50);
+  color: var(--bordeaux-700);
+}
+
+.file-detail-row-label,
+.file-detail-file-facts {
+  color: var(--ink-muted);
+}
+
+.file-detail-file-icon {
+  color: var(--bordeaux-600);
+}
+
+.file-detail-file-name {
+  color: var(--bordeaux-800);
+}
+
+/* R und W: kleine Marken, beim Zeigen neon */
+.file-detail-access-letter {
+  border: 1px solid var(--bordeaux-600);
+  background: var(--paper);
+  color: var(--bordeaux-700);
+}
+
+.file-detail-access-letter:hover,
+.file-detail-access-letter:focus-visible {
+  border-color: var(--bordeaux-800);
+  background: var(--neon-400);
+  color: var(--bordeaux-900);
+}
+
+/* E für den, der freigeben darf: wie R und W, aber anklickbar */
+.file-detail-access-letter-editable:hover,
+.file-detail-access-letter-editable:focus-visible {
+  box-shadow: 0 0 0 0.2rem var(--neon-glow);
+}
+
+/* Ein Feld zum Anklicken: beim Zeigen gestrichelter Bordeaux-Rahmen, der Stift neon auf Bordeaux */
+.file-detail-editable {
+  cursor: pointer;
+}
+
+.file-detail-editable:hover,
+.file-detail-editable:focus-visible {
+  border-color: var(--bordeaux-600);
+  background: var(--bordeaux-50);
+}
+
+.file-detail-editable-icon {
+  color: var(--bordeaux-700);
+}
+
+.file-detail-empty,
+.file-detail-access-legend-hint {
+  color: var(--ink-muted);
+}
+
+/* Markierungen (wtf & Co.): dunkles Bordeaux mit Neon-Rand, unterscheidbar von den Tags */
+.file-mark {
+  border: 1px solid var(--neon-400);
+  background: var(--bordeaux-900);
+  color: var(--neon-300);
+}
+
+/* Popup „Bearbeiten freigeben“ */
+.file-editors-option {
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.file-editors-option:hover {
+  border-color: var(--bordeaux-600);
+  background: var(--bordeaux-50);
+}
+
+/* Rich-Text: Überschriften in Bordeaux, Trennlinie fein; im leeren Editor der Hinweis gedämpft */
+.rich-text-view :is(h1, h2, h3),
+.rich-text-editor :is(h1, h2, h3) {
+  color: var(--bordeaux-800);
+}
+
+.rich-text-view hr,
+.rich-text-editor hr {
+  border: 0;
+  border-top: 2px solid var(--line-strong);
+  opacity: 1;
+}
+
+.rich-text-editor.is-empty::before {
+  color: var(--ink-muted);
+}
+
+.rich-text-toolbar-separator {
+  background: var(--line);
+}
+
+/* Ein Datum zeigt beim Zeigen „vor X Tagen“: gepunktet unterstrichen, damit man es ahnt */
+.date-time-text {
+  text-decoration: underline dotted var(--line-strong);
+  text-underline-offset: 3px;
+  cursor: help;
+}
+
+/* Das Sichtbarkeits-Pill: dunkles Bordeaux mit neongelber Schrift, beim Zeigen ein Neon-Schein */
+.visibility-picker-pill,
+.visibility-picker-pill.btn,
+.visibility-picker-pill.btn:disabled {
+  border: 1px solid var(--bordeaux-800);
+  background: linear-gradient(135deg, var(--bordeaux-900), var(--bordeaux-700));
+  color: var(--neon-300);
+}
+
+.visibility-picker-pill.btn:hover,
+.visibility-picker-pill.btn:focus-visible,
+.visibility-picker .show > .visibility-picker-pill.btn {
+  border-color: var(--neon-400);
+  background: linear-gradient(135deg, var(--bordeaux-900), var(--bordeaux-600));
+  color: var(--neon-400);
+  box-shadow: 0 0 0 0.2rem var(--neon-glow);
+}
+
+.visibility-picker-pill-readonly {
+  border-style: dashed;
+}
+
+.visibility-picker-menu {
+  border: 1px solid var(--line-strong);
+  border-radius: 0.875rem;
+  background: var(--paper);
+  box-shadow: 0 16px 30px -18px var(--bordeaux-shadow);
+}
+
+.visibility-picker-option-icon {
+  background: var(--bordeaux-50);
+  color: var(--bordeaux-700);
+}
+
+.visibility-picker-option:hover,
+.visibility-picker-option:focus {
+  background: var(--neon-100);
+  color: var(--bordeaux-900);
+}
+
+.visibility-picker-option.active,
+.visibility-picker-option:active {
+  background: var(--bordeaux-700);
+  color: #fff;
+}
+
+.visibility-picker-option.active .visibility-picker-option-icon {
+  background: var(--neon-400);
+  color: var(--bordeaux-900);
+}
+
+.visibility-picker-option-hint,
+.visibility-picker-note {
+  color: var(--ink-muted);
+}
+
+.visibility-picker-option.active .visibility-picker-option-hint {
+  color: var(--neon-200);
+}
+
+/* In der Legende eines Stands: der aktuelle mit Neon-Kante */
+.status-legend-entry-current {
+  box-shadow: inset 3px 0 0 var(--neon-400);
+  background: rgb(233 255 59 / 0.12);
+}
+
+/* ======================================================================================================== Galerien */
+
+/* Kacheln der Galerien und der Bilder: Papier mit feiner Linie, beim Zeigen hebt sich die Kachel mit Neon-Kante */
+.gallery-tile,
+.gallery-image-tile {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper);
+  box-shadow: 0 6px 18px -12px var(--bordeaux-shadow);
+  transition:
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.gallery-tile:hover,
+.gallery-tile:focus-within,
+.gallery-image-tile:hover,
+.gallery-image-tile:focus-within {
+  border-color: var(--bordeaux-600);
+  box-shadow:
+    0 16px 30px -14px rgb(52 8 26 / 0.6),
+    0 0 0 1px rgb(233 255 59 / 0.4);
+}
+
+.gallery-tile-link {
+  color: var(--bordeaux-800);
+}
+
+.gallery-tile-link:hover .gallery-tile-title,
+.gallery-tile-link:focus-visible .gallery-tile-title {
+  color: var(--bordeaux-600);
+}
+
+.gallery-tile-meta,
+.gallery-image-tile-name {
+  color: var(--ink-muted);
+}
+
+.gallery-tile-link > img,
+.gallery-image-tile-button > img,
+.gallery-tile-link > .file-preview-placeholder,
+.gallery-image-tile-button > .file-preview-placeholder {
+  border-radius: 0.6rem;
+}
+
+/* die gezogene Kachel: neongelber Hauch, Bordeaux-Kante, so sieht man, wo sie landet */
+.gallery-tile-dragging,
+.gallery-tile-dragging:hover {
+  border-color: var(--bordeaux-600);
+  background: var(--neon-100);
+  box-shadow:
+    0 0 0 2px var(--bordeaux-600),
+    0 18px 34px -14px rgb(52 8 26 / 0.65);
+}
+
+/* der Griff über der Vorschau braucht eine eigene Fläche */
+.gallery-image-tile-handle .drag-handle {
+  background-color: var(--paper);
+  box-shadow: 0 2px 6px -3px var(--bordeaux-shadow);
+}
+
+/* der Viewer: das Bild auf ruhigem Papier, transparente Stellen bleiben sichtbar */
+.gallery-viewer-body {
+  background: var(--paper);
+}
+
+/* ==================================================================================================== Upload-Liste */
+
+/* Kopf gedämpft, die Dateien durch feine Linien getrennt, fertige auf einem Hauch Papier */
+.file-upload-list-head {
+  border-bottom: 1px solid var(--line-strong);
+  color: var(--ink-muted);
+}
+
+.file-upload-list-row + .file-upload-list-row {
+  border-top: 1px solid var(--line);
+}
+
+.file-upload-list-file-icon {
+  color: var(--bordeaux-600);
+}
+
+.file-upload-list-field-label {
+  color: var(--ink-muted);
+}
+
+/* ===================================================================================================== File-Manager */
+.file-preview-placeholder {
+  border-radius: 0.375rem;
+  background-color: var(--paper);
+  color: var(--ink-muted);
+}
+
+.file-viewer-video {
+  background-color: #000;
+}
+
+/* Viewer für Tabellen und Text: Linien und Papier wie die ContentBox */
+:root {
+  --file-viewer-line: var(--line-strong);
+  --file-viewer-text-bg: var(--paper);
+  --file-viewer-text-color: var(--ink);
+}
+
+/* Auswahl der Dateiart: die gewählte Kachel bekommt einen neongelben Rahmen, Hover und Tastatur einen Bordeaux-Rahmen */
+.file-class-picker-tile:hover,
+.file-class-picker-tile:focus-visible {
+  border-color: var(--bordeaux-500);
+  outline: 0;
+}
+
+.file-class-picker-tile.active {
+  border-color: var(--neon-400);
+  box-shadow: 0 0 0 0.18rem var(--neon-glow);
+}
+
+.file-class-picker-tile:disabled {
+  opacity: 0.6;
+}
+
+
+/* Seitenzahlen (PageNavigation): Bordeaux auf hellem Grund, die aktuelle Seite neongelb auf dunklem Bordeaux */
+.page-navigation {
+  --bs-pagination-color: var(--bordeaux-700);
+  --bs-pagination-bg: var(--paper);
+  --bs-pagination-border-color: var(--line-strong);
+  --bs-pagination-hover-color: var(--bordeaux-800);
+  --bs-pagination-hover-bg: rgb(233 255 59 / 0.22);
+  --bs-pagination-hover-border-color: var(--bordeaux-400);
+  --bs-pagination-focus-color: var(--bordeaux-800);
+  --bs-pagination-focus-bg: rgb(233 255 59 / 0.22);
+  --bs-pagination-focus-box-shadow: 0 0 0 0.2rem var(--neon-glow);
+  --bs-pagination-active-color: var(--neon-300);
+  --bs-pagination-active-bg: var(--bordeaux-700);
+  --bs-pagination-active-border-color: var(--bordeaux-700);
+  --bs-pagination-disabled-color: var(--ink-muted);
+  --bs-pagination-disabled-bg: var(--paper);
+  --bs-pagination-disabled-border-color: var(--line);
+}
+
+/* Einstellungen im Profil: was später kommt, abgesetzt durch eine feine Linie */
+.profile-settings-later {
+  border-top-color: var(--line);
+}
+
+/* Link auf ein Profil: beim Zeigen Bordeaux und unterstrichen, ein Avatar darin leuchtet neongelb */
+.users-profile-link:hover,
+.users-profile-link:focus-visible {
+  color: var(--bordeaux-700);
+  text-decoration: underline;
+  outline: 0;
+}
+
+.users-profile-link:hover .users-avatar-small,
+.users-profile-link:hover .users-avatar-medium,
+.users-profile-link:focus-visible .users-avatar-small,
+.users-profile-link:focus-visible .users-avatar-medium {
+  box-shadow:
+    0 0 0 2px var(--bordeaux-600),
+    0 0 8px var(--neon-glow);
+}
+
+/* Kleine Avatare (Gästebuch, Freunde): ein feiner Bordeaux-Ring */
+.users-avatar-small,
+.users-avatar-medium {
+  box-shadow: 0 0 0 2px var(--bordeaux-200);
+}
+
+/* EmojiPicker: Hover und Tastatur leicht neongelb wie die Tabellenzeile, die gewählte Gruppe mit Bordeaux-Rahmen */
+.emoji-picker-emoji:hover:not(:disabled),
+.emoji-picker-emoji:focus-visible,
+.emoji-picker-group:hover,
+.emoji-picker-group:focus-visible {
+  background: rgb(233 255 59 / 0.3);
+  outline: 0;
+}
+
+.emoji-picker-group.active {
+  border-color: var(--bordeaux-500);
+  background: var(--bordeaux-50);
+}
+
+.emoji-picker-heading {
+  color: var(--ink-muted);
+}
+
+/* Gästebuch: Karten auf hellem Bordeaux, Kommentar-Verlauf mit Bordeaux-Linie, eigene Smileys neongelb auf Bordeaux */
+.guestbook-entry {
+  border-color: var(--line);
+  background: var(--bordeaux-50);
+}
+
+.guestbook-time {
+  color: var(--ink-muted);
+}
+
+.guestbook-comments {
+  border-left-color: var(--bordeaux-200);
+}
+
+/* Pillen mit Zahl: die Smileys des Gästebuchs und die Stimmen einer Datei; die eigene Bordeaux mit Neongelb */
+.guestbook-reaction,
+.file-cheer-button {
+  border-color: var(--line-strong);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.guestbook-reaction:hover:not(:disabled),
+.guestbook-reaction:focus-visible {
+  border-color: var(--bordeaux-500);
+  outline: 0;
+}
+
+.guestbook-reaction-own,
+.file-cheer-button-own {
+  border-color: var(--bordeaux-700);
+  background: var(--bordeaux-700);
+  color: var(--neon-300);
+}
+
+/*
+ * Stimmen einer Datei, beim Zeigen deutlich (Nutzer 2026-11-11): Der Smiley wächst, bekommt einen neongelben Schein und
+ * sieht schon so aus wie nach dem Klick. Ein fremder wird Bordeaux wie die eigene Stimme (so sähe es aus, wenn du
+ * stimmst), der eigene wird hell mit gestrichelter Kante (so sähe es aus, wenn du die Stimme zurücknimmst). Direkt nach
+ * einem Klick zeigt er den neuen Stand, bis der Zeiger ihn verlässt (`file-cheer-button-settled`): sonst sähe die
+ * eben gegebene Stimme sofort wieder abgewählt aus.
+ */
+.file-cheer-button {
+  transition:
+    transform 0.12s ease,
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.file-cheer-button:hover:not(:disabled),
+.file-cheer-button:focus-visible {
+  box-shadow: 0 0 0 3px var(--neon-glow);
+  outline: 0;
+  transform: scale(1.14);
+}
+
+.file-cheer-button:hover:not(:disabled):not(.file-cheer-button-settled),
+.file-cheer-button:focus-visible:not(.file-cheer-button-settled) {
+  border-color: var(--bordeaux-700);
+  background: var(--bordeaux-700);
+  color: var(--neon-300);
+}
+
+.file-cheer-button-own:hover:not(:disabled):not(.file-cheer-button-settled),
+.file-cheer-button-own:focus-visible:not(.file-cheer-button-settled) {
+  border-style: dashed;
+  border-color: var(--bordeaux-700);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* über einem Bild (Bildkachel der Galerie): ein Schatten hebt die Pillen vom Bild ab */
+.gallery-image-tile-cheers .file-cheer-button {
+  box-shadow: 0 2px 8px rgb(29 4 9 / 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .file-cheer-button {
+    transition: none;
+  }
+}
+
+/* Auswahl eines Rechts: Linie zwischen den Zeilen, Hover und Tastatur leicht neongelb wie die Tabellenzeile */
+.access-role-picker-entry {
+  border-bottom: 1px solid var(--line);
+}
+
+.access-role-picker-entry:hover:not(:disabled),
+.access-role-picker-entry:focus-visible {
+  background: rgb(233 255 59 / 0.22);
+  outline: 0;
+}
+
+/* Zentrale Tabelle: Kopf mit Erklärung gepunktet unterstrichen, Breitenanzeige im Hoverlay-Look, Griff beim Zeigen */
+.table-header-hinted {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+  cursor: help;
+}
+
+.table-header-hinted:focus-visible {
+  outline: 2px solid var(--bordeaux-500);
+  outline-offset: 2px;
+}
+
+.th-resize-readout {
+  border: 1px solid rgb(233 255 59 / 0.4);
+  background: linear-gradient(135deg, var(--bordeaux-900) 0%, var(--bordeaux-600) 100%);
+  color: #fff3f6;
+}
+
+.th-resize-handle:hover {
+  background: rgb(140 27 61 / 0.18);
+}
+
+/* Ein änderbarer Wert in einer Zelle: beim Zeigen ein Bordeaux-Rahmen, damit man sieht, dass ein Klick etwas öffnet */
+.editable-cell-button:hover:not(:disabled),
+.editable-cell-button:focus-visible {
+  border-color: var(--bordeaux-500);
+  outline: 0;
+}
+
+/* Zuschnitt eines Bildes (ImageCropper): Rahmen und Griffe neongelb, sie liegen auf der dunklen Maske */
+:root {
+  --image-cropper-accent: var(--neon-400);
+}

@@ -1,0 +1,46 @@
+# gebiter9k: Ins Repository gehören nur die Ordner code/ und docu/.
+# Alles andere im Projektordner bleibt draußen: mounts/ (Zertifikate, SFTP-Schlüssel, Daten der Container),
+# Vollidiot/ (Arbeitsnotizen), .claude/ und Editor-Dateien.
+/*
+!/.gitignore
+!/code/
+!/docu/
+
+# --- Geheimes: nie ins Repository ---
+# Zugangsdaten des Stacks. Die Vorlage ohne echte Werte ist code/.env.example.
+.env
+.env.local
+.env.*.local
+# Private Anleitung mit echten Werten (Passwörter, Adressen, Schlüssel des Servers)
+/docu/setup.md
+# Schlüssel, Zertifikate und Keystores, egal wo sie liegen
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+id_rsa*
+id_ed25519*
+ssh_host_*
+# Selbst signiertes Zertifikat des Dev-Servers
+.cert/
+
+# --- Fremdes ---
+# Die Code-Vorlage ist ein eigenes Repository und kein Teil dieses Projekts.
+/code/vorlage/
+
+# --- Bau-Ergebnisse und Abhängigkeiten ---
+target/
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+*.log
+
+# --- IDE und Betriebssystem ---
+.DS_Store
+.idea/
+.vscode/
+*.iml
+*.code-workspace
