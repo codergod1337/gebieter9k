@@ -13,7 +13,7 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
-## 2026-11-11 22:16 – Projekt nach GitHub (lokal fertig; den Push macht der Nutzer selbst)
+## 2026-11-11 22:16 – Projekt nach GitHub (fertig, auf GitHub)
 
 - Ansage: „ich habe jetzt auf GitHub ein Repo erstellt, da müssten wir jetzt unseren geistigen Erguss noch hinpushen.
   Kannst du die Git-Ignore vernünftig setzen, dass nur das an Code hochkommt, was wir brauchen. Also tendenziell würde
@@ -36,7 +36,12 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
   - PUSH NICHT ERFOLGT: `git push` blieb am macOS-Schlüsselbund hängen (wartet auf Freigabe bzw. Anmeldung am
     Bildschirm), ich habe ihn beendet; auf GitHub ist nichts angekommen. Der Nutzer schiebt selbst:
     `cd /Users/rottenapple69/dev/gebiter9k && git push -u origin main`.
-- OFFEN: Push durch den Nutzer; seine Entscheidung, ob das Repo öffentlich bleibt; ob
+- Stand 22:45: GEPUSHT. Ansage des Nutzers: Ich soll selbst pushen. Der Weg: `/usr/bin/git push` (das Git von Apple)
+  mit Zeitgrenze. Der GitHub-Zugang liegt im macOS-Schlüsselbund; bei jedem Push fragt der Schlüsselbund am Bildschirm,
+  bis der Nutzer „Immer erlauben“ klickt. Beim ersten Push wurde erlaubt: `main` auf GitHub steht auf dem ersten Commit
+  (883 Dateien). Der zweite Push (nur dieser Protokoll-Stand) wurde im Dialog abgebrochen (Fehler -128); der Commit
+  liegt lokal und geht mit dem nächsten Push mit.
+- OFFEN: seine Entscheidung, ob das Repo öffentlich bleibt; ob
   `mounts/nginx/conf/default.conf` mit hinein soll.
 
 ## 2026-11-11 20:52 – Markt: Kaufen (fertig, auf dem Pi; der Nutzer testet)
