@@ -13,6 +13,20 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-11 23:35 – Anleitung für einen neuen Rechner ins Repo (fertig, auf GitHub)
+
+- Ansage: „ist jetzt der Stand endlich auf Git? So komplett, dass wir loslegen können auf einem anderen Rechner. Also
+  Doku hat ja hoffentlich alle Anleitungen drin, wie man das Ding initialisiert. Ja, nein, vielleicht.“
+- Antwort: Nein. Der Code ist vollständig auf GitHub, aber die Anleitung (`docu/setup.md`, privat, mit echten
+  Zugangsdaten) und `code/.env` sind bewusst nicht im öffentlichen Repo; ein frischer Klon hat keine Anleitung.
+- Plan: `docu/neuer-rechner.md` schreiben, ohne Geheimes: was man installiert, was man von Hand mitnimmt (`code/.env`,
+  `docu/setup.md`, `Vollidiot/`), Zertifikat des Dev-Servers, Backend und Frontend starten, Git und Push. Den Verweis
+  in `code/frontend/vite.config.ts` darauf umstellen. Commit und Push.
+- Stand 23:50: FERTIG. `docu/neuer-rechner.md` geschrieben (aus `setup.md` Abschnitt 4, `start.sh`, `vite.config.ts`,
+  `.env.example`; ohne Zugangsdaten), `vite.config.ts` verweist darauf (nur Kommentar und Fehlermeldung des Dev-Servers,
+  kein Bau auf dem Pi nötig). Die Schritte selbst habe ich auf keinem zweiten Rechner ausprobiert.
+- OFFEN: Der Nutzer muss `code/.env`, `docu/setup.md` und `Vollidiot/` selbst auf den anderen Rechner bringen.
+
 ## 2026-11-11 23:00 – GitHub-Anmeldung über den Browser (fertig)
 
 - Ansage: „Wir brauchen kein Access-Token […] Wir können uns ganz normal im Browser anmelden […] Mach das.“

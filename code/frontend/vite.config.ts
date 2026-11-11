@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type ServerOptions } from 'vite'
 
-/** Das selbst signierte Zertifikat des Dev-Servers (Anleitung: docu/setup.md, 4.4). Nie ins Git. */
+/** Das selbst signierte Zertifikat des Dev-Servers (Anleitung: docu/neuer-rechner.md, Schritt 3). Nie ins Git. */
 const DEV_CERTIFICATE_PATH = '.cert/dev-cert.pem'
 const DEV_PRIVATE_KEY_PATH = '.cert/dev-key.pem'
 
@@ -23,7 +23,7 @@ function createDevServerOptions(): ServerOptions {
   const certificateMissing = !fs.existsSync(DEV_CERTIFICATE_PATH) || !fs.existsSync(DEV_PRIVATE_KEY_PATH)
   if (certificateMissing) {
     throw new Error(
-      'Zertifikat des Dev-Servers fehlt (' + DEV_CERTIFICATE_PATH + '). Anlegen wie in docu/setup.md, 4.4 beschrieben.',
+      'Zertifikat des Dev-Servers fehlt (' + DEV_CERTIFICATE_PATH + '). Anlegen wie in docu/neuer-rechner.md, Schritt 3 beschrieben.',
     )
   }
   const devCertificate = fs.readFileSync(DEV_CERTIFICATE_PATH)
