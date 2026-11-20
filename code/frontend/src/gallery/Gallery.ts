@@ -26,6 +26,16 @@ export type GalleryForClient = Gallery & {
   coverPreviewBase64Png: string | null
 }
 
+/**
+ * Ein Hashtag einer Galerie für den Filter über ihren Kacheln (`GalleryTagFilter`): der Tag, wie er gespeichert ist
+ * (ohne Raute), und in wie vielen Bildern der Galerie er steht (nur Bilder, die der Betrachter lesen darf).
+ * Doku: `docu/entities/Gallery.md`
+ */
+export type GalleryTagCount = {
+  tag: string
+  fileCount: number
+}
+
 /** Was man beim Anlegen und Ändern einer Galerie einträgt. */
 export type GalleryInput = {
   title: string

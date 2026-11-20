@@ -26,6 +26,8 @@ import { useGalleryShare } from './useGalleryShare.ts'
 type GalleryShareBoxProps = {
   /** Die eigene Galerie. */
   galleryId: number
+  /** Ihr Titel, für die Überschrift der Box. */
+  galleryTitle: string
 }
 
 /** Wie lange eine Freigabe gilt, als Text für die Liste. */
@@ -84,15 +86,16 @@ function GalleryShareLinkCell({ galleryShare }: GalleryShareLinkCellProps) {
 }
 
 /**
- * Die Freigaben einer eigenen Galerie über einen Link (Konzept `docu/konzept-galerie-freigabe.md`), unter ihren Bildern:
+ * Die Freigaben einer eigenen Galerie über einen Link (Konzept `docu/konzept-galerie-freigabe.md`), der Inhalt des
+ * Reiters „Freigabe“ der Galerie (`GallerySharePage`, seit 2026-11-20 ein eigener Reiter statt unter den Bildern):
  * die Liste der Freigaben (Bezeichnung, Link zum Weitergeben mit „kopieren“, Laufzeit, Aufrufe, Bilder, angelegt), je
  * Zeile das Löschen nach der Sicherheitsabfrage, und rechts im Kopf „neue Freigabe“ als geführter Ablauf
  * ({@link NewGallerySharePopup}). Der Link bleibt hier stehen, solange es die Freigabe gibt (Nutzer 2026-11-20).
  *
- * Anlegen darf nur, wer Admin ist oder das Recht FREIGABE hat: Ohne das Recht fehlt der Knopf. Wer das Recht nicht (mehr)
- * hat, sieht und löscht seine vorhandenen Freigaben weiter; ohne Recht und ohne Freigaben erscheint die Box nicht.
+ * Anlegen darf nur, wer Admin ist oder das Recht FREIGABE hat: Ohne das Recht fehlt der Knopf, und im Fuß steht, wer
+ * anlegen darf. Wer das Recht nicht (mehr) hat, sieht und löscht seine vorhandenen Freigaben weiter.
  */
-export function GalleryShareBox({ galleryId }: GalleryShareBoxProps) {
+export function GalleryShareBox({ galleryId, galleryTitle }: GalleryShareBoxProps) {
   const { hasAccessRole } = useCurrentSession()
   const listHook = useGalleryShare()
   const deleteHook = useGalleryShare()
@@ -130,10 +133,6 @@ export function GalleryShareBox({ galleryId }: GalleryShareBoxProps) {
     }
     return <Spinner animation="border" size="sm" />
   }
-  if (!mayCreate && galleryShares.length === 0) {
-    return null
-  }
-
   const columns: TableColumn<GalleryShare>[] = [
     {
       key: 'LABEL',
@@ -193,10 +192,11 @@ export function GalleryShareBox({ galleryId }: GalleryShareBoxProps) {
   if (deleteHook.error !== null) {
     deleteErrorMessage = deleteHook.error.detail
   }
+  const boxTitle = getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.boxTitle, { galleryTitle })
 
   return (
     <>
-      <ContentBox title={getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.boxTitle)} actions={newShareButton} footer={footer}>
+      <ContentBox title={boxTitle} actions={newShareButton} footer={footer}>
         <p className="small text-body-secondary">{getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.boxHint)}</p>
         <Table
           columns={columns}

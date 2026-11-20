@@ -334,6 +334,9 @@ gebiter:
     title-max-length: 100
     description-max-length: 2000
     file-page-size: 24
+    # Filter nach Hashtags über den Kacheln einer Galerie (Nutzer 2026-11-20): so viele Hashtags bietet er höchstens an
+    # (die häufigsten zuerst), und so viele lassen sich auf einmal wählen.
+    tag-filter-max-tags: 200
   # Freigaben einer Galerie über einen Token (Paket gallery, Konzept docu/konzept-galerie-freigabe.md): Wer den Link
   # mit dem Token hat, sieht die Bilder der Galerie ohne Anmeldung.
   gallery-share:

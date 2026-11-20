@@ -54,6 +54,7 @@ import { Profile } from './profile/Profile.tsx'
 import { ProfileHome } from './profile/ProfileHome.tsx'
 import { GalleryListTab } from './gallery/GalleryListTab.tsx'
 import { GalleryPage } from './gallery/GalleryPage.tsx'
+import { GallerySharePage } from './gallery/GallerySharePage.tsx'
 import { GalleryShareVisitorPage } from './gallery/GalleryShareVisitorPage.tsx'
 import { SolrCoreFieldsTab } from './solrmanager/SolrCoreFieldsTab.tsx'
 import { Market } from './market/Market.tsx'
@@ -144,6 +145,7 @@ function LoggedInRoutes() {
         <Route index element={<ProfileHome />} />
         <Route path="galleries" element={<GalleryListTab />} />
         <Route path="galleries/:galleryId" element={<GalleryPage />} />
+        <Route path="galleries/:galleryId/share" element={<GallerySharePage />} />
       </Route>
       <Route
         path="/admin"

@@ -161,7 +161,9 @@ Dokument.
 
 ### 4.7 Oberfläche in der eigenen Galerie (gebaut)
 
-Unter den Bildern der eigenen Galerie steht die Box „Freigaben über einen Link“ (`GalleryShareBox`):
+Die eigene Galerie hat im Subheader den Reiter „Freigabe“ (`GallerySharePage`, Adresse
+`/profile/<guid>/galleries/<id>/share`; Nutzer 2026-11-20: ein eigener Reiter, nicht unter allen Bildkacheln). Darin
+steht die Box „Freigaben von „<Galerie>“ über einen Link“ (`GalleryShareBox`):
 
 - die Liste der Freigaben als Tabelle (Bezeichnung, Link, gilt, Aufrufe, Bilder, angelegt), je Zeile Löschen nach der
   Sicherheitsabfrage. Weicht die Zahl der Bilder in Solr von der in Postgres ab, stehen beide da („8 von 9“);
@@ -171,7 +173,7 @@ Unter den Bildern der eigenen Galerie steht die Box „Freigaben über einen Lin
   bis zu einem Zeitpunkt, für eine Zahl von Aufrufen; die Eingabe erscheint erst mit der Wahl), 3. der Link zum
   Kopieren.
 - Den Knopf sieht nur, wer `ADMIN` ist oder das Recht `FREIGABE` hat (`VITE_GALLERY_SHARE_ACCESS_ROLE_KEY`). Ohne das
-  Recht und ohne Freigaben erscheint die Box nicht.
+  Recht steht im Fuß der Box, wer anlegen darf; vorhandene Freigaben sieht und löscht der Besitzer weiter.
 
 **Der Link bleibt abrufbar** (Entscheidung 14, gebaut 2026-11-20): Er steht nach dem Anlegen im dritten Schritt und
 danach dauerhaft in der Liste, solange es die Freigabe gibt. Beispiel: Die Freigabe „für Oma“ ist drei Wochen alt, der

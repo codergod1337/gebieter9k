@@ -68,7 +68,7 @@ Die Adressen unter `/api/share/token/` gehen ohne Anmeldung (Besucher mit dem Li
 
 - [`code/frontend/src/gallery/GalleryShare.ts`](../../code/frontend/src/gallery/GalleryShare.ts): die Typen `GalleryShare` (mit `shareToken`), `NewGalleryShare`, `SharedGallery`
 - [`code/frontend/src/gallery/useGalleryShare.ts`](../../code/frontend/src/gallery/useGalleryShare.ts): `createOwnGalleryShare`, `resolveOwnGalleryShares`, `deleteOwnGalleryShare`, `resolveSharedGallery`
-- [`code/frontend/src/gallery/GalleryShareBox.tsx`](../../code/frontend/src/gallery/GalleryShareBox.tsx): die Liste der Freigaben in der eigenen Galerie, je Zeile der Link zum Weitergeben mit „kopieren“ (`GalleryShareLinkCell`), Löschen
+- [`code/frontend/src/gallery/GalleryShareBox.tsx`](../../code/frontend/src/gallery/GalleryShareBox.tsx): die Liste der Freigaben der eigenen Galerie, seit 2026-11-20 im Reiter „Freigabe“ ([`GallerySharePage.tsx`](../../code/frontend/src/gallery/GallerySharePage.tsx), `/profile/<guid>/galleries/<id>/share`) statt unter den Bildern, je Zeile der Link zum Weitergeben mit „kopieren“ (`GalleryShareLinkCell`), Löschen
 - [`code/frontend/src/gallery/NewGallerySharePopup.tsx`](../../code/frontend/src/gallery/NewGallerySharePopup.tsx): „neue Freigabe“ als geführter Ablauf, zeigt am Ende den Link (er steht danach auch in der Liste)
 - [`code/frontend/src/gallery/GalleryShareVisitorPage.tsx`](../../code/frontend/src/gallery/GalleryShareVisitorPage.tsx): die Besucherseite `/share/galerie/<token>`
 - [`code/frontend/src/gallery/galleryShareUrls.ts`](../../code/frontend/src/gallery/galleryShareUrls.ts): die Adressen unter dem Token

@@ -14,18 +14,21 @@ type GalleryUploadBoxProps = {
   onUploaded: () => void
   /** Sobald die Auswertung einer Datei fertig ist: Der Aufrufer lädt die Bilder mit der Vorschau neu. */
   onAnalysisCompleted: () => void
+  /** Meldet, ob gerade Bilder hochladen: Das Popup warnt dann vor dem Schließen. */
+  onUploadingChange: (isUploading: boolean) => void
 }
 
 /** Je Galerie eigene gemerkte fertige Uploads, getrennt vom File-Manager. */
 const RECENT_FILE_UPLOADS_STATE_KEY_PREFIX = 'RECENT_FILE_UPLOADS_GALLERY_'
 
 /**
- * Hochladen in eine eigene Galerie: derselbe Ablauf wie überall ({@link FileUploadForm}), eine Liste je Bild von der
+ * Hochladen in eine eigene Galerie, gezeigt im Popup hinter dem Knopf „neue Bilder“ ({@link GalleryUploadPopup}):
+ * derselbe Ablauf wie überall ({@link FileUploadForm}), eine Liste je Bild von der
  * Prüfung bis „ausgewertet“. Anders sind nur die FileClasses (die der Admin am Ziel „Galerie“ anbietet und in die der
  * User schreiben darf), die Felder je Bild (Beschreibung und Tags mit Vervollständigung, kein Titel, kein Dateiname) und
  * der Endpunkt (`/api/gallery/upload`, das Backend hängt das Bild an die Galerie).
  */
-export function GalleryUploadBox({ galleryId, onUploaded, onAnalysisCompleted }: GalleryUploadBoxProps) {
+export function GalleryUploadBox({ galleryId, onUploaded, onAnalysisCompleted, onUploadingChange }: GalleryUploadBoxProps) {
   const { fileClasses, fileClassAccessRoles, fileSolrFieldNameSet } = useMasterData()
   const { hasAccessRole } = useCurrentSession()
   const destinationHook = useFileClassDestinationAssignment()
@@ -74,6 +77,7 @@ export function GalleryUploadBox({ galleryId, onUploaded, onAnalysisCompleted }:
       fileDocumentOriginLabel="Galerie"
       onUploaded={onUploaded}
       onAnalysisCompleted={onAnalysisCompleted}
+      onUploadingChange={onUploadingChange}
     />
   )
 }

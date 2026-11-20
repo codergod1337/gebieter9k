@@ -138,7 +138,9 @@ public class FileDocumentResolveService {
 		List<String> conditionFilterQueries = List.of(idFilterQuery);
 		String uploadedAtFieldName = fileSolrFieldNames.uploadedAt();
 		String newestFirstSort = uploadedAtFieldName + " desc";
-		FileDocumentPage foundPage = doResolveReadableFileDocuments(conditionFilterQueries, 0, 1, newestFirstSort);
+		Map<String, String> noReferencedQueryParams = Map.of();
+		FileDocumentPage foundPage = doResolveReadableFileDocuments(conditionFilterQueries, noReferencedQueryParams, 0, 1,
+				newestFirstSort);
 		List<Map<String, Object>> foundDocuments = foundPage.documents();
 		if (foundDocuments.isEmpty()) {
 			return null;
@@ -180,25 +182,74 @@ public class FileDocumentResolveService {
 		int start = page * pageSize;
 		String uploadedAtFieldName = fileSolrFieldNames.uploadedAt();
 		String newestFirstSort = uploadedAtFieldName + " desc";
-		return doResolveReadableFileDocuments(conditionFilterQueries, start, pageSize, newestFirstSort);
+		Map<String, String> noReferencedQueryParams = Map.of();
+		return doResolveReadableFileDocuments(conditionFilterQueries, noReferencedQueryParams, start, pageSize,
+				newestFirstSort);
 	}
 
 	/**
 	 * READ: Die Dateien einer Galerie, die der User lesen darf (derselbe Lesefilter wie überall), in der Reihenfolge der
 	 * Galerie: nach Platz, bei gleichem Platz nach Upload. Seitenweise ab 0.
+	 * <p>
+	 * Mit {@code tags} nur die Dateien, die mindestens einen dieser Tags tragen (Filter nach Hashtags in der Galerie,
+	 * Nutzer 2026-11-20). Beispiel: {@code ["strand", "safari"]} liefert jedes Bild mit {@code #strand} oder
+	 * {@code #safari}. Eine leere Liste filtert nicht. Die Tags müssen schon in ihrer einheitlichen Form stehen
+	 * ({@link Helper#normalizeTag(String)}), das macht der Aufrufer.
 	 *
-	 * @throws IllegalArgumentException ohne Galerie, mit negativer Seite oder Seitengröße unter 1
+	 * @throws IllegalArgumentException ohne Galerie, ohne Liste der Tags, mit negativer Seite oder Seitengröße unter 1
 	 */
-	public FileDocumentPage resolveFileDocumentsOfGallery(Long galleryId, int page, int pageSize) {
+	public FileDocumentPage resolveFileDocumentsOfGallery(Long galleryId, List<String> tags, int page, int pageSize) {
 		Helper.requireNotNull(galleryId, "galleryId");
+		Helper.requireNotNull(tags, "tags");
 		if (page < 0 || pageSize < 1) {
 			throw new IllegalArgumentException("page darf nicht negativ und pageSize nicht kleiner als 1 sein.");
 		}
 		String galleryFilterQuery = createGalleryFilterQuery(galleryId);
-		List<String> conditionFilterQueries = List.of(galleryFilterQuery);
+		List<String> conditionFilterQueries = new ArrayList<>();
+		conditionFilterQueries.add(galleryFilterQuery);
+		Map<String, String> tagFilterQueryParams = createTagFilterQueryParams(tags);
+		if (!tagFilterQueryParams.isEmpty()) {
+			Set<String> tagFilterQueryParamNames = tagFilterQueryParams.keySet();
+			String anyTagFilterQuery = createAnyOfReferencedFilterQuery(tagFilterQueryParamNames);
+			conditionFilterQueries.add(anyTagFilterQuery);
+		}
 		String galleryOrderSort = createGalleryOrderSort();
 		int start = page * pageSize;
-		return doResolveReadableFileDocuments(conditionFilterQueries, start, pageSize, galleryOrderSort);
+		return doResolveReadableFileDocuments(conditionFilterQueries, tagFilterQueryParams, start, pageSize,
+				galleryOrderSort);
+	}
+
+	/**
+	 * READ: Die Tags der Dateien einer Galerie, die der User lesen darf (derselbe Lesefilter wie überall), je mit der
+	 * Zahl dieser Dateien, häufigste zuerst, höchstens {@code maxTagCount}. Für die Schalter über den Kacheln einer
+	 * Galerie (Filter nach Hashtags, Nutzer 2026-11-20). Eine Facette in Solr über die ganze Galerie, nicht nur über
+	 * eine Seite; es werden keine Dokumente geladen. Darf der User das Feld {@code tags} nicht lesen, eine leere Map.
+	 *
+	 * @return Tag → Zahl der lesbaren Dateien der Galerie mit diesem Tag
+	 * @throws IllegalArgumentException ohne Galerie oder mit {@code maxTagCount} unter 1
+	 */
+	public Map<String, Long> resolveTagFileCountsOfGallery(Long galleryId, int maxTagCount) {
+		Helper.requireNotNull(galleryId, "galleryId");
+		if (maxTagCount < 1) {
+			throw new IllegalArgumentException("maxTagCount darf nicht kleiner als 1 sein.");
+		}
+		List<String> currentUsersAccessRoleKeys = currentUsersProvider.currentUsersAccessRoleKeys();
+		String solrCoreKey = fileConfig.solrCoreKey();
+		List<String> readableFieldNames = solrDocumentFieldService.getReadableSolrFieldNames(solrCoreKey,
+				currentUsersAccessRoleKeys);
+		String tagsFieldName = fileSolrFieldNames.tags();
+		boolean tagsReadable = readableFieldNames.contains(tagsFieldName);
+		if (currentUsersAccessRoleKeys.isEmpty() || !tagsReadable) {
+			return new LinkedHashMap<>();
+		}
+		String galleryFilterQuery = createGalleryFilterQuery(galleryId);
+		List<String> readFilterQueries = createReadFilterQueriesForCurrentUsers();
+		ModifiableSolrParams queryParams = solrDocumentService.createFilterOnlyQueryParams();
+		queryParams.add(CommonParams.FQ, galleryFilterQuery);
+		for (String readFilterQuery : readFilterQueries) {
+			queryParams.add(CommonParams.FQ, readFilterQuery);
+		}
+		return solrDocumentService.countSolrFieldValues(solrCoreKey, queryParams, tagsFieldName, maxTagCount);
 	}
 
 	/**
@@ -604,8 +655,13 @@ public class FileDocumentResolveService {
 		return galleryListingPositionFieldName + " asc," + uploadedAtFieldName + " asc";
 	}
 
-	private FileDocumentPage doResolveReadableFileDocuments(List<String> conditionFilterQueries, int start, int rows,
-			String sort) {
+	/**
+	 * Der Kern jedes Auflösens für einen User: die Bedingungen des Aufrufers plus die Lesegrenze, nur die Felder, die er
+	 * lesen darf. {@code referencedQueryParams} sind Parameter der Abfrage, auf die eine Bedingung mit {@code $name}
+	 * verweist (siehe {@link #createTagFilterQueryParams}); ohne solche eine leere Map.
+	 */
+	private FileDocumentPage doResolveReadableFileDocuments(List<String> conditionFilterQueries,
+			Map<String, String> referencedQueryParams, int start, int rows, String sort) {
 		int page = 0;
 		if (rows > 0) {
 			page = start / rows;
@@ -625,6 +681,11 @@ public class FileDocumentResolveService {
 		}
 		for (String readFilterQuery : readFilterQueries) {
 			queryParams.add(CommonParams.FQ, readFilterQuery);
+		}
+		for (Map.Entry<String, String> referencedQueryParam : referencedQueryParams.entrySet()) {
+			String referencedParamName = referencedQueryParam.getKey();
+			String referencedParamValue = referencedQueryParam.getValue();
+			queryParams.set(referencedParamName, referencedParamValue);
 		}
 		String fieldList = String.join(",", readableFieldNames);
 		queryParams.set(CommonParams.FL, fieldList);
@@ -859,5 +920,43 @@ public class FileDocumentResolveService {
 	private static String createTermsFilterQuery(String fieldName, Collection<String> values) {
 		String joinedValues = String.join(",", values);
 		return "{!terms f=" + fieldName + "}" + joinedValues;
+	}
+
+	/**
+	 * Je Tag ein eigener Parameter der Abfrage mit dem Filter „das Feld {@code tags} hat genau diesen Wert“ (term-Parser,
+	 * der Tag geht wörtlich hinein). Ein Tag darf jedes Zeichen enthalten, auch Komma und Hochkomma: Deshalb steht er nie
+	 * in einem zusammengesetzten Filter (der terms-Parser trennt am Komma, der bool-Filter schließt in Hochkommas ein),
+	 * sondern allein in seinem Parameter. Der Filter selbst verweist nur auf die Namen
+	 * ({@link #createAnyOfReferencedFilterQuery}). Ohne Tags eine leere Map.
+	 *
+	 * @return Name des Parameters → sein Filter, z. B. {@code tagFilter0} → {@code {!term f=tags}strand}
+	 */
+	private Map<String, String> createTagFilterQueryParams(List<String> tags) {
+		String tagsFieldName = fileSolrFieldNames.tags();
+		// Nur ein Name innerhalb dieser einen Abfrage, keine Einstellung: Solr kennt keinen Parameter, der so beginnt
+		String tagFilterParamNamePrefix = "tagFilter";
+		Map<String, String> tagFilterQueryParams = new LinkedHashMap<>();
+		int tagNumber = 0;
+		for (String tag : tags) {
+			String tagFilterParamName = tagFilterParamNamePrefix + tagNumber;
+			String tagFilterQuery = createTermFilterQuery(tagsFieldName, tag);
+			tagFilterQueryParams.put(tagFilterParamName, tagFilterQuery);
+			tagNumber = tagNumber + 1;
+		}
+		return tagFilterQueryParams;
+	}
+
+	/**
+	 * Filter „mindestens einer dieser Filter passt“ als bool-Filter, der auf Parameter der Abfrage verweist
+	 * ({@code should=$name}): Solr liest jeden Teil aus seinem Parameter, kein Wert steht hier im Text. Die Namen vergibt
+	 * allein das Backend.
+	 */
+	private static String createAnyOfReferencedFilterQuery(Collection<String> referencedParamNames) {
+		StringBuilder boolFilterQuery = new StringBuilder("{!bool");
+		for (String referencedParamName : referencedParamNames) {
+			boolFilterQuery.append(" should=$").append(referencedParamName);
+		}
+		boolFilterQuery.append("}");
+		return boolFilterQuery.toString();
 	}
 }

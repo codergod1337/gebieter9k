@@ -26,6 +26,7 @@ import de.gebiter.file.service.FileDocumentResolveService;
 import de.gebiter.file.service.FileDocumentWriteService;
 import de.gebiter.gallery.dto.GalleryDeletedEvent;
 import de.gebiter.gallery.dto.GalleryForClient;
+import de.gebiter.gallery.dto.GalleryTagCount;
 import de.gebiter.gallery.model.Gallery;
 import de.gebiter.gallery.repository.GalleryRepository;
 import de.gebiter.richtext.service.RichTextService;
@@ -78,6 +79,12 @@ public class GalleryService {
 	/** So viele Bilder zeigt eine Seite der Galerie ({@code gebiter.gallery.file-page-size}). */
 	private final int filePageSize;
 
+	/**
+	 * So viele Hashtags bietet der Filter einer Galerie höchstens an, und so viele lassen sich auf einmal wählen
+	 * ({@code gebiter.gallery.tag-filter-max-tags}).
+	 */
+	private final int tagFilterMaxTags;
+
 	private final RichTextService richTextService;
 
 	private final ApplicationEventPublisher applicationEventPublisher;
@@ -88,7 +95,11 @@ public class GalleryService {
 			RichTextService richTextService, ApplicationEventPublisher applicationEventPublisher,
 			@Value("${gebiter.gallery.title-max-length}") int titleMaxLength,
 			@Value("${gebiter.gallery.description-max-length}") int descriptionMaxLength,
-			@Value("${gebiter.gallery.file-page-size}") int filePageSize) {
+			@Value("${gebiter.gallery.file-page-size}") int filePageSize,
+			@Value("${gebiter.gallery.tag-filter-max-tags}") int tagFilterMaxTags) {
+		if (tagFilterMaxTags < 1) {
+			throw new IllegalStateException("gebiter.gallery.tag-filter-max-tags muss mindestens 1 sein.");
+		}
 		this.galleryRepository = galleryRepository;
 		this.usersService = usersService;
 		this.currentUsersProvider = currentUsersProvider;
@@ -98,6 +109,7 @@ public class GalleryService {
 		this.titleMaxLength = titleMaxLength;
 		this.descriptionMaxLength = descriptionMaxLength;
 		this.filePageSize = filePageSize;
+		this.tagFilterMaxTags = tagFilterMaxTags;
 		this.richTextService = richTextService;
 		this.applicationEventPublisher = applicationEventPublisher;
 	}
@@ -169,18 +181,49 @@ public class GalleryService {
 	 * reparierten Plätze, das Frontend muss dafür nichts tun. Das geschieht nur hier, beim Auflösen nach der Galerie, nie
 	 * beim Suchen. Ein anderer User löst nichts aus (er hat kein Schreibrecht) und sieht trotzdem dieselbe Reihenfolge,
 	 * denn sortiert wird nach Platz und bei gleichem Platz nach Upload.
+	 * <p>
+	 * Mit {@code tags} filtert die Galerie nach Hashtags (Nutzer 2026-11-20): nur die Bilder, die mindestens einen dieser
+	 * Tags tragen, weiter in der Reihenfolge der Galerie. Beispiel: {@code ["strand", "safari"]} zeigt jedes Bild mit
+	 * {@code #strand} oder {@code #safari}. Ohne Tags ({@code null} oder leer) alle Bilder. Eine getippte Raute und
+	 * Leerzeichen außen zählen nicht ({@link Helper#normalizeTag(String)}).
 	 *
 	 * @throws EntityNotFoundException wenn es die Galerie nicht gibt oder er sie nicht sehen darf
+	 * @throws IllegalArgumentException mit mehr Tags als {@code gebiter.gallery.tag-filter-max-tags}
 	 */
 	@Transactional(readOnly = true)
-	public FileDocumentPage resolveGalleryFiles(Long galleryId, int page) {
+	public FileDocumentPage resolveGalleryFiles(Long galleryId, List<String> tags, int page) {
 		Gallery visibleGallery = doGetVisibleGallery(galleryId);
 		Long visibleGalleryId = visibleGallery.getId();
+		List<String> filterTags = createFilterTags(tags);
 		boolean ownGallery = isOwnGallery(visibleGallery);
 		if (ownGallery) {
 			doRepairGalleryFileListingPositions(visibleGalleryId);
 		}
-		return fileDocumentResolveService.resolveFileDocumentsOfGallery(visibleGalleryId, page, filePageSize);
+		return fileDocumentResolveService.resolveFileDocumentsOfGallery(visibleGalleryId, filterTags, page, filePageSize);
+	}
+
+	/**
+	 * READ: Die Hashtags einer Galerie für die Schalter über ihren Kacheln (Nutzer 2026-11-20): jeder Tag, den
+	 * mindestens ein Bild der Galerie trägt, mit der Zahl dieser Bilder, häufigste zuerst, höchstens
+	 * {@code gebiter.gallery.tag-filter-max-tags}. Gezählt wird über die ganze Galerie und mit dem Lesefilter des
+	 * Betrachters: Tags von Bildern, die er nicht lesen darf, erscheinen nicht.
+	 *
+	 * @throws EntityNotFoundException wenn es die Galerie nicht gibt oder er sie nicht sehen darf
+	 */
+	@Transactional(readOnly = true)
+	public List<GalleryTagCount> resolveGalleryTags(Long galleryId) {
+		Gallery visibleGallery = doGetVisibleGallery(galleryId);
+		Long visibleGalleryId = visibleGallery.getId();
+		Map<String, Long> fileCountsByTag = fileDocumentResolveService.resolveTagFileCountsOfGallery(visibleGalleryId,
+				tagFilterMaxTags);
+		List<GalleryTagCount> galleryTagCounts = new ArrayList<>();
+		for (Map.Entry<String, Long> fileCountByTag : fileCountsByTag.entrySet()) {
+			String tag = fileCountByTag.getKey();
+			long fileCount = fileCountByTag.getValue();
+			GalleryTagCount galleryTagCount = new GalleryTagCount(tag, fileCount);
+			galleryTagCounts.add(galleryTagCount);
+		}
+		return galleryTagCounts;
 	}
 
 	/**
@@ -450,10 +493,33 @@ public class GalleryService {
 		}
 	}
 
+	/**
+	 * Die Tags eines Filters in ihrer einheitlichen Form ({@link Helper#normalizeTag(String)}), jeder nur einmal, leere
+	 * heraus. Ohne Tags ({@code null}) eine leere Liste: Es wird nicht gefiltert.
+	 */
+	private List<String> createFilterTags(List<String> tags) {
+		List<String> filterTags = new ArrayList<>();
+		if (tags == null) {
+			return filterTags;
+		}
+		for (String tag : tags) {
+			String normalizedTag = Helper.normalizeTag(tag);
+			boolean usable = !normalizedTag.isEmpty() && !filterTags.contains(normalizedTag);
+			if (usable) {
+				filterTags.add(normalizedTag);
+			}
+		}
+		if (filterTags.size() > tagFilterMaxTags) {
+			throw new IllegalArgumentException("Höchstens " + tagFilterMaxTags + " Hashtags lassen sich auf einmal wählen.");
+		}
+		return filterTags;
+	}
+
 	/** Eine Galerie für die Anzeige: Zahl und Vorschau mit dem Lesefilter des Betrachters aus Solr. */
 	private GalleryForClient createGalleryForClient(Gallery gallery) {
 		Long galleryId = gallery.getId();
-		FileDocumentPage firstFilePage = fileDocumentResolveService.resolveFileDocumentsOfGallery(galleryId, 0, 1);
+		List<String> noTags = List.of();
+		FileDocumentPage firstFilePage = fileDocumentResolveService.resolveFileDocumentsOfGallery(galleryId, noTags, 0, 1);
 		long fileCount = firstFilePage.totalCount();
 		String coverPreviewBase64Png = null;
 		List<Map<String, Object>> firstFiles = firstFilePage.documents();

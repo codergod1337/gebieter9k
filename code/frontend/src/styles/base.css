@@ -3937,6 +3937,58 @@
     margin-bottom: 1rem;
   }
 
+  /*
+   * Filter nach Hashtags über den Kacheln (GalleryTagFilter), aufgebaut wie die Rechte zum Anklicken: je Hashtag ein
+   * Schalter um das Tag-Badge. Ohne Wahl stehen alle gleich da; ist etwas gewählt, sind die gewählten eingerahmt (mit
+   * Haken) und die anderen blass. Die Farben von Badge und Rahmen kommen aus dem Theme (.file-tag,
+   * .gallery-tag-toggle-active).
+   */
+  .gallery-tag-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .gallery-tag-toggle {
+    padding: 0.125rem;
+    border: 2px solid transparent;
+    border-radius: 0.375rem;
+    background: none;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .gallery-tag-toggle.gallery-tag-toggle-muted {
+    opacity: 0.4;
+  }
+
+  .gallery-tag-toggle.gallery-tag-toggle-muted:hover {
+    opacity: 0.7;
+  }
+
+  .gallery-tag-toggle:disabled {
+    cursor: default;
+  }
+
+  /* der Haken vor einem gewählten Hashtag */
+  .gallery-tag-toggle-check {
+    margin-right: 0.25rem;
+  }
+
+  /* die Zahl der Bilder hinter dem Hashtag, im selben Badge */
+  .gallery-tag-toggle-count {
+    margin-left: 0.4rem;
+    font-weight: 400;
+    opacity: 0.85;
+  }
+
+  .gallery-tag-filter-reset {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
   .gallery-images {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--gallery-image-tile-min-width)), 1fr));

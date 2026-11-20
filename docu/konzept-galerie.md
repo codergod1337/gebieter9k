@@ -186,3 +186,48 @@ Plätzen 0, 1, 2, 2, 4, 4, 6, 7, 8 (zweimal derselbe Platz durch gleichzeitige U
   alle Plätze falsch. Nur prüfen ohne Abweichung: 44 ms. Alle 300 reparieren (lesen, 300 schreiben, ein Commit): 0,5 s.
   Ein Bild aus der Mitte weg, 199 rücken auf: 0,25 s. Die Meldung `FileDocumentSoftDeletedEvent` kommt beim
   `GalleryService` an. Danach sind alle Testdokumente wieder entfernt (geprüft: 0 übrig).
+
+## 8. Upload hinter dem Knopf, Reiter „Freigabe“, Filter nach Hashtags (2026-11-20)
+
+Ansagen des Nutzers vom 2026-11-20: „in einer galerie will ich nicht immer den hässlichen upload angezeigt haben, das
+will ich mit dem new entity button ansteuern“, „die freigabe als eigenen reiter […] und nich unter allen bildkacheln“,
+„nach allen hashtags in einer galerie filtern […], also toggeln ob ich alle bilder mit dem jeweiligen hashtag
+angezeigt haben möchte oder nicht“.
+
+### 8.1 Hochladen
+
+In der eigenen Galerie steht rechts im Kopf der Knopf „neue Bilder“ (`NewEntityButton`). Er öffnet ein Popup
+(`GalleryUploadPopup`) mit dem einen Upload-Ablauf der Plattform (`FileUploadForm` über `GalleryUploadBox`), so wie
+„neues Angebot“ im Gebietermarkt. Über den Kacheln steht kein Upload mehr. Schließen baut den Ablauf ab und bricht
+laufende Uploads ab; lädt beim Schließen noch etwas hoch, fragt das Popup nach („Weiter hochladen“ oder „Abbrechen und
+schließen“). Dafür meldet `FileUploadForm` über `onUploadingChange`, ob gerade etwas hochlädt.
+
+### 8.2 Reiter
+
+Solange eine Galerie offen ist, zeigt der Subheader des Profils zusätzlich „Bilder“ und, im eigenen Profil,
+„Freigabe“ (`Profile.tsx`). Beides sind Routen: `/profile/<guid>/galleries/<id>` und `…/share` (`GallerySharePage`,
+Inhalt in `konzept-galerie-freigabe.md` 4.7). „Galerien“ führt zurück zur Liste.
+
+### 8.3 Filter nach Hashtags
+
+Über den Kacheln steht jeder Hashtag der Galerie als Schalter mit der Zahl seiner Bilder (`GalleryTagFilter`), die
+häufigsten zuerst. So ist es gebaut (das Verständnis des Wunsches, dem Nutzer zur Bestätigung genannt):
+
+- Kein Schalter an: alle Bilder.
+- Ein Schalter an: nur die Bilder mit diesem Hashtag. Beispiel aus der Galerie „test 1“: `#sky` zeigt 2 von 10 Bildern.
+- Mehrere an: die Bilder mit mindestens einem davon (`#sky` und `#beach`: 3 Bilder).
+- „alle Bilder zeigen“ nimmt jede Wahl zurück.
+
+Technik:
+
+- Die Hashtags kommen als Facette aus Solr über die ganze Galerie, nicht nur über die Seite
+  (`POST /api/gallery/tag/resolve`, `GalleryService.resolveGalleryTags`,
+  `FileDocumentResolveService.resolveTagFileCountsOfGallery`), mit dem Lesefilter des Betrachters; höchstens
+  `gebiter.gallery.tag-filter-max-tags` (200). Wer das Feld `tags` nicht lesen darf („Wer liest“ im Solr-Manager, heute
+  `USER`), bekommt keine Schalter.
+- Gefiltert wird in Solr (`POST /api/gallery/file/resolve` mit `tags`), die Reihenfolge der Galerie bleibt. Ein Tag
+  darf jedes Zeichen enthalten, auch Komma und Hochkomma: Jeder gewählte Tag steht deshalb in einem eigenen Parameter
+  der Abfrage (`tagFilter0` → `{!term f=tags}sky`), der Filter verweist nur darauf (`{!bool should=$tagFilter0 …}`).
+- Die Wahl steht in der Adresse (`?tags=sky+beach`), Filtern ist ein Eintrag im Verlauf und springt auf Seite 1.
+- Solange ein Hashtag gewählt ist, lässt sich nicht sortieren: Die Plätze gelten für die ganze Galerie.
+- Die Besucherseite einer Freigabe (`/share/galerie/<token>`) hat den Filter noch nicht.

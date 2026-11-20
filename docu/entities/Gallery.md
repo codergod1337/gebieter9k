@@ -7,7 +7,7 @@ Eine Galerie im Profil (Konzept `docu/konzept-galerie.md`): Titel, Beschreibung 
 - **Tabelle:** `gallery`
 - **Klasse:** [`code/backend/src/main/java/de/gebiter/gallery/model/Gallery.java`](../../code/backend/src/main/java/de/gebiter/gallery/model/Gallery.java)
 - **Frontend-Typ:** [`code/frontend/src/gallery/Gallery.ts`](../../code/frontend/src/gallery/Gallery.ts)
-- **DTOs:** `FileUploadIntoGalleryData`, `GalleryChangeRequest`, `GalleryDeletedEvent`, `GalleryDeleteRequest`, `GalleryFileListingOrder`, `GalleryFileResolveRequest`, `GalleryForClient`, `GalleryListingOrder`, `GalleryResolveRequest`, `NewGallery`
+- **DTOs:** `FileUploadIntoGalleryData`, `GalleryChangeRequest`, `GalleryDeletedEvent`, `GalleryDeleteRequest`, `GalleryFileListingOrder`, `GalleryFileResolveRequest`, `GalleryForClient`, `GalleryListingOrder`, `GalleryResolveRequest`, `GalleryTagCount`, `GalleryTagResolveRequest`, `NewGallery`
 
 ## Beispiel-JSON
 
@@ -47,7 +47,8 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 | POST | `/api/gallery/upload` | [`GalleryController.uploadFileIntoGallery`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) | (eigener Controller) |
 | GET | `/api/gallery/{id}` | [`GalleryController.getGalleryForClient`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) | `GalleryForClient` |
 | POST | `/api/gallery/resolve` | [`GalleryController.resolveGalleries`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) | `GalleryForClient`, `GalleryResolveRequest` |
-| POST | `/api/gallery/file/resolve` | [`GalleryController.resolveGalleryFiles`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) | `GalleryFileResolveRequest` |
+| POST | `/api/gallery/file/resolve` | [`GalleryController.resolveGalleryFiles`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) | `GalleryFileResolveRequest` (seit 2026-11-20 mit `tags`: nur Bilder mit mindestens einem dieser Hashtags) |
+| POST | `/api/gallery/tag/resolve` | [`GalleryController.resolveGalleryTags`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) | `GalleryTagResolveRequest`, `GalleryTagCount` (die Hashtags der Galerie mit der Zahl ihrer Bilder, häufigste zuerst) |
 | PUT | `/api/gallery` | [`GalleryController.changeOwnGallery`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) | `Gallery`, `GalleryChangeRequest` |
 | PUT | `/api/gallery/listing-position` | [`GalleryController.changeOwnGalleryListingPositions`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) | `Gallery`, `GalleryListingOrder` |
 | PUT | `/api/gallery/file/listing-position` | [`GalleryController.changeOwnGalleryFileListingPositions`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) | `GalleryFileListingOrder` |
@@ -57,9 +58,19 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 
 - [`code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java): `createOwnGallery`, `changeOwnGallery`, `changeOwnGalleryListingPositions`
 - [`code/backend/src/main/java/de/gebiter/gallery/repository/GalleryRepository.java`](../../code/backend/src/main/java/de/gebiter/gallery/repository/GalleryRepository.java): (Import, Felder)
-- [`code/backend/src/main/java/de/gebiter/gallery/service/GalleryService.java`](../../code/backend/src/main/java/de/gebiter/gallery/service/GalleryService.java): `createOwnGallery`, `getGalleryForClient`, `resolveGalleries`, `resolveGalleryFiles`, `changeOwnGallery`, `changeOwnGalleryListingPositions`, `changeOwnGalleryFileListingPositions`, `prepareOwnGalleryUpload`, `checkOwnGalleryExists`, `getGalleryForGalleryShare`, `deleteOwnGallery` (schickt zuerst `GalleryDeletedEvent`, der `GalleryShareService` löscht daraufhin die Freigaben der Galerie), `createVisibilityFieldValues`, `doChangeAllGalleryFiles`, `createGalleryForClient`, `doGetVisibleGallery`, `doGetOwnGallery`, `isOwnGallery`, `doGetGallery`, `isGalleryVisibleWithinVisibleProfile`
+- [`code/backend/src/main/java/de/gebiter/gallery/service/GalleryService.java`](../../code/backend/src/main/java/de/gebiter/gallery/service/GalleryService.java): `createOwnGallery`, `getGalleryForClient`, `resolveGalleries`, `resolveGalleryFiles`, `resolveGalleryTags`, `createFilterTags`, `changeOwnGallery`, `changeOwnGalleryListingPositions`, `changeOwnGalleryFileListingPositions`, `prepareOwnGalleryUpload`, `checkOwnGalleryExists`, `getGalleryForGalleryShare`, `deleteOwnGallery` (schickt zuerst `GalleryDeletedEvent`, der `GalleryShareService` löscht daraufhin die Freigaben der Galerie), `createVisibilityFieldValues`, `doChangeAllGalleryFiles`, `createGalleryForClient`, `doGetVisibleGallery`, `doGetOwnGallery`, `isOwnGallery`, `doGetGallery`, `isGalleryVisibleWithinVisibleProfile`
 
 ## Verwendung im Frontend
+
+Von Hand ergänzt am 2026-11-20 (Upload hinter dem Knopf, Reiter „Freigabe“, Filter nach Hashtags):
+
+- [`code/frontend/src/gallery/GalleryPage.tsx`](../../code/frontend/src/gallery/GalleryPage.tsx): der Reiter „Bilder“ einer Galerie: Kacheln, Hashtag-Schalter, Knopf „neue Bilder“; Adresse `?tags=…&page=…&image=…`
+- [`code/frontend/src/gallery/GalleryTagFilter.tsx`](../../code/frontend/src/gallery/GalleryTagFilter.tsx): je Hashtag der Galerie ein Schalter mit der Zahl seiner Bilder (`GalleryTagCount`)
+- [`code/frontend/src/gallery/galleryTagUrlParam.ts`](../../code/frontend/src/gallery/galleryTagUrlParam.ts): `parseUrlTags`, `formatUrlTags` (die gewählten Hashtags in der Adresse)
+- [`code/frontend/src/gallery/GalleryUploadPopup.tsx`](../../code/frontend/src/gallery/GalleryUploadPopup.tsx): „neue Bilder“ als Popup mit dem globalen Upload-Ablauf (`GalleryUploadBox`)
+- [`code/frontend/src/gallery/GallerySharePage.tsx`](../../code/frontend/src/gallery/GallerySharePage.tsx): der Reiter „Freigabe“ der eigenen Galerie (`/profile/<guid>/galleries/<id>/share`)
+- [`code/frontend/src/profile/Profile.tsx`](../../code/frontend/src/profile/Profile.tsx): die Reiter „Bilder“ und „Freigabe“ im Subheader, solange eine Galerie offen ist
+- [`code/frontend/src/gallery/galleryTexts.ts`](../../code/frontend/src/gallery/galleryTexts.ts): die Texte dazu
 
 - [`code/frontend/src/gallery/GalleryEditPopup.tsx`](../../code/frontend/src/gallery/GalleryEditPopup.tsx): (Typ)
 - [`code/frontend/src/gallery/GalleryListTab.tsx`](../../code/frontend/src/gallery/GalleryListTab.tsx): `getGalleryKey`, `GalleryListTab`, `loadGalleries`, `createGallery`, `changeGallery`, `confirmDeleteGallery`, `reorderGalleries`

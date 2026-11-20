@@ -5,7 +5,7 @@ import { type ApiDataOrError, useApiRequest } from '../api/useApiRequest.ts'
 import type { FileDocumentPage, FileUploadResult } from '../file/FileDocument.ts'
 import { FILE_DOCUMENT_VIEW_CACHE_SCOPE } from '../file/fileDocumentViewCacheScope.ts'
 import { clearViewCacheScope } from '../navigation/viewCache.ts'
-import type { Gallery, GalleryForClient, GalleryInput } from './Gallery.ts'
+import type { Gallery, GalleryForClient, GalleryInput, GalleryTagCount } from './Gallery.ts'
 
 /**
  * Was {@link useGallery} anbietet: je Endpunkt von `/api/gallery` eine Funktion, benannt wie die Methode im
@@ -23,7 +23,8 @@ export type GalleryHook = ApiHookState & {
   ) => Promise<ApiDataOrError<FileUploadResult>>
   getGalleryForClient: (galleryId: number) => Promise<GalleryForClient | null>
   resolveGalleries: (ownerUsersGuid: string) => Promise<GalleryForClient[] | null>
-  resolveGalleryFiles: (galleryId: number, page: number) => Promise<FileDocumentPage | null>
+  resolveGalleryFiles: (galleryId: number, page: number, tags: string[]) => Promise<FileDocumentPage | null>
+  resolveGalleryTags: (galleryId: number) => Promise<GalleryTagCount[] | null>
   changeOwnGallery: (galleryId: number, galleryInput: GalleryInput) => Promise<Gallery | null>
   changeOwnGalleryListingPositions: (galleryIdsInOrder: number[]) => Promise<Gallery[] | null>
   changeOwnGalleryFileListingPositions: (galleryId: number, page: number, fileDocumentIdsInOrder: string[]) => Promise<boolean>
@@ -90,10 +91,19 @@ export function useGallery(): GalleryHook {
     return sendForData<GalleryForClient[]>({ method: 'POST', path: '/api/gallery/resolve', body: resolveRequest })
   }, [sendForData])
 
-  /** READ: Eine Seite der Bilder einer Galerie, ab 0, in ihrer Reihenfolge. */
-  const resolveGalleryFiles = useCallback((galleryId: number, page: number) => {
-    const resolveRequest = { galleryId, page }
+  /**
+   * READ: Eine Seite der Bilder einer Galerie, ab 0, in ihrer Reihenfolge. Mit `tags` nur die Bilder, die mindestens
+   * einen dieser Hashtags tragen; eine leere Liste zeigt alle.
+   */
+  const resolveGalleryFiles = useCallback((galleryId: number, page: number, tags: string[]) => {
+    const resolveRequest = { galleryId, page, tags }
     return sendForData<FileDocumentPage>({ method: 'POST', path: '/api/gallery/file/resolve', body: resolveRequest })
+  }, [sendForData])
+
+  /** READ: Die Hashtags einer Galerie, je mit der Zahl ihrer Bilder, häufigste zuerst: für die Schalter über den Kacheln. */
+  const resolveGalleryTags = useCallback((galleryId: number) => {
+    const resolveRequest = { galleryId }
+    return sendForData<GalleryTagCount[]>({ method: 'POST', path: '/api/gallery/tag/resolve', body: resolveRequest })
   }, [sendForData])
 
   /** UPDATE: Titel, Beschreibung und Sichtbarkeit einer eigenen Galerie; die Sichtbarkeit geht auf die Bilder über. */
@@ -143,6 +153,7 @@ export function useGallery(): GalleryHook {
     getGalleryForClient,
     resolveGalleries,
     resolveGalleryFiles,
+    resolveGalleryTags,
     changeOwnGallery,
     changeOwnGalleryListingPositions,
     changeOwnGalleryFileListingPositions,

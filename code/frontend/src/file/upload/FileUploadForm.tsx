@@ -1,4 +1,4 @@
-import { type CSSProperties, type FormEvent, useCallback, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Form from 'react-bootstrap/Form'
 import Spinner from 'react-bootstrap/Spinner'
 import { ContentBox } from '../../components/ContentBox.tsx'
@@ -71,6 +71,12 @@ type FileUploadFormProps = (FileClassByChoiceProps | FileClassFixedProps) & {
   onUploaded?: (uploadResult: FileUploadResult) => void
   /** Sobald die Auswertung einer Datei fertig ist (Vorschau da). */
   onAnalysisCompleted?: () => void
+  /**
+   * Meldet, ob gerade Dateien hochladen oder darauf warten: `true` mit dem ersten Upload, `false`, sobald keiner mehr
+   * läuft. Für einen Aufrufer, der den Ablauf in einem Popup zeigt und vor dem Schließen warnen muss (Schließen bricht
+   * laufende Uploads ab).
+   */
+  onUploadingChange?: (isUploading: boolean) => void
 }
 
 function getSolrFieldLabelInCurrentLanguage(solrField: SolrField): string {
@@ -100,6 +106,7 @@ export function FileUploadForm({
   fileDocumentOriginLabel,
   onUploaded,
   onAnalysisCompleted,
+  onUploadingChange,
 }: FileUploadFormProps) {
   const masterDataHook = useMasterData()
   const fileSolrFieldNameSet = masterDataHook.fileSolrFieldNameSet
@@ -161,6 +168,14 @@ export function FileUploadForm({
     return rowInputValues
   }, [uploadSolrFields])
   const fileUploadList = useFileUploadList(createRowInputValues, uploadFile)
+
+  // Dem Aufrufer melden, ob gerade hochgeladen wird (z. B. dem Popup der Galerie)
+  const uploadsRunning = fileUploadList.isUploading
+  useEffect(() => {
+    if (onUploadingChange !== undefined) {
+      onUploadingChange(uploadsRunning)
+    }
+  }, [uploadsRunning, onUploadingChange])
   const rows = fileUploadList.rows
 
   let allowedFileExtensions: string[] = []

@@ -27,6 +27,8 @@ import de.gebiter.gallery.dto.GalleryFileResolveRequest;
 import de.gebiter.gallery.dto.GalleryForClient;
 import de.gebiter.gallery.dto.GalleryListingOrder;
 import de.gebiter.gallery.dto.GalleryResolveRequest;
+import de.gebiter.gallery.dto.GalleryTagCount;
+import de.gebiter.gallery.dto.GalleryTagResolveRequest;
 import de.gebiter.gallery.dto.NewGallery;
 import de.gebiter.gallery.model.Gallery;
 import de.gebiter.gallery.service.GalleryService;
@@ -92,13 +94,28 @@ public class GalleryController {
 		return ResponseEntity.ok(galleries);
 	}
 
-	/** READ: Eine Seite der Bilder einer Galerie. Body: {@code {"galleryId": 7, "page": 0}}. */
+	/**
+	 * READ: Eine Seite der Bilder einer Galerie. Body: {@code {"galleryId": 7, "page": 0}}; mit
+	 * {@code "tags": ["strand", "safari"]} nur die Bilder, die mindestens einen dieser Hashtags tragen.
+	 */
 	@PostMapping("/file/resolve")
 	public ResponseEntity<FileDocumentPage> resolveGalleryFiles(@RequestBody GalleryFileResolveRequest resolveRequest) {
 		Long galleryId = resolveRequest.galleryId();
 		int page = resolveRequest.page();
-		FileDocumentPage galleryFilePage = galleryService.resolveGalleryFiles(galleryId, page);
+		List<String> tags = resolveRequest.tags();
+		FileDocumentPage galleryFilePage = galleryService.resolveGalleryFiles(galleryId, tags, page);
 		return ResponseEntity.ok(galleryFilePage);
+	}
+
+	/**
+	 * READ: Die Hashtags einer Galerie, je mit der Zahl ihrer Bilder, häufigste zuerst: für die Schalter über den
+	 * Kacheln. Body: {@code {"galleryId": 7}}.
+	 */
+	@PostMapping("/tag/resolve")
+	public ResponseEntity<List<GalleryTagCount>> resolveGalleryTags(@RequestBody GalleryTagResolveRequest resolveRequest) {
+		Long galleryId = resolveRequest.galleryId();
+		List<GalleryTagCount> galleryTagCounts = galleryService.resolveGalleryTags(galleryId);
+		return ResponseEntity.ok(galleryTagCounts);
 	}
 
 	/** UPDATE: Titel, Beschreibung und Sichtbarkeit einer eigenen Galerie. */

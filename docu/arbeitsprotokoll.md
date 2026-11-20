@@ -13,6 +13,182 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-20 17:05 – Galerie: Upload hinter Knopf, Freigabe als eigener Reiter, Filter nach Hashtags
+
+- Ansage (gekürzt, wörtlich): „in einer galerie will ich nicht immer den hässlichen upload angezeigt haben, das will ich
+  mit dem new entity button ansteuern!!! auch will ich die freigabe als eigenen reiter haben und nich unter allen
+  bildkacheln […] ich stelle mir auch vor, dass wir nach allen hashtags in einer galerie filtern können, also toggeln
+  ob ich alle bilder mit dem jeweiligen hashtag angezeigt haben möchte oder nicht, kapierst du was ich meine? und ich
+  will die freigabe haben und testen können“.
+- Zur Frage von 16:50 (60-Sekunden-Grenzen anheben) kam keine Antwort: bleibt liegen, nicht noch einmal fragen.
+- Plan, in seiner Reihenfolge: 1. Regeln lesen (`guided-creation-flow`, `upload-file-dropzone`, `ui-display-rules`,
+  `navigation-origin-url-state`, `frontend-structure`, `css-base-and-theme`) und die Stellen (`GalleryPage`,
+  `GalleryUploadBox`, Reiter im Subheader anderer Module, `NewEntityButton`). 2. Upload der Galerie hinter den
+  `NewEntityButton` (Popup mit dem globalen `FileUploadForm`). 3. Galerie mit Reitern „Bilder“ und „Freigabe“, der
+  Reiter steht in der Adresse. 4. Hashtags der Galerie als Schalter über den Kacheln (alle Hashtags der Galerie aus
+  Solr, nicht nur die der Seite; die Auswahl in der Adresse). 5. Bauen, Doku. 6. Auf den Pi geht es erst nach dem Push
+  des Nutzers (Regel: Code nur über Git); danach `git pull`, bauen, er testet die Freigabe.
+- So verstanden (von mir, dem Nutzer zur Bestätigung genannt): Über den Kacheln steht jeder Hashtag der Galerie als
+  Schalter mit der Zahl seiner Bilder. Kein Schalter an: alle Bilder. Schalter an: nur die Bilder mit diesem Hashtag;
+  mehrere an: Bilder mit mindestens einem davon. Reiter: im Subheader des Profils, sobald eine Galerie offen ist
+  („Bilder“, in der eigenen Galerie dazu „Freigabe“), wie alle Reiter als Route.
+- Stand 17:11, Backend für den Filter gebaut (`./mvnw -q -o -DskipTests clean compile` rc=0, noch nicht gegen Solr
+  getestet): `FileDocumentResolveService.resolveFileDocumentsOfGallery` mit `tags`, neu `resolveTagFileCountsOfGallery`
+  (Facette), `createTagFilterQueryParams`, `createAnyOfReferencedFilterQuery` (jeder Tag in einem eigenen Parameter,
+  weil ein Tag Komma und Hochkomma enthalten darf), `doResolveReadableFileDocuments` mit `referencedQueryParams`;
+  `GalleryService.resolveGalleryFiles(galleryId, tags, page)`, neu `resolveGalleryTags`, `createFilterTags`;
+  `GalleryController`: `POST /api/gallery/file/resolve` nimmt `tags`, neu `POST /api/gallery/tag/resolve`; DTOs
+  `GalleryTagCount`, `GalleryTagResolveRequest`, `GalleryFileResolveRequest` mit `tags`; YAML
+  `gebiter.gallery.tag-filter-max-tags: 200`.
+- Stand 17:20, Filter gegen das echte Solr getestet (Wegwerf-Test `GalleryTagFilterThrowawayTest` über den Tunnel,
+  gelöscht): Galerie 5 „test 1“ hat 10 Bilder und 6 Hashtags (`sky` 2, `ancient`, `beach`, `mountain`, `nature`,
+  `water` je 1); je Hashtag liefert der Filter genau so viele Bilder, wie die Facette zählt, und jedes trägt ihn; zwei
+  Hashtags zusammen 3 Bilder; ein Tag mit Komma, Hochkomma und Solr-Syntax 0 Bilder und kein Fehler; nur leere Tags wie
+  ohne Filter. Mit nur dem Recht ADMIN kam die Liste der Hashtags leer: Das Feld `tags` liest das Recht `USER`
+  (`solr_field` id 14), echte Sitzungen des Admins tragen es.
+- VORFALL 17:16 bis 17:21: Für den Treffer-Fall hat der Test zwei Probe-Hashtags an drei Bilder von „test 1“
+  geschrieben; mittendrin riss die Internetverbindung (Tunnel weg), das Aufräumen im `finally` lief ins Leere. Die
+  Probe-Hashtags standen etwa 5 Minuten in je 2 Dokumenten. Bereinigt direkt auf dem Pi mit einem Skript gegen Solr
+  (atomares `remove`, wie der `FileDocumentWriteService`), nachgeprüft: im Kern stehen wieder genau die 6 echten
+  Hashtags. Lehre: keine Probe-Daten an echte Dokumente über den Tunnel vom Laptop (Regel in
+  `Vollidiot/ask-before-heavy-tests.md`).
+- Stand 17:28, Oberfläche gebaut (`npm run build` ohne Fehler, Backend `clean compile` rc=0):
+  - Upload: `GalleryPage` zeigt in der eigenen Galerie rechts im Kopf den `NewEntityButton` „neue Bilder“; er öffnet
+    `GalleryUploadPopup` (neu) mit `GalleryUploadBox` (dem globalen `FileUploadForm`). `FileUploadForm` meldet über das
+    neue `onUploadingChange`, ob etwas hochlädt; das Popup fragt dann vor dem Schließen nach.
+  - Reiter: `Profile.tsx` zeigt bei offener Galerie „Bilder“ und im eigenen Profil „Freigabe“; neue Route
+    `galleries/:galleryId/share` (`App.tsx`) mit `GallerySharePage` (neu); `galleryPaths.ts`
+    (`getGalleryShareTabPath`, `OPEN_GALLERY_PATH_PATTERN`); `GalleryShareBox` mit dem Titel der Galerie, nicht mehr
+    unter den Kacheln und ohne das Ausblenden ohne Recht.
+  - Hashtags: `GalleryTagFilter` (neu), `galleryTagUrlParam.ts` (neu, `?tags=sky+beach`), `useGallery`
+    (`resolveGalleryFiles` mit `tags`, `resolveGalleryTags`), `Gallery.ts` (`GalleryTagCount`), `galleryTexts.ts`
+    (neu); CSS: Lage in `base.css` (`.gallery-tag-*`), Rahmen des gewählten Schalters im Theme.
+  - Angesehen: eine statische Vorschau der neuen Elemente mit dem gebauten CSS und dem Theme (firefox-esr ohne
+    Fenster): Reiter, Plus-Knopf, Schalter ohne Wahl und mit Wahl. NICHT gesehen: die echte Seite mit Anmeldung.
+  - Doku: `konzept-galerie.md` Abschnitt 8, `konzept-galerie-freigabe.md` 4.7, `konzept-navigation.md` Abschnitt 4,
+    `entities/Gallery.md` und `entities/GalleryShare.md` von Hand.
+- Nicht auf dem Pi: Der Code kommt nur über Git dorthin. WARTET auf den Push des Nutzers, danach `git pull` und Bau.
+
+## 2026-11-20 16:50 – Langsames Internet unterwegs: wo kann etwas in ein Zeitlimit laufen?
+
+- Ansage: „ich habe hier echt mistig langsames internet, prüfe mal bitte, dass da so schnell nichts timeoutet, bzw, sag
+  mir wo die kritischen stellen sind“.
+- Plan (nur lesen und messen, nichts ändern): 1. Leitung messen (Laufzeit, Durchsatz hoch und runter, kleine Mengen).
+  2. Zeitlimits auf dem Weg lesen: nginx auf dem Pi (`default.conf`), Backend (`application.yaml`: Tomcat, Upload,
+  Token, Anmeldeschein, Freigabe), Frontend (Anfragen, Upload, Abfragen im Takt). 3. Je Stelle ausrechnen, ab wann sie
+  bei dieser Leitung reißt, und dem Nutzer die kritischen nennen.
+- Stand 17:00, fertig, nichts geändert:
+  - Gemessen (je 1 MB, eine Messung): hoch 121 KB/s, runter 216 KB/s, Verbindungsaufbau 0,21 bis 0,35 s, eine
+    https-Anfrage 0,65 bis 1,1 s.
+  - Hält auch langsam: Das Frontend setzt nirgends ein Zeitlimit für Anfragen (`ApiClient`: `fetch` und
+    `XMLHttpRequest` ohne Timeout). nginx: `proxy_read_timeout` und `proxy_send_timeout` 1 h, ungepuffert in beide
+    Richtungen. Kein Limit für die Dauer eines Uploads. 2FA-Anmeldung 10 min. JWT 31 min, geprüft nur am Anfang einer
+    Anfrage; Erneuerung nach 15 min, bei Netzfehler neuer Versuch alle 30 s. Die Abfrage der Auswertung (alle 3 s)
+    überlappt nicht (`isPollingRef`).
+  - KRITISCH 1, Aussetzer: Fließt 60 s lang kein Byte, trennt nginx (`client_body_timeout` und `send_timeout`, beide
+    nicht gesetzt, also Standard 60 s; mit `nginx -T` im Container geprüft) bzw. Tomcat (kein `server.tomcat.*`
+    gesetzt, Standard 60 s). Ein Upload ist EINE Anfrage je Datei, ohne Fortsetzen und ohne automatischen neuen
+    Versuch (Zeile wird FAILED, derselbe Knopf lädt von vorn).
+  - KRITISCH 2, Menge: Bilder der Galerie „test 1“ im Schnitt 32 MB = 4,5 min je Bild; 1 GB = 2,4 h; 100 GB = rund
+    10 Tage.
+  - KRITISCH 3, Sitzung: Geht die Antwort auf eine Erneuerung verloren, schickt das Frontend nach 30 s den alten
+    Refresh-Token; `UsersRefreshTokenService` wertet „schon verbraucht“ als Diebstahl und löscht ALLE Sitzungen des
+    Users. Danach neu anmelden mit 2FA, laufende Uploads brechen ab (die Upload-Seite wird abgebaut). Selten (das
+    Fenster ist etwa eine Sekunde je Viertelstunde), aber mit großer Wirkung.
+  - KRITISCH 4, Freigabe mit begrenzten Aufrufen: Jede Anfrage nach einem Bild zählt, auch ein Byte-Bereich; setzt
+    der Browser eines Besuchers nach einem Aussetzer neu an, zählt dasselbe Bild mehrfach.
+  - Nur langsam: nginx liefert ohne Komprimierung (`gzip` aus): JS und CSS 1,5 MB statt rund 0,4 MB; kein
+    `Cache-Control`. Kachelseiten tragen die Vorschaubilder als Base64 im JSON.
+  - Nicht geprüft: ein Upload über mehr als eine Stunde (kein großer Test ohne Rückfrage).
+- OFFEN, den Nutzer gefragt: die 60-Sekunden-Grenzen für Upload und Download anheben?
+
+## 2026-11-20 16:44 – Auf dem Pi pullen und bauen, Stand melden
+
+- Ansage: „du kommst doch auf den pi bitte pulle und builde und teile mir dann den aktuellen stand mit“.
+- Vorgefunden: GitHub steht weiter auf `c3299e8` (16:21), seitdem ist nichts Neues gepusht; der Pi steht schon auf
+  diesem Commit und ist damit gebaut (16:34). Tunnel steht.
+- Plan: wie um 16:34 nach der Regel (Zustand ansehen, laufende Images als `:vorher` sichern, `git pull --ff-only`,
+  erst `backend`, dann `frontend` bauen, dann starten, prüfen), danach den Stand berichten.
+- Stand 16:45, fertig:
+  - Pi vorher: Last 0,0, 13 GiB RAM frei, 787 GB Platte frei, 44 °C.
+  - `git pull --ff-only`: „Already up to date“, der Pi steht auf `c3299e8`, Klon sauber (0 abweichende Dateien).
+  - Bau `backend` (10 Schritte aus dem Cache), dann `frontend` (6 aus dem Cache), zusammen 3 s. Start: kein Container
+    neu angelegt, beide liefen durch; sie laufen mit dem Inhalt des frisch gebauten Images.
+  - Danach: alle 5 Container laufen (Backend und Frontend seit 16:13, die anderen seit 9 Tagen), Backend ohne ERROR
+    und ohne WARN. Über nginx: Startseite 200, Freigaben ohne Anmeldung 401, unbekannter Token 404; im Bundle
+    `index-c4nAG9SA.js` stehen die Spalte „Link“ und der neue Hinweis, der alte Text nicht mehr. Von außen dasselbe.
+  - Pi-DB: 2 User, 2 Galerien (5 „test 1“, 6 „Bla“), 0 Freigaben. Neu vorgefunden: Das Recht `FREIGABE` gibt es jetzt
+    in `access_role` (der Nutzer hat es angelegt).
+  - Hilfsdateien in `/tmp` gelöscht; die Tags `:vorher` zeigen auf die laufenden Images und bleiben bis zum nächsten Bau.
+  - Lokal nicht committet und damit nicht auf dem Pi: nur dieses Protokoll (Einträge ab 16:19, bereinigter Eintrag vom
+    2026-11-11).
+
+## 2026-11-20 16:29 – Push des Nutzers prüfen, dann auf dem Pi pullen und bauen
+
+- Ansage: „in git gepusht habe ich gerade. den lokalen codestand, du kannst das nochmal prüfen und dann auf dem pi
+  pullen UND builden, bedenke aber, dass falls der pi crasht oder sonst irgendwie hängt wir keine möglichkeit haben
+  physisch zu restarten! wir haben nur den ssh zugang und dann ebend das https mapping“.
+- Plan: 1. Push prüfen (lokal gegen `origin/main`, Inhalt des Commits). 2. Pi ansehen, nur lesen: Git vorhanden?,
+  Ordner und Besitzer, Last, RAM, Platte, Temperatur, Watchdog, Neustart-Regeln der Container. 3. `/gebiter9k` auf dem
+  Pi zum Klon machen, ohne eine Datei anzufassen (Index auf `origin/main`, dann vergleichen). 4. Bauen: erst bauen,
+  dann starten, nacheinander, mit Sicherung der Images; nichts an SSH, Netz, Docker-Dienst oder Paketen ändern, kein
+  Neustart des Pi. 5. Prüfen, Doku und Regeln nachziehen (der Bau lief bisher über tar und scp).
+- Stand 16:30, Schritt 1: Der Push ist da, lokal = `origin/main` = `c3299e8` („pray beacoup“, 16:21, 54 Dateien). Der
+  Code darin ist der Stand, der seit 16:13 auf dem Pi läuft (lokal seither nur dieses Protokoll geändert). Keine
+  `.env`, keine `setup.md`, kein Schlüssel im Stand.
+  FUND: Der Commit enthält dieses Protokoll noch mit der Adresse von zu Hause (dreimal) und dem SSH-Port (Eintrag vom
+  2026-11-11 23:55); die Bereinigung von 16:20 kam nach dem Commit. Dem Nutzer gemeldet, Frage folgt.
+- Stand 16:36, **Schritte 2 bis 5 fertig** (Einzelheiten in `setup.md` 5.16):
+  - Der Tunnel war nach der Pause weg (Steuer-Socket fehlte, der Pi lief normal); neu geöffnet, direkt, diesmal ohne
+    Bindeadresse (IPv4 und IPv6).
+  - Pi vorher: Last 0,0, 12 GiB RAM frei, 787 GB Platte frei, 44 °C; Git ist dort schon installiert.
+  - `/gebiter9k` auf dem Pi ist jetzt ein Klon auf `c3299e8` (`git init`, `fetch`, `reset --mixed`: keine Datei
+    angefasst). Vergleich: keine geänderte Datei; 64 fehlende (`docu/`, `.gitignore`, `code/.gitignore`,
+    `code/.env.example`) mit `git restore .` geholt. `.env` des Pi unverändert.
+  - Pull „Already up to date“; Bau `backend`, dann `frontend` in 3 s aus dem Cache; `up -d --wait`: kein Neustart,
+    keine Unterbrechung. Frisch gebautes Image und laufender Container haben je dieselben Schichten und dieselbe
+    Konfiguration. Von außen: Startseite 200, Freigaben ohne Anmeldung 401, unbekannter Token 404.
+  - Bleibt auf dem Pi: die Tags `:vorher` an beiden Images (hängen an den laufenden Containern, nur mit Zwang
+    löschbar, kosten keinen Platz; der nächste Bau setzt sie neu). Hilfsdateien in `/tmp` gelöscht.
+  - Rückhalt bei einem Hänger: Watchdog von systemd (60 s), Docker startet beim Booten, alle Container
+    `unless-stopped`.
+  - Doku und Regeln: `setup.md` 5.16 (neuer Weg über Git), `Vollidiot/github-repo.md`, `pi-access-self.md`,
+    `rechner-debian-laptop.md`, `MEMORY.md`.
+  - Der Tunnel ist OFFEN. Lokal nicht committet: nur dieses Protokoll (bereinigt, mit den Einträgen ab 16:19).
+- OFFEN, den Nutzer gefragt: 1. Adresse und Port aus der Historie nehmen (Commit umschreiben, er pusht mit Zwang)?
+  2. Gilt ab jetzt: auf den Pi kommt nur, was gepusht ist?
+- 16:40 ENTSCHIEDEN zu 1: „so lange keine zugangsdaten davon in git sind ist mir das egal“. Die Historie bleibt, wie
+  sie ist. Gemeint waren der DynDNS-Name des Anschlusses und der SSH-Port, nicht seine Postadresse (so hatte er
+  „Adresse von zu Hause“ verstanden). Nachgeprüft über alle 5 Commits: kein Passwort aus `code/.env`, kein Kennwort des
+  Pi; es stehen nur Namen drin (Datenbank und ihr Benutzer, Benutzer von Solr und SFTP, LAN-IP, Pfad der Mounts) und
+  Platzhalter wie `change-me`. Regel dazu in `Vollidiot/github-repo.md`.
+- 16:42 ENTSCHIEDEN zu 2, feste Regel: „wir halten aber fest dass sämtlicher code auf dem pi ausschliesslich über git
+  geht“. Kein tar und kein scp mehr für Code, auf dem Pi wird kein Code bearbeitet; gebaut wird nach dem Push. Weiter
+  per `scp` geht nur, was nicht im Repo liegt: Konfiguration unter `mounts/` (nginx) und `code/.env`. Eingetragen in
+  `Vollidiot/pi-access-self.md`, `github-repo.md`, `rechner-debian-laptop.md`, `MEMORY.md` und `setup.md` 5.16 (der
+  alte Weg steht dort als abgelöst).
+- 16:45 abgegrenzt vom Nutzer: „also direkte datenbank fixes schon noch weiterhin direkt, aber code für die
+  fullstackapp in git und dann auf den pi und dann wird gebaut“. Korrekturen an den Daten (SQL gegen die Pi-DB, Felder
+  in Solr) also weiter direkt; die Regel gilt für den Code der App. In `Vollidiot/pi-access-self.md` nachgetragen.
+- Stand: nichts mehr offen aus diesem Auftrag. Lokal nicht committet ist nur dieses Protokoll.
+
+## 2026-11-20 16:19 – Frage: jetzt nach GitHub pushen, oder fehlt noch etwas?
+
+- Ansage: „dann sollte ich das nun erst mal aus unserem projekt auf git pushen?“, dazu „oder brauchen wir jetzt noch
+  was dass alles so funktioniert wie ich mir das vorstelle“. Eine Frage, kein Auftrag: nichts committet, nichts gepusht.
+- Geprüft (nur gelesen): Ein Commit nähme 54 Dateien auf (`code/`, `docu/`, `.gitignore`). Kein Kennwort aus
+  `code/.env` steht in einer davon (Treffer nur der Projektname als Datenbank-Benutzer und der Pfad der Mounts). Die
+  zwei 64-Zeichen-Hexwerte in `solr-cores/FILE.md` sind die Datei-id des Beispieldokuments, kein Token.
+- Bereinigt: Der Eintrag vom 2026-11-11 23:55 nannte dreimal die Adresse von zu Hause und einmal den SSH-Port; jetzt
+  steht dort nur noch der Verweis auf `setup.md` 5.8. Im Repo auf GitHub standen beide bisher nicht.
+- Hindernis für den Push von diesem Laptop: Für GitHub ist hier nichts angemeldet (`gh` fehlt, kein Helfer), der
+  Probelauf `git push --dry-run` scheitert an der Anmeldung. Weg wie auf dem Mac: `gh` ohne sudo ins Home-Verzeichnis,
+  Anmeldung über den Browser mit Einmal-Code.
+- Was zum Wunsch des Nutzers noch fehlt: Kommentare an Bildern (eigenes Stück, in der Kachelansicht asynchron
+  nachladen). Und: Der Link nimmt die Adresse, unter der der Besitzer die Seite gerade offen hat
+  (`window.location.origin`); öffnet er sie zu Hause über die IP im LAN, taugt der kopierte Link nicht für Freunde.
+- WARTET auf die Antwort des Nutzers (committen und pushen ja oder nein).
+
 ## 2026-11-20 16:03 – Galerie-Freigabe: Link wird gespeichert und bleibt abrufbar
 
 - Ansage: „warum willst du den link nicht speichern? […] das "token" im link ist einfach ein zugangslink den ich
@@ -366,17 +542,17 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
 - Ansage: „ich würde gern hier jetzt mein Repo klonen und einrichten, dass wir es hier auch pushen können, wenn wir
   unterwegs an was dran arbeiten. […] Schau mal das Ding durch, ob du damit was anfangen kannst und ob da noch weitere
   Dinge holen müssen. […] npm-dev und Spring […] Datenbank auf dem Pi […] SSH-Tunnel […] Ports von Solr und Postgres
-  […] DynDNS gebieter.ddns.net“. Regeln gelten aus `Vollidiot/`.
+  […] DynDNS [Adresse]“. Regeln gelten aus `Vollidiot/`.
 - Rechner: Debian 13 (`microslop`), Projekt unter `~/Dokumente/coding/fullstackprojekt/gebieter9k` (Ordner mit „ie“).
 - Vorgefunden: Klon sauber auf `origin/main`. `.env` und `gebiter9k.env` (gleich) und `setup.md` liegen im
   Projektordner statt in `code/.env` und `docu/setup.md`; `Vollidiot/` ist da, `.claude/` fehlt. Werkzeuge: Git und
   Java 25 da; es fehlen `gh`, nvm/Node, Tesseract, libheif, `~/.ssh`.
 - Plan: 1. Abschnitte 4.3, 5.8, 5.15 der `setup.md`, `start.sh`, `vite.config.ts` lesen. 2. Dateien an ihren Platz
   (`code/.env`, `docu/setup.md`, chmod 600). 3. `.claude/settings.local.json` (Memory-Ordner `Vollidiot`). 4. Werkzeuge.
-  5. SSH zum Pi über `gebieter.ddns.net` (Tunnel für Postgres, Solr, SFTP). 6. Git-Autor und `gh`-Anmeldung.
+  5. SSH zum Pi über DynDNS (Adresse und Port: `setup.md` 5.8; Tunnel für Postgres, Solr, SFTP). 6. Git-Autor und `gh`-Anmeldung.
 - Stand 2026-11-12 00:05:
   - ERLEDIGT: `code/.env` und `docu/setup.md` an ihrem Platz (600, von Git ignoriert), Duplikat `gebiter9k.env` gelöscht
-    (war identisch). Git-Autor `codergod1337` + noreply nur für dieses Repo. Pi (LAN und `gebieter.ddns.net:6969`) in
+    (war identisch). Git-Autor `codergod1337` + noreply nur für dieses Repo. Pi (LAN und DynDNS, Adresse und Port: `setup.md` 5.8) in
     `~/.ssh/known_hosts`, Fingerprint wie in `setup.md` 5.1; `~/.ssh/config` nicht angelegt (Regel). Dev-Zertifikat in
     `code/frontend/.cert`. `./mvnw clean compile` ok. Kontext-Test gegen den Pi ok (Profil `LAN`, SFTP-Host-Key geprüft).
     Tunnel über DynDNS mit Passwort getestet (Ports 19005/19009/19022, Solr 200, SFTP-Host-Key richtig), wieder zu.

@@ -1745,6 +1745,11 @@ body {
   color: var(--neon-300);
 }
 
+/* Filter nach Hashtags in der Galerie: Der gewählte Schalter trägt einen Rahmen in der Farbe des Badges */
+.gallery-tag-toggle.gallery-tag-toggle-active {
+  border-color: var(--bordeaux-700);
+}
+
 .file-detail-add,
 .file-detail-collapsible {
   color: var(--bordeaux-600);

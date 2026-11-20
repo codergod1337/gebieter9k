@@ -5,8 +5,8 @@
  */
 export const GALLERY_SHARE_TEXTS = {
   // --- in der eigenen Galerie ---
-  /** Titel der Box unter den Bildern der eigenen Galerie. */
-  boxTitle: { de: 'Freigaben über einen Link' },
+  /** Titel der Box im Reiter „Freigabe“ der eigenen Galerie. */
+  boxTitle: { de: 'Freigaben von „{galleryTitle}“ über einen Link' },
   /** Der Knopf rechts im Kopf der Box und der Titel des Popups. */
   newShareButton: { de: 'neue Freigabe' },
   newSharePopupTitle: { de: 'Galerie über einen Link freigeben' },

@@ -83,6 +83,7 @@ Stand 2026-11-09, gebaut und auf dem Pi 5. Vorgabe des Nutzers am selben Tag:
 | Administration | – | Alle Bearbeiten- und Neu-Seiten mit „Zurück zu <Tab>“, Abbrechen und Speichern springen zurück |
 | Profil, Gästebuch | `?guestbookPage=…`, 10 Einträge je Seite, `PageNavigation` | – |
 | Icon-Manager | `?q=…&view=…&page=…&symbol=…` | – |
+| Galerie (2026-11-20) | `/profile/<guid>/galleries/<id>?tags=sky+beach&page=…&image=…` (gewählte Hashtags, Seite, offenes Bild; Filtern und Blättern PUSH), Cache `FILE_DOCUMENT`; die Reiter „Bilder“ und „Freigabe“ (`…/share`) sind Routen im Subheader des Profils | Datei mit „Zurück zu <Galerie>“ |
 | Gebietermarkt (2026-11-11) | die Rubrik steht im Pfad: `/market/category/<Key>`, je Rubrik ein Tab; Artikel im Cache `SHOP_ITEM` | Datei mit „Zurück zu <Rubrik>“ |
 
 **Uploads (Nutzer 2026-11-09):** Wer hochlädt, lässt die Seite offen; wer sie verlässt, bricht ab. Bis dahin liefen
