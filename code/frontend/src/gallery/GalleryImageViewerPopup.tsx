@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import Button from 'react-bootstrap/Button'
 import Modal from 'react-bootstrap/Modal'
 import { FileCheerBar } from '../file/cheer/FileCheerBar.tsx'
@@ -20,6 +21,14 @@ type GalleryImageViewerPopupProps = {
   originLabel: string
   onShow: (fileDocumentId: string) => void
   onClose: () => void
+  /**
+   * Optional: woher das Bild und sein Download kommen, wenn nicht vom File-Endpunkt des angemeldeten Users, z. B. auf der
+   * Besucherseite einer Freigabe die Adressen unter ihrem Token.
+   */
+  viewUrl?: string
+  downloadUrl?: string
+  /** Optional statt der Stimmen des angemeldeten Users ({@link FileCheerBar}), z. B. die Zahlen ohne Abstimmen. */
+  cheers?: ReactNode
 }
 
 /**
@@ -34,16 +43,29 @@ export function GalleryImageViewerPopup({
   originLabel,
   onShow,
   onClose,
+  viewUrl,
+  downloadUrl,
+  cheers,
 }: GalleryImageViewerPopupProps) {
-  const viewUrl = getFileDocumentViewUrl(image.fileDocumentId)
-  const downloadUrl = getFileDocumentDownloadUrl(image.fileDocumentId)
+  let shownViewUrl = getFileDocumentViewUrl(image.fileDocumentId)
+  if (viewUrl !== undefined) {
+    shownViewUrl = viewUrl
+  }
+  let shownDownloadUrl = getFileDocumentDownloadUrl(image.fileDocumentId)
+  if (downloadUrl !== undefined) {
+    shownDownloadUrl = downloadUrl
+  }
+  let shownCheers = cheers
+  if (shownCheers === undefined) {
+    shownCheers = <FileCheerBar fileDocumentId={image.fileDocumentId} originLabel={originLabel} />
+  }
   return (
     <Modal show onHide={onClose} centered size="xl">
       <Modal.Header closeButton>
         <Modal.Title className="text-break">{image.heading}</Modal.Title>
       </Modal.Header>
       <Modal.Body className="gallery-viewer-body">
-        <img className="gallery-viewer-image" src={viewUrl} alt={image.fileName} />
+        <img className="gallery-viewer-image" src={shownViewUrl} alt={image.fileName} />
       </Modal.Body>
       <Modal.Footer className="gallery-viewer-footer">
         <Button
@@ -52,8 +74,8 @@ export function GalleryImageViewerPopup({
           onClick={() => previousImage !== null && onShow(previousImage.fileDocumentId)}>
           <i className="bi bi-chevron-left" aria-hidden="true"></i> Voriges
         </Button>
-        <FileCheerBar fileDocumentId={image.fileDocumentId} originLabel={originLabel} />
-        <Button as="a" href={downloadUrl} variant="outline-secondary">
+        {shownCheers}
+        <Button as="a" href={shownDownloadUrl} variant="outline-secondary">
           <i className="bi bi-download me-1" aria-hidden="true"></i>
           Herunterladen
         </Button>

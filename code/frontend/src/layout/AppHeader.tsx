@@ -19,7 +19,7 @@ export function AppHeader() {
     <header className="header">
       <Link className="header-brand" to="/">
         <i className="bi bi-house-fill"></i>
-        <span>gebiter9k</span>
+        <span>gebieter9k</span>
       </Link>
       {isLoggedIn && <OriginBackButton />}
       {isLoggedIn && (

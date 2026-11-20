@@ -9,6 +9,7 @@ import type { MultilingualText } from '../../language/MultilingualText.ts'
 import type { FileCheerDirection, FileCheerState } from '../FileCheer.ts'
 import { useFileCheer } from '../useFileCheer.ts'
 import { FileCheerHint } from './FileCheerHint.tsx'
+import { CHEER_LOOKS } from './fileCheerLooks.ts'
 import { FILE_CHEER_TEXTS } from './fileCheerTexts.ts'
 import { useFileCheerAllUsers } from './useFileCheerAllUsers.ts'
 
@@ -16,15 +17,6 @@ type FileCheerBarProps = {
   fileDocumentId: string
   /** Der Name der Seite, auf der die Smileys stehen: für „Zurück zu …“, wenn man aus der Liste ein Profil öffnet. */
   originLabel: string
-}
-
-/**
- * Was je Richtung feststeht: Bezeichnung (mehrsprachig, aus {@link FILE_CHEER_TEXTS}) und Smiley (Nutzer 2026-11-11:
- * Smileys statt der Daumen von Facebook).
- */
-const CHEER_LOOKS: Record<FileCheerDirection, { label: MultilingualText; emoji: string }> = {
-  UP: { label: FILE_CHEER_TEXTS.upLabel, emoji: '🤩' },
-  DOWN: { label: FILE_CHEER_TEXTS.downLabel, emoji: '🤮' },
 }
 
 /**

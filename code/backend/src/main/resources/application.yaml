@@ -334,6 +334,29 @@ gebiter:
     title-max-length: 100
     description-max-length: 2000
     file-page-size: 24
+  # Freigaben einer Galerie über einen Token (Paket gallery, Konzept docu/konzept-galerie-freigabe.md): Wer den Link
+  # mit dem Token hat, sieht die Bilder der Galerie ohne Anmeldung.
+  gallery-share:
+    # So viele Byte Zufall hat ein Token; als Hex-Text doppelt so viele Zeichen (32 Byte = 64 Zeichen).
+    token-bytes: 32
+    # Höchstlänge der Bezeichnung einer Freigabe, z. B. „für Oma“.
+    label-max-length: 100
+    # So viele Bilder zeigt eine Seite der Besucheransicht.
+    file-page-size: 24
+    # Diese Felder eines Bildes bekommt ein Besucher ohne Anmeldung (kommagetrennt, Namen aus gebiter.file.field.*). Nie
+    # Pfade, GUIDs, Rollen oder die Freigaben selbst: sftpPath und galleryShareTokenHashes weist das Backend beim Start ab.
+    # Ein angemeldeter Betrachter bekommt stattdessen die Felder, die er nach seinen Rechten ohnehin lesen darf.
+    visitor-field-names: id,fileName,fileDescription,tags,fileExtension,mimeType,fileSizeBytes,uploadedAt,cheerUpCount,cheerDownCount,previewBase64Png,imageWidth,imageHeight,capturedAt,cameraModel
+    # So viele Abrufe von Dateien über Freigaben laufen höchstens gleichzeitig (Viewer, Download und ZIP zusammen). Der
+    # SFTP-Broker hat 10 Verbindungen (gebiter.sftp.max-connections); so bleibt für angemeldete User immer Platz.
+    max-parallel-deliveries: 4
+    # Davon höchstens so viele ZIP-Downloads („Auswahl“ und „alle“): Ein ZIP von 100 GB läuft Stunden.
+    max-parallel-zip-downloads: 2
+    # So lange wartet ein Abruf auf einen freien Platz, danach 429 mit Retry-After.
+    delivery-wait: 10s
+    delivery-retry-after-seconds: 30
+    # Höchstens so viele Bilder in einer Auswahl; wer mehr will, nimmt „alle“.
+    selection-max-file-count: 2000
   # Die Sichtbarkeit neuer User (Nutzer 2026-11-09): Standard sind öffentliche Profile, also alle, auch ohne Anmeldung.
   users:
     default-profile-visibility: ANY
@@ -539,3 +562,7 @@ gebiter:
       # Wer die Metadaten außer dem Autor noch bearbeiten darf (Nutzer 2026-11-09): GUIDs, die der Autor freigibt; diese
       # User dürfen die Datei auch lesen. Setzt nur das Backend (PUT /api/file-document/editors).
       editor-users-guids: editorUsersGuids
+      # Die Freigaben der Galerie, in der die Datei steht (Nutzer 2026-11-19, Konzept docu/konzept-galerie-freigabe.md):
+      # je Freigabe der SHA-256 ihres Schlüssels, mehrwertig, mehrere Freigaben laufen parallel. Nie der Schlüssel
+      # selbst. Setzt nur das Backend; im Solr-Manager liest das Feld nur ADMIN.
+      gallery-share-token-hashes: galleryShareTokenHashes

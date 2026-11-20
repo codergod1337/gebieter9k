@@ -31,7 +31,8 @@ Ohne den ersten Rechner: `cp code/.env.example code/.env` und die Werte eintrage
 
 - Git, Bash, OpenSSH (`ssh-keyscan`) und `openssl`.
 - Java 25.
-- Node 26.13.0 über nvm (`code/frontend/.nvmrc`).
+- Node 26.13.0 über nvm (`code/frontend/.nvmrc`). nvm auf Debian (ohne sudo, trägt sich in `~/.bashrc` ein):
+  `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.41.0/install.sh | bash`, danach ein neues Terminal.
 - Für die Auswertung hochgeladener Dateien: Tesseract (Texterkennung, mit Deutsch) und libheif (HEIC vom iPhone).
   - Mac: `brew install tesseract tesseract-lang libheif`
   - Debian: `sudo apt install tesseract-ocr tesseract-ocr-deu libheif-examples libheif-plugin-libde265`
@@ -108,6 +109,16 @@ git config user.email "73815018+codergod1337@users.noreply.github.com"
 brew install gh
 gh auth login --hostname github.com --git-protocol https --web
 gh auth setup-git
+```
+
+Auf Debian statt `brew install gh` das offizielle Paket-Repo von GitHub (das Debian-Paket ist älter):
+
+```
+sudo mkdir -p -m 755 /etc/apt/keyrings
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null
+sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt update && sudo apt install -y gh
 ```
 
 `gh auth login` zeigt im Terminal einen Einmal-Code (acht Zeichen, kein 2FA-Code) und öffnet nach Enter den Browser:

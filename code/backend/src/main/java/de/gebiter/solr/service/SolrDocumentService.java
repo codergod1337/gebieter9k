@@ -123,6 +123,63 @@ public class SolrDocumentService {
 		doAddAtomicUpdateDocuments(solrCoreKey, atomicUpdateDocuments);
 	}
 
+	/**
+	 * UPDATE: Nimmt in mehreren vorhandenen Dokumenten EINEN Wert in ein mehrwertiges Feld auf (Atomic Update
+	 * {@code add-distinct}). Die übrigen Werte des Feldes und alle anderen Felder bleiben, wie sie sind; steht der Wert
+	 * schon drin, steht er danach nicht doppelt drin. Anders als bei {@code set} muss niemand die Liste vorher lesen: Zwei
+	 * Vorgänge, die gleichzeitig je einen anderen Wert aufnehmen, überschreiben sich nicht. Alle Dokumente in EINER
+	 * Anfrage, EIN Soft-Commit am Ende. Ohne Dokumente geschieht nichts.
+	 * <p>
+	 * Solr arbeitet die Dokumente der Reihe nach ab: Fehlt eines, sind die davor schon geändert.
+	 *
+	 * @throws jakarta.persistence.EntityNotFoundException wenn es eines der Dokumente nicht (mehr) gibt
+	 * @throws SolrUnavailableException wenn Solr nicht antwortet
+	 */
+	public void addFieldValueToSolrDocuments(String solrCoreKey, String idFieldName, Collection<String> ids,
+			String fieldName, Object fieldValue) {
+		// "add-distinct" ist Solrs Befehl für Atomic Update: den Wert aufnehmen, wenn er noch nicht drinsteht
+		String addDistinctCommand = "add-distinct";
+		doChangeOneFieldValueOfSolrDocuments(solrCoreKey, idFieldName, ids, fieldName, addDistinctCommand, fieldValue);
+	}
+
+	/**
+	 * UPDATE: Nimmt in mehreren vorhandenen Dokumenten EINEN Wert aus einem mehrwertigen Feld heraus (Atomic Update
+	 * {@code remove}), das Gegenstück zu {@link #addFieldValueToSolrDocuments}. Die übrigen Werte bleiben; steht der Wert
+	 * in einem Dokument nicht drin, ändert sich dort nichts. Alle Dokumente in EINER Anfrage, EIN Soft-Commit am Ende.
+	 * Ohne Dokumente geschieht nichts.
+	 *
+	 * @throws jakarta.persistence.EntityNotFoundException wenn es eines der Dokumente nicht (mehr) gibt
+	 * @throws SolrUnavailableException wenn Solr nicht antwortet
+	 */
+	public void removeFieldValueFromSolrDocuments(String solrCoreKey, String idFieldName, Collection<String> ids,
+			String fieldName, Object fieldValue) {
+		// "remove" ist Solrs Befehl für Atomic Update: genau diesen Wert herausnehmen
+		String removeCommand = "remove";
+		doChangeOneFieldValueOfSolrDocuments(solrCoreKey, idFieldName, ids, fieldName, removeCommand, fieldValue);
+	}
+
+	/**
+	 * Der Kern von Aufnehmen und Herausnehmen eines Werts: je Dokument ein Atomic Update mit dem Befehl für dieses eine
+	 * Feld und der Bedingung „gibt es schon“, alle in einer Anfrage.
+	 */
+	private void doChangeOneFieldValueOfSolrDocuments(String solrCoreKey, String idFieldName, Collection<String> ids,
+			String fieldName, String atomicUpdateCommand, Object fieldValue) {
+		if (ids.isEmpty()) {
+			return;
+		}
+		List<SolrInputDocument> atomicUpdateDocuments = new ArrayList<>();
+		for (String id : ids) {
+			Map<String, Object> fieldOperation = Map.of(atomicUpdateCommand, fieldValue);
+			SolrInputDocument atomicUpdateDocument = new SolrInputDocument();
+			atomicUpdateDocument.setField(idFieldName, id);
+			atomicUpdateDocument.setField(fieldName, fieldOperation);
+			// _version_ 1 heißt: nur, wenn es das Dokument gibt. Sonst legte ein Atomic Update ein neues, halbes an.
+			atomicUpdateDocument.setField("_version_", 1L);
+			atomicUpdateDocuments.add(atomicUpdateDocument);
+		}
+		doAddAtomicUpdateDocuments(solrCoreKey, atomicUpdateDocuments);
+	}
+
 	/** Das Atomic Update für ein Dokument: die id, je Feld der Befehl {@code set} und die Bedingung „gibt es schon“. */
 	private static SolrInputDocument createAtomicUpdateDocument(String id, String idFieldName,
 			Map<String, Object> newValuesByFieldName) {

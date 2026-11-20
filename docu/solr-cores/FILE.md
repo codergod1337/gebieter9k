@@ -38,6 +38,7 @@
 | 33 | `readableForFriendsOfUsersGuid` | STRING | ja | ja |  | ja |  |  |  |  | -1 | (nur Backend) | Lesbar für Freunde von | Bei FRIENDS die GUID des Autors: Seine Freunde dürfen die Datei lesen. Sonst leer. Der Lesefilter vergleicht sie mit der Freundesliste des Lesers aus dem Hauptspeicher, ohne Postgres. Setzt nur das Backend. |
 | 34 | `galleryListingPosition` | LONG | ja | ja |  | ja |  |  |  |  | -1 | USER | Platz in der Galerie | Reihenfolge des Bildes in seiner Galerie (Drag and Drop), setzt das Backend. |
 | 35 | `editorUsersGuids` | STRING | ja | ja | ja | ja |  |  |  |  | -1 | USER | Bearbeiter | GUIDs der User, die der Autor zum Bearbeiten der Metadaten freigegeben hat; sie dürfen die Datei auch lesen. Setzt nur das Backend. |
+| 36 | `galleryShareTokenHashes` | STRING | ja | ja | ja | ja |  |  |  |  | -1 | ADMIN | Galerie-Freigaben | Freigaben der Galerie über einen Link mit Token (Postgres, Tabelle gallery_share): je Freigabe der SHA-256 des Tokens, nie der Token selbst. Setzt nur das Backend. Ein Besucher mit dem Link bekommt nur Bilder, die den Hash seiner Freigabe tragen. (Von Hand nachgetragen am 2026-11-19, `solr_field` id 42.) |
 
 ## Beispiel-Dokument
 

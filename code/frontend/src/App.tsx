@@ -54,6 +54,7 @@ import { Profile } from './profile/Profile.tsx'
 import { ProfileHome } from './profile/ProfileHome.tsx'
 import { GalleryListTab } from './gallery/GalleryListTab.tsx'
 import { GalleryPage } from './gallery/GalleryPage.tsx'
+import { GalleryShareVisitorPage } from './gallery/GalleryShareVisitorPage.tsx'
 import { SolrCoreFieldsTab } from './solrmanager/SolrCoreFieldsTab.tsx'
 import { Market } from './market/Market.tsx'
 import { MarketCategoryTab } from './market/MarketCategoryTab.tsx'
@@ -97,7 +98,8 @@ function AppLayout() {
 }
 
 /**
- * Die Bestätigungsseite der 2FA geht immer, sie öffnet sich in einem neuen Fenster. Ohne Anmeldung gibt es sonst nur
+ * Die Bestätigungsseite der 2FA geht immer, sie öffnet sich in einem neuen Fenster; ebenso die Besucherseite einer
+ * Galerie-Freigabe (`/share/galerie/<token>`). Ohne Anmeldung gibt es sonst nur
  * Login und Registrierung, angemeldet die Module. Administration, SolrManager, Tika-Test und Icon-Manager stehen
  * zusätzlich hinter dem Admin-Wächter, ihre Tabs sind Routen.
  */
@@ -113,6 +115,8 @@ function AppRoutes() {
   }
   return (
     <Routes>
+      {/* Die Besucherseite einer Galerie-Freigabe: ohne Anmeldung, der Token im Link ist das Recht */}
+      <Route path="/share/galerie/:shareToken" element={<GalleryShareVisitorPage />} />
       {session === null && <Route path="*" element={<LoginPage />} />}
       {session !== null && <Route path="*" element={<LoggedInRoutes />} />}
     </Routes>

@@ -18,11 +18,26 @@ type GalleryImageTileProps = {
   sortingDisabled: boolean
   /** Darf der User die Metadaten ändern (Autor, freigegebene Bearbeiter, FILE_MANAGER, ADMIN)? Dann gibt es den Stift. */
   changeable: boolean
-  /** Der Origin für die Seite der Datei („Zurück zu <Galerie>“). */
-  originState: OriginState
+  /**
+   * Der Origin für die Seite der Datei („Zurück zu <Galerie>“). Fehlt nur dort, wo es die Seite der Datei nicht gibt
+   * (Besucherseite einer Freigabe): Dann bringt der Aufrufer `cheers` und `actions` selbst mit.
+   */
+  originState?: OriginState
   onOpen: (fileDocumentId: string) => void
   /** Optional, unter der Aktionsleiste: was der Aufrufer zur Kachel dazusagt, z. B. im Gebietermarkt das Angebot. */
   footer?: ReactNode
+  /** Optional, links in der Kopfzeile vor der Überschrift: z. B. das Kästchen zum Auswählen auf der Besucherseite. */
+  headStart?: ReactNode
+  /**
+   * Optional statt der Stimmen des angemeldeten Users ({@link FileCheerBar}): was über dem Bild steht, z. B. auf der
+   * Besucherseite einer Freigabe die Zahlen ohne Abstimmen.
+   */
+  cheers?: ReactNode
+  /**
+   * Optional statt der Aktionsleiste einer Datei ({@link FileDocumentActionButtons}): z. B. auf der Besucherseite einer
+   * Freigabe nur der Download über den Link.
+   */
+  actions?: ReactNode
 }
 
 /** Kantenlänge der Vorschau einer Kachel: die volle Vorschau aus Solr. */
@@ -53,6 +68,9 @@ export function GalleryImageTile({
   originState,
   onOpen,
   footer,
+  headStart,
+  cheers,
+  actions,
 }: GalleryImageTileProps) {
   const navigate = useNavigate()
   const sortableItem = useSortableItem(fileDocumentId, sortingDisabled || !sortable)
@@ -67,10 +85,31 @@ export function GalleryImageTile({
     navigate(fileDocumentPath, { state: originState })
   }
 
+  // Ohne eigene Teile des Aufrufers: die Stimmen und die Aktionsleiste des angemeldeten Users
+  let shownCheers = cheers
+  if (shownCheers === undefined && originState !== undefined) {
+    shownCheers = <FileCheerBar fileDocumentId={fileDocumentId} originLabel={originState.origin.label} />
+  }
+  let shownActions = actions
+  if (shownActions === undefined && originState !== undefined) {
+    shownActions = (
+      <FileDocumentActionButtons
+        fileDocumentId={fileDocumentId}
+        fileName={fileName}
+        hasViewer={false}
+        changeable={changeable}
+        onEdit={openEdit}
+        linkState={originState}
+        detailsPath={fileDocumentPath}
+      />
+    )
+  }
+
   return (
     <div ref={sortableItem.ref} style={sortableItem.style} className={tileClassName}>
       <div className="gallery-image-tile-head">
         {sortable && <div className="gallery-image-tile-handle">{sortableItem.dragHandle}</div>}
+        {headStart}
         <span className="gallery-image-tile-name">{heading}</span>
       </div>
       <div className="gallery-image-tile-picture">
@@ -81,21 +120,9 @@ export function GalleryImageTile({
             alternativeText={fileName}
           />
         </button>
-        <div className="gallery-image-tile-cheers">
-          <FileCheerBar fileDocumentId={fileDocumentId} originLabel={originState.origin.label} />
-        </div>
+        <div className="gallery-image-tile-cheers">{shownCheers}</div>
       </div>
-      <div className="gallery-image-tile-actions">
-        <FileDocumentActionButtons
-          fileDocumentId={fileDocumentId}
-          fileName={fileName}
-          hasViewer={false}
-          changeable={changeable}
-          onEdit={openEdit}
-          linkState={originState}
-          detailsPath={fileDocumentPath}
-        />
-      </div>
+      <div className="gallery-image-tile-actions">{shownActions}</div>
       {footer !== undefined && <div className="gallery-image-tile-footer small text-center px-2 pb-2">{footer}</div>}
     </div>
   )

@@ -20,6 +20,7 @@ zurück (Javadoc der Entity und der Controller, Kommentar am Frontend-Typ). Erze
 - [FileExtension](FileExtension.md): Eine Dateiendung, die das System kennt, wie in der Vorlage jede einzeln angelegt.
 - [FileExtensionGroup](FileExtensionGroup.md): Eine Übergruppe der Endungen, z.
 - [Gallery](Gallery.md): Eine Galerie im Profil (Konzept `docu/konzept-galerie.md`): Titel, Beschreibung und Sichtbarkeit legt der Besitzer selbst fest.
+- [GalleryShare](GalleryShare.md): Eine Freigabe einer Galerie über einen Token (Konzept `docu/konzept-galerie-freigabe.md`): Wer den Link mit dem Token hat, sieht die Bilder der Galerie ohne Anmeldung.
 - [Guestbook](Guestbook.md): Ein Eintrag im Gästebuch eines Users: wer ihn wo geschrieben hat und was.
 - [GuestbookComment](GuestbookComment.md): Ein Kommentar unter einem Gästebucheintrag.
 - [GuestbookReaction](GuestbookReaction.md): Ein Smiley auf einen Gästebucheintrag oder einen seiner Kommentare (Vorgabe des Nutzers 2026-11-09): nur in eine Richtung, nicht zurücknehmbar.

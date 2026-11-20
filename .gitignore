@@ -13,6 +13,8 @@
 .env.*.local
 # Private Anleitung mit echten Werten (Passwörter, Adressen, Schlüssel des Servers)
 /docu/setup.md
+# Anleitung „Tunnel über Tor“: nennt Adresse und SSH-Port von zu Hause
+/docu/todo-tunnel-ueber-tor.md
 # Schlüssel, Zertifikate und Keystores, egal wo sie liegen
 *.pem
 *.key

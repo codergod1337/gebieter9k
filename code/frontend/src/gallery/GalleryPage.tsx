@@ -20,6 +20,7 @@ import { useFileManagerOrAdmin } from '../file/useFileManagerOrAdmin.ts'
 import { VISIBILITY_LABELS } from '../users/visibilityLabels.ts'
 import { GalleryImageTile } from './GalleryImageTile.tsx'
 import { GalleryImageViewerPopup, type GalleryViewerImage } from './GalleryImageViewerPopup.tsx'
+import { GalleryShareBox } from './GalleryShareBox.tsx'
 import { GalleryUploadBox } from './GalleryUploadBox.tsx'
 import { useGallery } from './useGallery.ts'
 
@@ -241,6 +242,7 @@ export function GalleryPage() {
           </div>
         )}
       </ContentBox>
+      {ownGallery && <GalleryShareBox galleryId={gallery.id} />}
       {openViewerImage !== null && (
         <GalleryImageViewerPopup
           image={openViewerImage}

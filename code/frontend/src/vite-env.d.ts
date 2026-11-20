@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_ADMIN_ACCESS_ROLE_KEY: string | undefined
   /** Key des File-Manager-Rechts, wie gebiter.accessrole.file-manager-key im Backend. */
   readonly VITE_FILE_MANAGER_ACCESS_ROLE_KEY: string | undefined
+  /** Key des Rechts zum Freigeben einer Galerie über einen Link, wie am GalleryShareService im Backend. */
+  readonly VITE_GALLERY_SHARE_ACCESS_ROLE_KEY: string | undefined
   /** Der Solr-Kern der Dateien, wie gebiter.file.solr-core-key im Backend. */
   readonly VITE_FILE_SOLR_CORE_KEY: string | undefined
   /** Höchstens so viele Dateien in einer Upload-Liste der FileDropzone. */

@@ -355,6 +355,89 @@ public final class Helper {
 	}
 
 	/**
+	 * Macht aus einem gespeicherten Dateinamen einen, der gefahrlos als Eintrag in einem ZIP oder als Name eines Downloads
+	 * taugt. Den Namen hat einmal ein User hochgeladen, er ist also nicht vertrauenswürdig:
+	 * <ul>
+	 * <li>Pfadtrenner und alles, was Windows in Namen verbietet ({@code \ / : * ? " < > |}), wird zu {@code _}: Beim
+	 * Entpacken kann so nichts außerhalb des Zielordners landen.</li>
+	 * <li>Steuerzeichen und unsichtbare Formatzeichen (z. B. die Umkehr der Schreibrichtung, mit der sich eine Endung
+	 * tarnen lässt) werden zu {@code _}.</li>
+	 * <li>Punkte und Leerzeichen am Anfang und am Ende fallen weg: kein {@code ..}, keine versteckte Datei.</li>
+	 * <li>Höchstens 150 Zeichen, die Endung bleibt erhalten.</li>
+	 * </ul>
+	 *
+	 * @param fallbackFileName der Name, wenn {@code fileName} fehlt oder nichts Brauchbares übrig bleibt
+	 */
+	public static String createSafeFileName(String fileName, String fallbackFileName) {
+		if (fileName == null) {
+			return fallbackFileName;
+		}
+		String forbiddenCharacters = "\\/:*?\"<>|";
+		StringBuilder cleanedFileName = new StringBuilder();
+		for (int index = 0; index < fileName.length(); index++) {
+			char character = fileName.charAt(index);
+			boolean forbiddenCharacter = forbiddenCharacters.indexOf(character) >= 0;
+			boolean controlCharacter = Character.isISOControl(character);
+			boolean formatCharacter = Character.getType(character) == Character.FORMAT;
+			if (forbiddenCharacter || controlCharacter || formatCharacter) {
+				cleanedFileName.append('_');
+			} else {
+				cleanedFileName.append(character);
+			}
+		}
+		int startIndex = 0;
+		int endIndex = cleanedFileName.length();
+		while (startIndex < endIndex && isDotOrWhitespace(cleanedFileName.charAt(startIndex))) {
+			startIndex = startIndex + 1;
+		}
+		while (endIndex > startIndex && isDotOrWhitespace(cleanedFileName.charAt(endIndex - 1))) {
+			endIndex = endIndex - 1;
+		}
+		String safeFileName = cleanedFileName.substring(startIndex, endIndex);
+		if (safeFileName.isEmpty()) {
+			return fallbackFileName;
+		}
+		// 150 Zeichen passen in jedes Dateisystem, auch wenn ein „ (2)“ dazukommt
+		int maxFileNameLength = 150;
+		if (safeFileName.length() <= maxFileNameLength) {
+			return safeFileName;
+		}
+		int lastDotIndex = safeFileName.lastIndexOf('.');
+		int maxExtensionLength = 20;
+		boolean hasShortExtension = lastDotIndex > 0 && safeFileName.length() - lastDotIndex <= maxExtensionLength;
+		if (!hasShortExtension) {
+			return safeFileName.substring(0, maxFileNameLength);
+		}
+		String extensionWithDot = safeFileName.substring(lastDotIndex);
+		int keptNameLength = maxFileNameLength - extensionWithDot.length();
+		String shortenedName = safeFileName.substring(0, keptNameLength);
+		return shortenedName + extensionWithDot;
+	}
+
+	private static boolean isDotOrWhitespace(char character) {
+		return character == '.' || Character.isWhitespace(character);
+	}
+
+	/**
+	 * Ist {@code value} ein Hex-Text aus genau {@code length} Zeichen 0–9 und a–f, nur Kleinbuchstaben? So sieht ein Token
+	 * aus {@link #createRandomHexToken(int)} aus. Geprüft wird Zeichen für Zeichen, ohne den Wert irgendwo auszugeben.
+	 */
+	public static boolean isLowerCaseHex(String value, int length) {
+		if (value == null || value.length() != length) {
+			return false;
+		}
+		for (int index = 0; index < value.length(); index++) {
+			char character = value.charAt(index);
+			boolean digit = character >= '0' && character <= '9';
+			boolean lowerCaseHexLetter = character >= 'a' && character <= 'f';
+			if (!digit && !lowerCaseHexLetter) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
 	 * Prüft Paket oder Name eines Symbols gegen die Symbol-Regel ({@code gameicons}, {@code 3d-glasses}).
 	 *
 	 * @throws IllegalArgumentException wenn der Wert fehlt oder die Regel verletzt
@@ -421,6 +504,21 @@ public final class Helper {
 		SECURE_RANDOM.nextBytes(randomBytes);
 		Base64.Encoder urlSafeEncoderWithoutPadding = Base64.getUrlEncoder().withoutPadding();
 		return urlSafeEncoderWithoutPadding.encodeToString(randomBytes);
+	}
+
+	/**
+	 * Ein neuer Zufalls-Token als Hex-Text in Kleinbuchstaben: {@code tokenBytes} Byte aus {@link SecureRandom}, also
+	 * doppelt so viele Zeichen 0–9 und a–f. Nur Hex, damit er ohne Umkodierung in einen Link und als Wert in eine
+	 * Adresse passt. Für den Token einer Galerie-Freigabe ({@code gebiter.gallery-share.token-bytes}): Er steht in
+	 * Postgres an der Freigabe, in Solr steht nur sein SHA-256 ({@link #createSha256Hex(String)}).
+	 *
+	 * @param tokenBytes wie viele Byte Zufall
+	 */
+	public static String createRandomHexToken(int tokenBytes) {
+		byte[] randomBytes = new byte[tokenBytes];
+		SECURE_RANDOM.nextBytes(randomBytes);
+		HexFormat lowerCaseHexFormat = HexFormat.of();
+		return lowerCaseHexFormat.formatHex(randomBytes);
 	}
 
 	/**

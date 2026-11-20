@@ -14,6 +14,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import de.gebiter.file.dto.FileDocumentPage;
 import de.gebiter.file.dto.FileDocumentSoftDeletedEvent;
 import de.gebiter.file.service.FileDocumentResolveService;
 import de.gebiter.file.service.FileDocumentWriteService;
+import de.gebiter.gallery.dto.GalleryDeletedEvent;
 import de.gebiter.gallery.dto.GalleryForClient;
 import de.gebiter.gallery.model.Gallery;
 import de.gebiter.gallery.repository.GalleryRepository;
@@ -78,10 +80,13 @@ public class GalleryService {
 
 	private final RichTextService richTextService;
 
+	private final ApplicationEventPublisher applicationEventPublisher;
+
 	public GalleryService(GalleryRepository galleryRepository, UsersService usersService,
 			CurrentUsersProvider currentUsersProvider, FileDocumentResolveService fileDocumentResolveService,
 			FileDocumentWriteService fileDocumentWriteService, FileSolrFieldNames fileSolrFieldNames,
-			RichTextService richTextService, @Value("${gebiter.gallery.title-max-length}") int titleMaxLength,
+			RichTextService richTextService, ApplicationEventPublisher applicationEventPublisher,
+			@Value("${gebiter.gallery.title-max-length}") int titleMaxLength,
 			@Value("${gebiter.gallery.description-max-length}") int descriptionMaxLength,
 			@Value("${gebiter.gallery.file-page-size}") int filePageSize) {
 		this.galleryRepository = galleryRepository;
@@ -94,6 +99,7 @@ public class GalleryService {
 		this.descriptionMaxLength = descriptionMaxLength;
 		this.filePageSize = filePageSize;
 		this.richTextService = richTextService;
+		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
 	/**
@@ -175,6 +181,30 @@ public class GalleryService {
 			doRepairGalleryFileListingPositions(visibleGalleryId);
 		}
 		return fileDocumentResolveService.resolveFileDocumentsOfGallery(visibleGalleryId, page, filePageSize);
+	}
+
+	/**
+	 * READ: Prüft für einen anderen Service, dass es die Galerie gibt und sie dem angemeldeten User gehört, bevor er an
+	 * ihr etwas tut (z. B. der {@code GalleryShareService} eine Freigabe anlegt). Eine fremde Galerie sieht aus wie „gibt
+	 * es nicht“.
+	 *
+	 * @throws EntityNotFoundException wenn es die Galerie nicht gibt oder sie nicht ihm gehört
+	 */
+	@Transactional(readOnly = true)
+	public void checkOwnGalleryExists(Long id) {
+		doGetOwnGallery(id);
+	}
+
+	/**
+	 * READ (Backend): Die Galerie zu einer gültigen Freigabe, für die Besucheransicht (Titel und Beschreibung). Ohne
+	 * Rechteprüfung und ohne angemeldeten User: Dass der Besucher sie sehen darf, hat der Aufrufer geprüft (der
+	 * {@code GalleryShareVisitorService}: gültiger Token). Über keinen Endpunkt direkt erreichbar.
+	 *
+	 * @throws EntityNotFoundException wenn es die Galerie nicht gibt
+	 */
+	@Transactional(readOnly = true)
+	public Gallery getGalleryForGalleryShare(Long id) {
+		return doGetGallery(id);
 	}
 
 	/**
@@ -303,14 +333,20 @@ public class GalleryService {
 	}
 
 	/**
-	 * DELETE: Der Besitzer löscht seine Galerie. Ihre Bilder bleiben erhalten: Sie verlieren die Galerie und ihren Platz
-	 * und werden privat (NONE), damit nichts verloren geht und nichts ungewollt sichtbar bleibt.
+	 * DELETE: Der Besitzer löscht seine Galerie. Zuerst gehen ihre Freigaben weg: Die Meldung {@link GalleryDeletedEvent}
+	 * lässt den {@code GalleryShareService} jede Freigabe erst aus den Bildern in Solr nehmen und dann in Postgres
+	 * löschen. Scheitert das, bleibt die Galerie bestehen, und das Löschen lässt sich wiederholen. Danach die Bilder: Sie
+	 * bleiben erhalten, verlieren die Galerie und ihren Platz und werden privat (NONE), damit nichts verloren geht und
+	 * nichts ungewollt sichtbar bleibt.
 	 *
 	 * @throws EntityNotFoundException wenn es die Galerie nicht gibt oder sie nicht ihm gehört
 	 */
 	@Transactional
 	public void deleteOwnGallery(Long id) {
 		Gallery ownGallery = doGetOwnGallery(id);
+		Long ownGalleryId = ownGallery.getId();
+		GalleryDeletedEvent galleryDeletedEvent = new GalleryDeletedEvent(ownGalleryId);
+		applicationEventPublisher.publishEvent(galleryDeletedEvent);
 		String galleryIdsFieldName = fileSolrFieldNames.galleryIds();
 		String galleryListingPositionFieldName = fileSolrFieldNames.galleryListingPosition();
 		String visibilityFieldName = fileSolrFieldNames.visibility();

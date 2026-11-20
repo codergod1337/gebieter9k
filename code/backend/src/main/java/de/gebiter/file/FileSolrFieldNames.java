@@ -53,6 +53,8 @@ public class FileSolrFieldNames {
 
 	private final String editorUsersGuids;
 
+	private final String galleryShareTokenHashes;
+
 	public FileSolrFieldNames(@Value("${gebiter.file.field.id}") String id,
 			@Value("${gebiter.file.field.sftp-path}") String sftpPath,
 			@Value("${gebiter.file.field.author-users-guid}") String authorUsersGuid,
@@ -85,7 +87,8 @@ public class FileSolrFieldNames {
 			@Value("${gebiter.file.field.gallery-listing-position}") String galleryListingPosition,
 			@Value("${gebiter.file.field.file-description}") String fileDescription,
 			@Value("${gebiter.file.field.tags}") String tags,
-			@Value("${gebiter.file.field.editor-users-guids}") String editorUsersGuids) {
+			@Value("${gebiter.file.field.editor-users-guids}") String editorUsersGuids,
+			@Value("${gebiter.file.field.gallery-share-token-hashes}") String galleryShareTokenHashes) {
 		this.id = id;
 		this.sftpPath = sftpPath;
 		this.authorUsersGuid = authorUsersGuid;
@@ -119,6 +122,7 @@ public class FileSolrFieldNames {
 		this.fileDescription = fileDescription;
 		this.tags = tags;
 		this.editorUsersGuids = editorUsersGuids;
+		this.galleryShareTokenHashes = galleryShareTokenHashes;
 	}
 
 	/** Alle Namen als ein Objekt, z. B. für die Stammdaten des Frontends. */
@@ -282,5 +286,13 @@ public class FileSolrFieldNames {
 	/** Die GUIDs der User, die der Autor zum Bearbeiten der Metadaten freigegeben hat; sie dürfen die Datei auch lesen. */
 	public String editorUsersGuids() {
 		return editorUsersGuids;
+	}
+
+	/**
+	 * Die Freigaben der Galerie, in der die Datei steht: je Freigabe der SHA-256 ihres Tokens, mehrwertig. Nie der
+	 * Token selbst. Setzt nur das Backend ({@code GalleryShareService}); geht nicht in die Stammdaten des Frontends.
+	 */
+	public String galleryShareTokenHashes() {
+		return galleryShareTokenHashes;
 	}
 }

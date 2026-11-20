@@ -24,6 +24,7 @@ import de.gebiter.file.dto.FileStatusValueSet;
 import de.gebiter.file.dto.FileDocumentBackendFacts;
 import de.gebiter.file.dto.FileDocumentForClient;
 import de.gebiter.file.dto.FileDocumentPage;
+import de.gebiter.file.dto.FileDocumentZipSource;
 import de.gebiter.file.dto.FileSolrFieldNameSet;
 import de.gebiter.security.CurrentUsersProvider;
 import de.gebiter.solr.service.SolrDocumentFieldService;
@@ -365,9 +366,230 @@ public class FileDocumentResolveService {
 	}
 
 	/**
-	 * Der Kern jedes Lesens für einen User: die Bedingungen des Aufrufers plus fest Leserolle und Status, nur lesbare
-	 * Felder, neueste zuerst. Ohne Rollen oder ohne lesbare Felder eine leere Seite.
+	 * READ (Backend): In wie vielen aktiven Dateien steht der Hash dieser Galerie-Freigabe ({@code galleryShareTokenHashes})?
+	 * Ohne Lesefilter, für die Kontrolle einer Freigabe: Die Zahl muss zu der passen, die die Freigabe in Postgres
+	 * mitführt. Die Rechte prüft der Aufrufer (der {@code GalleryShareService}, nur für den Besitzer der Galerie).
+	 *
+	 * @param galleryShareTokenHash der SHA-256 des Tokens der Freigabe als Hex-Text
 	 */
+	public long countActiveFileDocumentsWithGalleryShareTokenHash(String galleryShareTokenHash) {
+		String checkedGalleryShareTokenHash = Helper.requireSha256Hex(galleryShareTokenHash);
+		String galleryShareTokenHashesFieldName = fileSolrFieldNames.galleryShareTokenHashes();
+		String galleryShareFilterQuery = createTermFilterQuery(galleryShareTokenHashesFieldName,
+				checkedGalleryShareTokenHash);
+		String activeStatus = fileConfig.statusActive();
+		String activeStatusFilterQuery = createStatusFilterQuery(activeStatus);
+		List<String> filterQueries = List.of(galleryShareFilterQuery, activeStatusFilterQuery);
+		String solrCoreKey = fileConfig.solrCoreKey();
+		return solrDocumentService.countSolrDocuments(solrCoreKey, filterQueries);
+	}
+
+	/**
+	 * READ (Backend): Die ids ALLER Dateien, in denen der Hash dieser Galerie-Freigabe steht
+	 * ({@code galleryShareTokenHashes}), in jedem Status, auch weich gelöschte, ohne Lesefilter. Für das Löschen einer
+	 * Freigabe: Der Hash muss aus jedem Dokument heraus, das ihn trägt. Die Rechte prüft der Aufrufer (der
+	 * {@code GalleryShareService}, nur für den Besitzer der Galerie).
+	 *
+	 * @param galleryShareTokenHash der SHA-256 des Tokens der Freigabe als Hex-Text
+	 */
+	public List<String> resolveFileDocumentIdsWithGalleryShareTokenHash(String galleryShareTokenHash) {
+		String checkedGalleryShareTokenHash = Helper.requireSha256Hex(galleryShareTokenHash);
+		String galleryShareTokenHashesFieldName = fileSolrFieldNames.galleryShareTokenHashes();
+		String galleryShareFilterQuery = createTermFilterQuery(galleryShareTokenHashesFieldName,
+				checkedGalleryShareTokenHash);
+		String idFieldName = fileSolrFieldNames.id();
+		// feste Reihenfolge: So lässt das Lesen in Blöcken keine Datei aus und liefert keine doppelt
+		String idSort = idFieldName + " asc";
+		String solrCoreKey = fileConfig.solrCoreKey();
+		int batchSize = fileConfig.resolvePageSize();
+		List<String> sharedFileDocumentIds = new ArrayList<>();
+		long foundCount = Long.MAX_VALUE;
+		int start = 0;
+		while (start < foundCount) {
+			ModifiableSolrParams queryParams = solrDocumentService.createFilterOnlyQueryParams();
+			queryParams.add(CommonParams.FQ, galleryShareFilterQuery);
+			queryParams.set(CommonParams.FL, idFieldName);
+			queryParams.set(CommonParams.SORT, idSort);
+			queryParams.set(CommonParams.START, start);
+			queryParams.set(CommonParams.ROWS, batchSize);
+			SolrDocumentList foundSolrDocuments = solrDocumentService.querySolrDocuments(solrCoreKey, queryParams);
+			foundCount = foundSolrDocuments.getNumFound();
+			if (foundSolrDocuments.isEmpty()) {
+				break;
+			}
+			for (SolrDocument foundSolrDocument : foundSolrDocuments) {
+				String sharedFileDocumentId = readText(foundSolrDocument, idFieldName);
+				sharedFileDocumentIds.add(sharedFileDocumentId);
+			}
+			start = start + foundSolrDocuments.size();
+		}
+		return sharedFileDocumentIds;
+	}
+
+	/**
+	 * READ (Besucher einer Galerie-Freigabe): Eine Seite der Bilder, die diese Freigabe zeigt, in der Reihenfolge der
+	 * Galerie. Ohne angemeldeten User und ohne dessen Lesefilter: Die Lesegrenze ist hier allein die Freigabe
+	 * ({@link #createGalleryShareFilterQueries}). Dass sie gilt, hat der Aufrufer geprüft (der
+	 * {@code GalleryShareVisitorService}).
+	 * <p>
+	 * Felder: Ein Besucher ohne Anmeldung bekommt nur {@code visitorFieldNames}. Schaut ein angemeldeter User über den
+	 * Link, bekommt er die Felder, die er nach seinen Rechten ohnehin lesen darf (der Admin also alle).
+	 *
+	 * @param galleryId die Galerie der Freigabe, aus Postgres, nie vom Besucher
+	 * @param galleryShareTokenHash der SHA-256 des Tokens der Freigabe als Hex-Text
+	 * @param visitorFieldNames die Felder für einen Besucher ohne Anmeldung
+	 */
+	public FileDocumentPage resolveFileDocumentsOfGalleryShare(Long galleryId, String galleryShareTokenHash, int page,
+			int pageSize, List<String> visitorFieldNames) {
+		Helper.requireNotNull(visitorFieldNames, "visitorFieldNames");
+		if (page < 0) {
+			throw new IllegalArgumentException("page darf nicht negativ sein.");
+		}
+		List<String> galleryShareFilterQueries = createGalleryShareFilterQueries(galleryId, galleryShareTokenHash);
+		String solrCoreKey = fileConfig.solrCoreKey();
+		List<String> fieldNames = visitorFieldNames;
+		boolean usersLoggedIn = currentUsersProvider.isAuthenticated();
+		if (usersLoggedIn) {
+			List<String> currentUsersAccessRoleKeys = currentUsersProvider.currentUsersAccessRoleKeys();
+			List<String> readableFieldNames = solrDocumentFieldService.getReadableSolrFieldNames(solrCoreKey,
+					currentUsersAccessRoleKeys);
+			if (!readableFieldNames.isEmpty()) {
+				fieldNames = readableFieldNames;
+			}
+		}
+		if (fieldNames.isEmpty()) {
+			return new FileDocumentPage(List.of(), 0, page, pageSize);
+		}
+		String fieldList = String.join(",", fieldNames);
+		String galleryOrderSort = createGalleryOrderSort();
+		// als long gerechnet: Eine absurd große Seitenzahl eines Besuchers läuft so nicht über
+		long startAsLong = (long) page * pageSize;
+		if (startAsLong > Integer.MAX_VALUE) {
+			throw new IllegalArgumentException("Diese Seite gibt es nicht.");
+		}
+		int start = (int) startAsLong;
+
+		ModifiableSolrParams queryParams = solrDocumentService.createFilterOnlyQueryParams();
+		for (String galleryShareFilterQuery : galleryShareFilterQueries) {
+			queryParams.add(CommonParams.FQ, galleryShareFilterQuery);
+		}
+		queryParams.set(CommonParams.FL, fieldList);
+		queryParams.set(CommonParams.SORT, galleryOrderSort);
+		queryParams.set(CommonParams.START, start);
+		queryParams.set(CommonParams.ROWS, pageSize);
+		SolrDocumentList foundSolrDocuments = solrDocumentService.querySolrDocuments(solrCoreKey, queryParams);
+		List<Map<String, Object>> clientDocuments = new ArrayList<>();
+		for (SolrDocument foundSolrDocument : foundSolrDocuments) {
+			Map<String, Object> clientDocument = toClientDocument(foundSolrDocument);
+			clientDocuments.add(clientDocument);
+		}
+		long totalCount = foundSolrDocuments.getNumFound();
+		return new FileDocumentPage(clientDocuments, totalCount, page, pageSize);
+	}
+
+	/**
+	 * READ (Besucher einer Galerie-Freigabe): Die Fakten fürs Ausliefern EINES Bildes (Viewer, Download), nur wenn genau
+	 * diese Freigabe es zeigt ({@link #createGalleryShareFilterQueries}). Sonst {@code null}: „gibt es nicht“ und „gehört
+	 * nicht zu dieser Freigabe“ sehen gleich aus. Ohne angemeldeten User; dass die Freigabe gilt, hat der Aufrufer geprüft.
+	 *
+	 * @param id die id der Datei, wie der Besucher sie schickt; eine falsche Form ergibt {@code null}
+	 */
+	public FileDocumentBackendFacts resolveFileDocumentBackendFactsOfGalleryShare(String id, Long galleryId,
+			String galleryShareTokenHash) {
+		boolean idWellFormed = Helper.isSha256Hex(id);
+		if (!idWellFormed) {
+			return null;
+		}
+		String sha256Hex = Helper.requireSha256Hex(id);
+		String idFilterQuery = createIdFilterQuery(sha256Hex);
+		List<String> galleryShareFilterQueries = createGalleryShareFilterQueries(galleryId, galleryShareTokenHash);
+		List<String> filterQueries = new ArrayList<>(galleryShareFilterQueries);
+		filterQueries.add(idFilterQuery);
+		return doResolveFileDocumentBackendFacts(filterQueries);
+	}
+
+	/**
+	 * READ (Besucher einer Galerie-Freigabe): Was ein ZIP-Download braucht, je Bild id, Pfad, Name und Größe, in der
+	 * Reihenfolge der Galerie. Nur Bilder, die genau diese Freigabe zeigt ({@link #createGalleryShareFilterQueries}).
+	 * Gelesen wird in Blöcken und nur diese wenigen Felder: Auch bei vielen tausend Bildern bleibt es klein. Immer ALLE
+	 * Bilder der Freigabe: Eine Auswahl sucht sich der Aufrufer daraus heraus. So geht nie eine lange Liste von ids als
+	 * Filter an Solr (2000 ids wären zu lang für eine Adresse), und die Reihenfolge der Galerie bleibt erhalten.
+	 */
+	public List<FileDocumentZipSource> resolveFileDocumentZipSourcesOfGalleryShare(Long galleryId,
+			String galleryShareTokenHash) {
+		List<String> filterQueries = createGalleryShareFilterQueries(galleryId, galleryShareTokenHash);
+		String idFieldName = fileSolrFieldNames.id();
+		String sftpPathFieldName = fileSolrFieldNames.sftpPath();
+		String fileNameFieldName = fileSolrFieldNames.fileName();
+		String fileExtensionFieldName = fileSolrFieldNames.fileExtension();
+		String fileSizeBytesFieldName = fileSolrFieldNames.fileSizeBytes();
+		List<String> zipSourceFieldNames = List.of(idFieldName, sftpPathFieldName, fileNameFieldName,
+				fileExtensionFieldName, fileSizeBytesFieldName);
+		String fieldList = String.join(",", zipSourceFieldNames);
+		// Reihenfolge der Galerie; die id am Ende macht sie eindeutig, damit das Lesen in Blöcken nichts auslässt
+		String galleryOrderSort = createGalleryOrderSort() + "," + idFieldName + " asc";
+		String solrCoreKey = fileConfig.solrCoreKey();
+		int batchSize = fileConfig.resolvePageSize();
+		List<FileDocumentZipSource> zipSources = new ArrayList<>();
+		long foundCount = Long.MAX_VALUE;
+		int start = 0;
+		while (start < foundCount) {
+			ModifiableSolrParams queryParams = solrDocumentService.createFilterOnlyQueryParams();
+			for (String filterQuery : filterQueries) {
+				queryParams.add(CommonParams.FQ, filterQuery);
+			}
+			queryParams.set(CommonParams.FL, fieldList);
+			queryParams.set(CommonParams.SORT, galleryOrderSort);
+			queryParams.set(CommonParams.START, start);
+			queryParams.set(CommonParams.ROWS, batchSize);
+			SolrDocumentList foundSolrDocuments = solrDocumentService.querySolrDocuments(solrCoreKey, queryParams);
+			foundCount = foundSolrDocuments.getNumFound();
+			if (foundSolrDocuments.isEmpty()) {
+				break;
+			}
+			for (SolrDocument foundSolrDocument : foundSolrDocuments) {
+				String fileDocumentId = readText(foundSolrDocument, idFieldName);
+				String sftpPath = readText(foundSolrDocument, sftpPathFieldName);
+				String fileName = readText(foundSolrDocument, fileNameFieldName);
+				String fileExtension = readText(foundSolrDocument, fileExtensionFieldName);
+				Long storedFileSizeBytes = readLong(foundSolrDocument, fileSizeBytesFieldName);
+				long fileSizeBytes = 0;
+				if (storedFileSizeBytes != null) {
+					fileSizeBytes = storedFileSizeBytes;
+				}
+				FileDocumentZipSource zipSource = new FileDocumentZipSource(fileDocumentId, sftpPath, fileName,
+						fileExtension, fileSizeBytes);
+				zipSources.add(zipSource);
+			}
+			start = start + foundSolrDocuments.size();
+		}
+		return zipSources;
+	}
+
+	/**
+	 * Die Lesegrenze eines Besuchers einer Galerie-Freigabe, an genau dieser Stelle: Jeder Leseweg für Besucher nutzt sie.
+	 * Ein Bild gehört nur dazu, wenn alle drei Bedingungen stimmen:
+	 * <ul>
+	 * <li>es trägt den Hash genau dieser Freigabe im Feld {@code galleryShareTokenHashes};</li>
+	 * <li>es steht in der Galerie der Freigabe (die id kommt aus Postgres): Ein Hash, der an einem Bild hängen geblieben
+	 * ist, das die Galerie verlassen hat, öffnet nichts;</li>
+	 * <li>es ist aktiv: Gelöschte, deaktivierte und archivierte Bilder bekommt ein Besucher nie.</li>
+	 * </ul>
+	 * Die Leserollen der FileClass und die Sichtbarkeit gelten hier bewusst nicht: Die Freigabe ist ein eigener Weg, den
+	 * der Besitzer der Galerie ausdrücklich geöffnet hat. Alle Werte gehen über den term-Parser hinein.
+	 */
+	private List<String> createGalleryShareFilterQueries(Long galleryId, String galleryShareTokenHash) {
+		Helper.requireNotNull(galleryId, "galleryId");
+		String checkedGalleryShareTokenHash = Helper.requireSha256Hex(galleryShareTokenHash);
+		String galleryShareTokenHashesFieldName = fileSolrFieldNames.galleryShareTokenHashes();
+		String galleryShareFilterQuery = createTermFilterQuery(galleryShareTokenHashesFieldName,
+				checkedGalleryShareTokenHash);
+		String galleryFilterQuery = createGalleryFilterQuery(galleryId);
+		String activeStatus = fileConfig.statusActive();
+		String activeStatusFilterQuery = createStatusFilterQuery(activeStatus);
+		return List.of(galleryShareFilterQuery, galleryFilterQuery, activeStatusFilterQuery);
+	}
+
 	/** Der Filter auf die Dateien einer Galerie. */
 	private String createGalleryFilterQuery(Long galleryId) {
 		String galleryIdsFieldName = fileSolrFieldNames.galleryIds();

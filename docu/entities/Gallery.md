@@ -7,7 +7,7 @@ Eine Galerie im Profil (Konzept `docu/konzept-galerie.md`): Titel, Beschreibung 
 - **Tabelle:** `gallery`
 - **Klasse:** [`code/backend/src/main/java/de/gebiter/gallery/model/Gallery.java`](../../code/backend/src/main/java/de/gebiter/gallery/model/Gallery.java)
 - **Frontend-Typ:** [`code/frontend/src/gallery/Gallery.ts`](../../code/frontend/src/gallery/Gallery.ts)
-- **DTOs:** `FileUploadIntoGalleryData`, `GalleryChangeRequest`, `GalleryDeleteRequest`, `GalleryFileListingOrder`, `GalleryFileResolveRequest`, `GalleryForClient`, `GalleryListingOrder`, `GalleryResolveRequest`, `NewGallery`
+- **DTOs:** `FileUploadIntoGalleryData`, `GalleryChangeRequest`, `GalleryDeletedEvent`, `GalleryDeleteRequest`, `GalleryFileListingOrder`, `GalleryFileResolveRequest`, `GalleryForClient`, `GalleryListingOrder`, `GalleryResolveRequest`, `NewGallery`
 
 ## Beispiel-JSON
 
@@ -57,7 +57,7 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 
 - [`code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java): `createOwnGallery`, `changeOwnGallery`, `changeOwnGalleryListingPositions`
 - [`code/backend/src/main/java/de/gebiter/gallery/repository/GalleryRepository.java`](../../code/backend/src/main/java/de/gebiter/gallery/repository/GalleryRepository.java): (Import, Felder)
-- [`code/backend/src/main/java/de/gebiter/gallery/service/GalleryService.java`](../../code/backend/src/main/java/de/gebiter/gallery/service/GalleryService.java): `createOwnGallery`, `getGalleryForClient`, `resolveGalleries`, `resolveGalleryFiles`, `changeOwnGallery`, `changeOwnGalleryListingPositions`, `changeOwnGalleryFileListingPositions`, `prepareOwnGalleryUpload`, `deleteOwnGallery`, `createVisibilityFieldValues`, `doChangeAllGalleryFiles`, `createGalleryForClient`, `doGetVisibleGallery`, `doGetOwnGallery`, `isOwnGallery`, `doGetGallery`, `isGalleryVisibleWithinVisibleProfile`
+- [`code/backend/src/main/java/de/gebiter/gallery/service/GalleryService.java`](../../code/backend/src/main/java/de/gebiter/gallery/service/GalleryService.java): `createOwnGallery`, `getGalleryForClient`, `resolveGalleries`, `resolveGalleryFiles`, `changeOwnGallery`, `changeOwnGalleryListingPositions`, `changeOwnGalleryFileListingPositions`, `prepareOwnGalleryUpload`, `checkOwnGalleryExists`, `getGalleryForGalleryShare`, `deleteOwnGallery` (schickt zuerst `GalleryDeletedEvent`, der `GalleryShareService` löscht daraufhin die Freigaben der Galerie), `createVisibilityFieldValues`, `doChangeAllGalleryFiles`, `createGalleryForClient`, `doGetVisibleGallery`, `doGetOwnGallery`, `isOwnGallery`, `doGetGallery`, `isGalleryVisibleWithinVisibleProfile`
 
 ## Verwendung im Frontend
 

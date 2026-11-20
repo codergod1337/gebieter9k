@@ -13,6 +13,381 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-20 16:03 – Galerie-Freigabe: Link wird gespeichert und bleibt abrufbar
+
+- Ansage: „warum willst du den link nicht speichern? […] das "token" im link ist einfach ein zugangslink den ich
+  anderen schicken werde“. Also ENTSCHIEDEN: Der Link wird gespeichert und ist in der eigenen Galerie jederzeit wieder
+  zu sehen und zu kopieren. „Nur einmal sichtbar“ war meine Entscheidung aus der Nacht, nicht seine, und ist falsch.
+- Plan: 1. Regeln (`code-style`, `entity-docs-rule`, `naming-rules`, `pi-access-self`) und die Stellen lesen
+  (`GalleryShare`, `GalleryShareService`, DTOs, `GalleryShareBox`, `NewGallerySharePopup`). 2. `gallery_share` bekommt
+  das Token im Klartext (Spalte `share_token`), `GalleryShareForClient` liefert es mit; Solr behält nur den Hash.
+  3. Box in der eigenen Galerie zeigt je Freigabe den Link mit „kopieren“. 4. Kompilieren, `npm run build`. 5. Konzept,
+  `entities/GalleryShare.md`, Regel `gallery-share-key-link` nachziehen. 6. Auf den Pi.
+- Ansage zwischendurch (ca. 16:06), für das Stück „Kommentare an Bildern“ (noch nicht dran): „kommentare würde ich auch
+  schon in der kachelansicht asychron nachladen, die brauch ich noch nicht instantan“. Also: Die Kacheln kommen sofort,
+  die Kommentare je Bild lädt die Kachelansicht danach nach. Im Konzept bei den offenen Punkten festgehalten.
+- Stand Backend (kompiliert, `./mvnw -q -o -DskipTests clean compile` rc=0): `GalleryShare.shareToken` (Spalte
+  `share_token`, Pflicht, eindeutig), Konstruktor mit Token; `GalleryShareForClient` mit `shareToken`;
+  `GalleryShareService.createOwnGalleryShare` liefert jetzt `GalleryShareForClient`; DTO `CreatedGalleryShare` gelöscht
+  (wäre doppelt); `GalleryShareController` und Javadoc in `Helper.createRandomHexToken` nachgezogen. Solr unverändert
+  (dort weiter nur der Hash).
+- Stand Frontend (`npm run build` ohne Fehler): `GalleryShare.ts` (Typ mit `shareToken`, `CreatedGalleryShare` weg),
+  `useGalleryShare.ts`, `GalleryShareBox.tsx` (neue Spalte „Link“: Link zum Anklicken und Knopf zum Kopieren,
+  `GalleryShareLinkCell`), `NewGallerySharePopup.tsx` (Hinweis „Den Link findest du jederzeit wieder“ statt „nur dieses
+  eine Mal“), `galleryShareTexts.ts`.
+- Ansage zwischendurch (ca. 16:09): „wenn du dann mal zeit hast, versuch mal direkt den ssh tunnel nach hause auf“.
+  Gemacht: Der SSH-Port von zu Hause ist aus diesem Netz offen, Tunnel direkt ohne Tor, alle drei Ports, Steuer-Socket
+  `$XDG_RUNTIME_DIR/gebieter-tunnel.sock`. Fund: `localhost` zeigt auf dem Laptop zuerst auf `::1`; die Weiterleitungen
+  müssen ohne Bindeadresse stehen, sonst findet `start.sh` den Pi nicht (nachträglich mit `-O forward` ergänzt).
+- Stand 16:17, **fertig und auf dem Pi** (Bau 16:13, Einzelheiten in `setup.md` 5.16):
+  - Vorher: `gallery_share` auf dem Pi war leer (0 Zeilen), also keine Migration nötig. Kontexttest vom Laptop grün
+    (Start 26 s), dabei hat Hibernate die Spalte `share_token` angelegt. Stand Laptop gegen Pi per SHA-256 verglichen:
+    genau die 10 geänderten Dateien und das gelöschte DTO.
+  - Pi: Bau 26 s, Start 17,0 s, kein ERROR, kein WARN; im Bundle steht der neue Text, der alte nicht mehr.
+  - Wegwerf-Test `GalleryShareLinkThrowawayTest` (gelöscht), als Besitzer der Galerie 5: Probe-Freigabe angelegt, die
+    Liste liefert denselben Token wieder, Postgres hat Token und passenden Hash, der Link antwortet auf dem Pi mit 200,
+    nach dem Löschen 404. Endstand Pi: `gallery_share` 0 Zeilen (die Identität steht bei 15), kein Token im Log.
+    Sicherungen und Hilfsdateien auf dem Pi gelöscht.
+  - Doku: Konzept (Entscheidungen 14 und 15, Abschnitte 3, 4.1, 4.3, 4.7, 7, 8), `entities/GalleryShare.md` von Hand,
+    `setup.md` 5.16; Regeln `Vollidiot/gallery-share-key-link.md`, `rechner-debian-laptop.md`, `MEMORY.md`.
+  - **Der Tunnel ist OFFEN** (vom Nutzer so gewollt). Schließen: `ssh -S "$XDG_RUNTIME_DIR/gebieter-tunnel.sock" -O exit x`.
+  - Nichts committet.
+- NICHT gesehen: die Box in der eigenen Galerie mit der Spalte „Link“ (braucht die Anmeldung mit 2FA).
+- Offen für den Nutzer: ausprobieren; sonst wie im Eintrag vom 2026-11-19 22:40, Punkte 2, 3, 5, 6, 7.
+
+## 2026-11-20 16:00 – Neue Sitzung: Stand einlesen (Debian-Laptop)
+
+- Ansage: „hast du noch den kontext vom letzten post?“, danach „dann bring dich auf den aktuellen stand“.
+- Vorgefunden: Die Sitzung lief im Oberordner `fullstackprojekt` an, ohne die Regeln aus `Vollidiot/` (hier gibt es
+  kein `.claude/settings.local.json`, also zeigt nichts auf `Vollidiot`). Der Verlauf der letzten Sitzung ist nicht da.
+  Bevor ich die Regel `memory-location` kannte, habe ich den Ordner `~/.claude/projects/…/memory` aufgelistet (leer,
+  nichts gelesen, nichts geschrieben); seither nicht mehr angefasst.
+- Gelesen: `Vollidiot/MEMORY.md`, `memory-location`, `gallery-share-key-link`, `rechner-debian-laptop`,
+  `log-current-work`, dieses Protokoll ab dem 2026-11-19.
+- Stand am Rechner geprüft (nur gelesen): seit 2026-11-19 23:46 keine Datei geändert; 27 geänderte und 28 neue Dateien,
+  nichts committet, Branch `main` gleich `origin/main`; Tunnel zu; `node_modules` und `dist` im Frontend vorhanden.
+- WARTET auf die Ansage des Nutzers. Offen bleibt die Liste am Ende des Eintrags von 22:40.
+
+## 2026-11-19 22:40 – Galerie-Freigabe fertig bauen und auf den Pi bringen (Nutzer schläft, ohne Rückfragen)
+
+- Ansage: „bekommst du das nun ohne weitere rückfragen lauffähig also so wie wir es besprochen haben? ich gehe nun
+  nämlich schlafen, wäre aber schön wenn du es fertig bekommst“.
+- Plan: 1. Stück 2 Backend (Besucher-Endpunkte), 2. Stück 3 (ZIP gestreamt), 3. Frontend (Box in der eigenen Galerie,
+  Besucherseite), 4. nginx (Adressen mit Token in kein Log), 5. auf den Pi bringen und dort prüfen, 6. Doku. Kein
+  Commit. Was ich selbst entscheide, kommt in den Bericht.
+- Selbst entschieden (alles im Konzept `docu/konzept-galerie-freigabe.md` nachlesbar):
+  - Link nur einmal sichtbar (so gebaut, die Frage blieb ohne Antwort).
+  - Felder für Besucher ohne Anmeldung: Liste in `gebiter.gallery-share.visitor-field-names`, ohne GPS; ein
+    angemeldeter Betrachter bekommt, was er nach seinen Rechten ohnehin liest.
+  - Jede Anfrage nach einem Bild zählt als Aufruf, auch Range; ein ZIP zählt je Bild; die Kacheln zählen nicht.
+  - Weitere Seiten der Besucheransicht über `POST /api/share/token/{token}/resolve` (Body `{page}`).
+  - Die Auswahl kommt als Formular (POST, Feld `fileIds`), damit der Browser das ZIP direkt auf die Platte schreibt.
+  - Besucher-Deckel: 4 Abrufe gleichzeitig, davon 2 ZIP; Auswahl höchstens 2000 Bilder.
+  - Für Besucher nur aktive Bilder; die Galerie-id aus Postgres ist zusätzliche Bedingung im Filter.
+  - Kommentare an Bildern gibt es auf der Plattform noch nicht: nicht gebaut, steht als offen im Konzept.
+- Stand 23:15:
+  - Backend: `GalleryShareService.getValidGalleryShare`, `countGalleryShareAccesses`;
+    `GalleryShareRepository.findByShareTokenHash`, `increaseAccessCountIfValid` (eine SQL-Anweisung prüft und zählt);
+    `GalleryService.getGalleryForGalleryShare`; `FileDocumentResolveService.resolveFileDocumentsOfGalleryShare`,
+    `resolveFileDocumentBackendFactsOfGalleryShare`, `resolveFileDocumentZipSourcesOfGalleryShare`, die eine Lesegrenze
+    `createGalleryShareFilterQueries`; `FileDownloadService.streamFileDocumentWithBackendFacts`,
+    `streamFileDocumentsAsZip` (gemeinsamer Kern `doStreamFileDocument`); neu `GalleryShareVisitorService`,
+    `GalleryShareShareController` (`/api/share/token`), `GalleryShareBusyException` (429), DTOs
+    `SharedGalleryForClient`, `SharedGalleryPageRequest`, `FileDocumentZipSource`; `Helper.isLowerCaseHex`,
+    `Helper.createSafeFileName`; YAML `gebiter.gallery-share.*`. Kompiliert.
+  - Frontend: `gallery/GalleryShare.ts`, `useGalleryShare.ts`, `galleryShareUrls.ts`, `galleryShareTexts.ts`,
+    `GalleryShareBox.tsx` (in `GalleryPage` für die eigene Galerie), `NewGallerySharePopup.tsx`,
+    `GalleryShareVisitorPage.tsx` (Route `/share/galerie/:shareToken` in `App.tsx`, vor der Anmelde-Weiche),
+    `GalleryShareCheerCounts.tsx`; `GalleryImageTile` und `GalleryImageViewerPopup` mit optionalen Teilen des
+    Aufrufers; `file/cheer/fileCheerLooks.ts` (Smileys an einer Stelle); `auth/access/galleryShareAccessRoleKey.ts`,
+    `VITE_GALLERY_SHARE_ACCESS_ROLE_KEY` in beiden `.env.*`; zwei Klassen in `base.css`. `npm ci` (Node 26.13.1),
+    `npm run build` ohne Fehler.
+  - Test über den Tunnel (Wegwerf-Test, räumt selbst auf), grün: Ansicht (9 Bilder, nur erlaubte Felder), 7 falsche
+    Tokens abgewiesen, Viewer mit Byte-Bereich (206, JPEG, `nosniff`, `sandbox`), Download als Anhang, fremdes Bild
+    und falsche ids abgewiesen und nicht gezählt, Grenze von 2 Aufrufen (dritter Abruf und Ansicht zu), ZIP-Prüfungen
+    vor dem ersten Byte. Noch im Lauf (Tor ist sehr langsam): Admin-Ansicht, Ablauf, Galerie löschen.
+  - nginx: geänderte `default.conf` liegt im Scratchpad bereit (`nginx/default.conf`, vorher `default.conf.vorher`).
+- Stand 23:46, **fertig und auf dem Pi** (Bau 23:24, Einzelheiten in `setup.md` 5.16):
+  - Nachgebessert nach dem Gegenprüfen: Auswahl wird aus allen Bildern der Freigabe herausgesucht (keine lange
+    id-Liste als Filter an Solr); Seitenzahl gegen Überlauf gesichert; ein ZIP, bei dem bei uns etwas scheitert,
+    bricht hart ab (Fehler, den kein Handler abfängt), ein Abbruch des Browsers ist kein Fehler; das Formularfeld der
+    Auswahl liest der Controller direkt aus der Anfrage.
+  - Auf dem Pi: Start 16,9 s, kein ERROR, kein WARN. nginx mit zwei neuen Blöcken (Token-Adressen in kein Log,
+    `Referrer-Policy: no-referrer`), vorher mit `nginx -t` geprüft.
+  - Ende-zu-Ende auf dem Pi über nginx mit zwei Probe-Freigaben an Galerie 5 „test 1“ (9 Bilder, 293 MB): Ansicht mit
+    genau den erlaubten Feldern; Seite 2 leer; Viewer mit Byte-Bereich 206; ganzer Download bitgenau (SHA-256 = id);
+    fremdes Bild, Auswahl mit fremdem Bild 404; leere und kaputte Auswahl 400; Auswahl-ZIP (2 Bilder, 47 MB, 0,9 s) und
+    alle als ZIP (9 Bilder, 293 MB, 3,0 s): je Eintrag CRC, Größe, SHA-256 richtig; Speicher des Backends (RSS) 586 MB
+    davor, 596 MB danach; Token weder im nginx- noch im Backend-Log. Freigabe mit Ablauf: vorher 200, 16 s nach dem
+    Zeitpunkt Ansicht, Bild und ZIP 404. Aufrufe gezählt: 14 (1 Byte-Bereich, 1 Download, 2 + 9 im ZIP, 1 Viewer im
+    Browser), abgewiesene nicht.
+  - Besucherseite im echten Browser angesehen (firefox-esr ohne Fenster, per Marionette gesteuert, direkt per https):
+    9 Kacheln, Titel, Beschreibung, Fuß „9 Bilder“, Ankreuzen („Auswahl herunterladen (2)“), Hinweis zur Anmeldung,
+    Viewer mit den Adressen unter dem Token. Fotos im Scratchpad unter `shot/`.
+  - Wegwerf-Tests über den Tunnel: Galerie löschen nimmt ihre Freigabe mit (leere Galerie 7, wieder weg); alle
+    Probe-Freigaben gelöscht. Endstand Pi: `gallery_share` 0 Zeilen (Identität steht bei 14), Galerien 5 und 6, kein
+    Dokument mit einem Wert in `galleryShareTokenHashes`. Wegwerf-Tests, Token-Dateien, Hilfsdateien auf dem Pi und die
+    Sicherungen (`:vorher`-Images, Quellen, alte `default.conf`) sind gelöscht.
+  - Doku: Konzept (Abschnitte 4.7 bis 8), `entities/GalleryShare.md`, `entities/Gallery.md`, `solr-cores/FILE.md`
+    (Feld von Hand nachgetragen), `setup.md` 5.16, Regeln in `Vollidiot/`.
+  - Tunnel geschlossen (23:45). Nichts committet.
+- NICHT gesehen: die Box in der eigenen Galerie und „neue Freigabe“ (brauchen Anmeldung mit 2FA). Geprüft sind dafür
+  Typen, Bau und die Services dahinter (anlegen, auflisten, löschen).
+- Offen für den Nutzer: 1. ausprobieren (eigene Galerie → „Freigaben über einen Link“ → neue Freigabe → Link in einem
+  privaten Fenster öffnen); 2. Kommentare an Bildern (gibt es auf der Plattform noch nicht); 3. Felder für Besucher;
+  4. Link später wieder abrufbar?; 5. Recht `FREIGABE` anlegen, wenn andere freigeben sollen; 6. Fuß `gebiter9k`;
+  7. Commit auf Ansage (vorher den Eintrag vom 11.11. 23:55 um Adresse und Port bereinigen).
+
+## 2026-11-19 22:27 – Galerie-Freigabe: Adress-Schema des Nutzers, Tabelle und Solr-Feld anlegen
+
+- Ansage: „nein ich dachte an /api/share/token/{token} dann kommt die default ansicht. und danach gibt es dann ein
+  /view/{file.id} oder ein /download/{file.id} oder ein /selection oder ein /download/all und ja ich denke wir müssen
+  da eine ausnahme machen, dass wir 2 parameter erlauben“.
+- Also die Adressen der Besucherseite (Stück 2 und 3):
+  - `GET /api/share/token/{token}`: die Standardansicht (Galerie und ihre Bilder)
+  - `GET /api/share/token/{token}/view/{fileId}`: ein Bild für den Viewer
+  - `GET /api/share/token/{token}/download/{fileId}`: ein Bild herunterladen
+  - `/api/share/token/{token}/selection`: eine Auswahl herunterladen
+  - `GET /api/share/token/{token}/download/all`: alle herunterladen
+  - Ausnahme von „GET nur ein Wert“: hier zwei Werte (Token und Datei-id) erlaubt.
+- Zur Frage „Link später wieder sehen oder nur einmal“ kam keine Antwort: Es bleibt wie gebaut (einmal beim Anlegen,
+  gespeichert nur der Hash). Nicht noch einmal fragen; will er es anders, kommt eine Spalte dazu.
+- Plan:
+  1. Im Code heißt der Schlüssel ab jetzt wie beim Nutzer „Token“ (`shareToken`, `shareTokenHash`, Feld
+     `galleryShareTokenHashes`): „key“ ist im Projekt für Keys wie `FOTO_ART` belegt (Key-Regel). Noch ist nichts in
+     Postgres oder Solr angelegt, die Umbenennung kostet jetzt nichts.
+  2. Konzept und Regel `controller-rules` nachziehen.
+  3. Tunnel über Tor öffnen, Kontextstart (legt `gallery_share` an), Feld im Solr-Manager und in Solr anlegen.
+- Stand 22:36, Plan 1 bis 3 erledigt:
+  - Umbenannt (Code, YAML, Konzept, Entity-Doku): `shareToken`, `shareTokenHash`, `galleryShareTokenHashes`,
+    `gebiter.gallery-share.token-bytes`, `gebiter.file.field.gallery-share-token-hashes`,
+    `Helper.createRandomHexToken`. Kompiliert (rc=0).
+  - Konzept Abschnitt 5 mit der Tabelle der Adressen; Regel `Vollidiot/controller-rules.md` mit der Ausnahme.
+  - Tunnel über Tor offen (22:28, Steuer-Socket `$XDG_RUNTIME_DIR/gebieter-tunnel.sock`). Hilfsskript im Scratchpad
+    `pi-sql.sh` (SQL-Datei per scp auf den Pi, dort mit sudo im Postgres-Container ausführen).
+  - **Pi-DB:** Tabelle `gallery_share` angelegt (Hibernate, 9 Spalten, 0 Zeilen; die Identität steht nach dem Test bei 2).
+    **Solr-Manager:** Zeile `solr_field` id 42 `galleryShareTokenHashes` (STRING, mehrwertig, indexiert, gespeichert,
+    docValues, Suchgewicht -1, „Wer liest“ ADMIN, „vom Client“ aus, Platz 36). **Solr:** Feld im Schema von `FILE`
+    (`string`, `multiValued`), geprüft über die Schema-API; kein Dokument trägt einen Wert.
+  - Wegwerf-Test `GalleryShareThrowawayTest` (gelöscht) grün, als Admin-Konto an dessen Galerie 5 „test 1“ (9 Bilder):
+    anlegen (Token 64 Zeichen, Bezeichnung ohne Leerzeichen außen, `fileCount` 9 = `sharedFileCount` 9), auflisten (1),
+    löschen (danach 0 Dokumente mit Hash, 0 Freigaben); beide Grenzen zugleich, leere Bezeichnung und fremde Galerie 6
+    werden abgewiesen. Start des Kontexts über Tor: 31 s.
+  - Das laufende Backend auf dem Pi kennt das neue Feld erst nach dem nächsten Neubau (Kopie im Speicher).
+  - Das Recht `FREIGABE` gibt es in `access_role` noch nicht; anlegen kann es der Admin im Rechte-Manager.
+- Als Nächstes: Stück 2 Backend (Besucher-Endpunkte nach der Tabelle der Adressen), dann `npm ci` und die Oberflächen.
+
+## 2026-11-19 21:27 – Galerie-Freigabe: Antworten des Nutzers einbauen (Bezeichnung, Löschen, Node)
+
+- Ansage (Antworten auf die vier Fragen, wörtlich gekürzt):
+  1. „da wir die verwaltung sämtlicher freigaben in postgres haben, sollte die galerie id ja unnötig sein, denn wir
+     holen ja alle file docs per token AUFLÖSUNG!“ Also: keine Galerie-id im Link, der Schlüssel löst alles auf.
+  2. „ja der link soll den schlüssel einfach drin haben“. Freunde bekommen einen Link und sehen die Bilder „ohne weitere
+     passwörter“. Die ältere Freigabe mit Abholtoken ist ein anderer Anwendungsfall: „trenne das sauber in zukunft“.
+  3. Bezeichnung je Freigabe: ja.
+  4. Löschen: „wir löschen erst die freigabetoken aus den solr dokumenten, denn wenn da was schief geht können wir den
+     prozess neu starten so lange wir die freigabedaten noch in postgres haben“.
+  5. Nachgeschoben: „du kannst doch die neue node 26 lts auch übers terminal installieren, bestätige“.
+- Plan:
+  1. `GalleryShare` bekommt `label` (Bezeichnung, Pflicht, Höchstlänge aus `application.yaml`).
+  2. Freigabe löschen: Hash aus allen Dokumenten nehmen (alle, die ihn tragen, auch gelöschte), nachzählen, erst dann
+     die Zeile löschen. Scheitert Solr, bleibt die Zeile und der Vorgang lässt sich wiederholen.
+  3. Galerie löschen: Meldung `GalleryDeletedEvent` vor dem Löschen (Muster `FileExtensionDeletedEvent`), der
+     `GalleryShareService` räumt die Freigaben in derselben Reihenfolge weg; danach wie bisher.
+  4. Konzept, Entity-Doku, Regeln in `Vollidiot/` nachziehen. Kompilieren.
+  5. Node 26 LTS ohne sudo ins Home-Verzeichnis (nodejs.org, Prüfsumme und Signatur prüfen).
+- Weiter offen: a) Link später wieder abrufbar oder nur einmal sichtbar (Antwort 2 sagt das nicht eindeutig);
+  b) Ausnahme „GET nur ein Wert“ für Schlüssel + Datei-id beim einzelnen Bild.
+- Stand 22:17, Plan 1 bis 5 erledigt:
+  - Code: `GalleryShare.label` (Pflicht, Spalte 500, Höchstlänge `gebiter.gallery-share.label-max-length: 100`);
+    `NewGalleryShare` und `GalleryShareForClient` mit `label`; neu `GalleryShareDeleteRequest`, `GalleryDeletedEvent`
+    (beide `gallery/dto`); `FileDocumentResolveService.resolveFileDocumentIdsWithGalleryShareKeyHash` (alle Status);
+    `GalleryShareService.deleteOwnGalleryShare`, Listener `deleteGallerySharesOfDeletedGallery`, Kern
+    `doDeleteGalleryShare` (Hash heraus, nachlesen, dann Zeile löschen), `doGetOwnGalleryShare`, `requireLabel`;
+    `GalleryShareController` `DELETE /api/gallery-share`; `GalleryService.deleteOwnGallery` schickt zuerst die Meldung.
+  - `./mvnw -q -o -DskipTests clean compile` rc=0. Kein Kontextstart, kein Test: `gallery_share` gibt es in der Pi-DB
+    noch nicht, das Feld `galleryShareKeyHashes` weder in `solr_field` noch in Solr.
+  - Doku: `docu/konzept-galerie-freigabe.md` (Link ohne Galerie-id, Entscheidungen 12 und 13, Abschnitt 4.6 Löschen),
+    `docu/entities/GalleryShare.md` von Hand nachgezogen (das Werkzeug überschreibt fremde Dokus).
+  - Regeln: `Vollidiot/delete-order-dependents-first.md`, `Vollidiot/gallery-share-key-link.md`, Notiz zum Laptop.
+  - Node v26.13.1 (LTS „Lithium“) installiert: `~/.local/lib/nodejs/`, Links in `~/.local/bin`, npm 11.20.0. Geprüft:
+    Signatur der Prüfsummen-Liste (Schlüssel `5BE8 A3F6 … B168 D356`, Antoine du Hamel, an zwei Stellen gleich) und
+    SHA-256 des Pakets. Nebenwirkung: `gpg --show-keys` hat ein leeres `~/.gnupg` angelegt. `npm ci` im Frontend steht
+    noch aus (`node_modules` fehlt).
+  - Der Tor Browser läuft noch (Port 9150 offen), der Tunnel ist zu.
+- Als Nächstes: Antwort auf a) abwarten (entscheidet über eine Spalte), dann Tunnel öffnen, Kontextstart (legt
+  `gallery_share` an), Feld in Solr anlegen, `npm ci`, Oberfläche „Freigabe“ in der eigenen Galerie.
+
+## 2026-11-19 15:48 – Bestandsaufnahme vor einer größeren Erweiterung (unterwegs, Debian-Laptop)
+
+- Ansage: „mach mal bestandsaufnahme, ich bin gerade nicht zuhause, sprich wir müssen per ssh auf den pi connecten. ich
+  habe ne grössere erweiterung vor“.
+- Plan (nur lesen, nichts ändern, keine großen Tests): 1. Laptop: Git-Stand gegen GitHub, Werkzeuge, `node_modules`.
+  2. Pi über DynDNS (Adresse und Port: `setup.md` 5.8; Passwort-Login): System, Container, Logs, Tabellen in Postgres,
+  Solr-Kern, SFTP-Speicher, Zertifikat, Code-Stand auf dem Pi gegen den Klon. 3. Code: Pakete im Backend, Module im
+  Frontend, offene Punkte aus Protokoll und Konzepten. Danach kurzer Bericht, dann sagt der Nutzer die Erweiterung an.
+- Vorgefunden: Die Kennwort-Notiz in `code/.env` beginnt hier mit `# pw: ` (nicht mehr `# geben: `).
+- Ansagen 15:55: 1. SSH-Tunnel, Ports für Solr und Datenbank auf jeden Fall mit. 2. Im Head `gebiter` → `gebieter`.
+  3. Unsicheres Netz (öffentliches WLAN in Tansania): nur auf sicherem Weg nach Hause. Kein Dev-Server hier.
+- Ansage 16:37: das Tor-Tunnel-Vorgehen als eigene Todo, Schritt für Schritt und erklärt, zum Selbermachen.
+- Stand 16:45, ERLEDIGT:
+  - `gebieter9k` in `code/frontend/index.html` (`<title>`) und `code/frontend/src/layout/AppHeader.tsx` (Marke). Nur
+    lokal: noch nicht auf dem Pi, nicht committet. OFFEN: Fuß (`AppFooter.tsx`) zeigt noch `gebiter9k`, Frage gestellt.
+  - Zugang: Das WLAN sperrt ausgehend den SSH-Port nach Hause (Timeout auch zu einem fremden Testserver; 443, 8080,
+    2222 gehen), die FritzBox kann der Nutzer von hier nicht ändern. Lösung: Tor Browser 16.0.1 (Signatur geprüft, in
+    `~/tor-browser`), SSH über dessen Eingang `127.0.0.1:9150` mit `socat`, streng gegen den hinterlegten Host-Key.
+  - TUNNEL LÄUFT seit 16:35 (von mir geöffnet, Steuer-Socket `$XDG_RUNTIME_DIR/gebieter-tunnel.sock`): 9005, 9009,
+    9022 nur an `127.0.0.1`; SFTP-Host-Key, Postgres und Solr darüber geprüft. Schließen: `ssh -S <socket> -O exit x`.
+  - Anleitung `docu/todo-tunnel-ueber-tor.md` geschrieben. Privat: steht in der `.gitignore`, weil Adresse und SSH-Port
+    von zu Hause drinstehen (beides war bisher nicht im öffentlichen Repo).
+  - Bestandsaufnahme Pi (nur gelesen, Hilfsdateien in `/tmp` wieder gelöscht): läuft seit 2026-11-11 16:18, 45,8 °C,
+    RAM 2,8 von 15 GiB, NVMe 101 von 938 GB. Alle 5 Container laufen, Backend seit 2026-11-11 21:01 ohne ERROR.
+    Postgres 18.6: 40 Tabellen, 12 MB, 2 User. Solr-Kern `FILE`: 26 Dokumente; SFTP: 26 Dateien, 56 GB. SSH in 8 Tagen:
+    kein falsches Kennwort, von außen nur die eigenen Anmeldungen (12.11. Laptop, heute Tor).
+  - Code: Pi und Klon sind gleich (817 von 825 Dateien identisch; Rest: zwei Kommentare in `UsersPointBooking.java`,
+    Zeilenenden `mvnw.cmd`, Kommentar `vite.config.ts`, die zwei Änderungen von heute). Umfang: 371 Java-Klassen,
+    69 Controller, 202 Endpunkte, 40 Entities; 418 TS/TSX-Dateien.
+- FUNDE, dem Nutzer berichtet, nichts davon angefasst:
+  1. Zertifikat läuft am 2027-01-24 ab, auf dem Pi gibt es keine Erneuerung (`/etc/letsencrypt/renewal` leer, kein
+     `live`), und Port 80 ist von außen zu.
+  2. `code/backend/start.sh` wartet 2 s auf den SFTP-Host-Key, über den Tor-Tunnel dauert er gut 3 s.
+  3. Docker-Build-Cache auf dem Pi 36 GB (35 GB frei räumbar). 4. Drei `._`-Dateien in `/gebiter9k/code`.
+  5. 65 Pakete mit Update auf dem Pi. 6. Laptop: Node/npm, `gh`, Tesseract, libheif fehlen weiter.
+- NÄCHSTES: Der Nutzer sagt die Erweiterung an.
+- 16:50 Ansage: „nun zu meinem eigentlichen vorhaben […] jeder user eine eigene galerie aufmacht und da bilder
+  hochlädt, soweit korrekt?“ Plan: Galerie am Code prüfen (`de.gebiter.gallery`, Frontend `gallery/`,
+  `konzept-galerie.md`, `entities/Gallery.md`), dann kurz bestätigen oder korrigieren. Nur lesen.
+  Stand 16:55: bestätigt (Konzept, `GalleryController`, YAML gelesen). WARTET auf das Vorhaben des Nutzers.
+
+## 2026-11-19 16:55 – Vorhaben: Galerie per Freigabeschlüssel teilen (Stück 1 Backend gebaut, Uhrzeiten ca.)
+
+- Ansage (gekürzt): Als Admin unbegrenzt hochladen. Neu: eigener Endpunkt und eigenes Frontend-Modul, um eine Galerie
+  optional über einen Token bzw. einfachen Freigabeschlüssel zu teilen. Besucher kommen ohne Anmeldung nur über den
+  „Tokenlink“ auf die Galerieseite: Kachelansicht, Download einzelner, aller oder ausgewählter Bilder. Wollen sie
+  bewerten: Hinweis „melde dich kostenlos an, dann kannst du bewerten und kommentieren“. Idee: das Dokument im Kern
+  `FILE` bekommt ein Feld mit den Freigabe-Tokens, MULTIVALUED, mehrere Freigaben parallel. Das Feld im Solr-Manager
+  („Wer liest“) auf ADMIN. Beispiel: Urlaubsbilder hochladen, verschlagworten, beschreiben, dann teilen.
+  „kannst du mir soweit folgen?“
+- Plan: 1. Regeln und Stellen lesen, die das berührt (`Vollidiot/platform-how-it-works`, `security-concept`,
+  `controller-rules`, `file-access-rework`, `konzept-lesezugriff.md`, Share-Pfade in der Security, Lesefilter in
+  `FileDocumentResolveService`, Kern `FILE`). 2. In eigenen Worten bestätigen, offene Punkte nummeriert fragen. Nur lesen.
+- Stand 17:00, gelesen und dem Nutzer bestätigt:
+  - Upload-Grenze gilt schon heute nicht für ADMIN und FILE_MANAGER (`FileUploadService`, Zeile 641).
+  - Passt zum Prinzip: Lesegrenze im Solr-Dokument, eine Stelle (`FileDocumentResolveService
+    .createReadFilterQueriesForCurrentUsers`); für Besucher ohne Anmeldung gibt es dort noch keinen Weg. Ohne Token sind
+    nur `/api/share/**` offen (bisher Session, Registrierung, Login-2FA).
+  - „Wer liest“ ist genau ein Recht je Feld (`SolrDocumentFieldService.getReadableSolrFieldNames`); ein Besucher hat
+    kein Recht und bekäme heute kein einziges Feld.
+  - Bewerten gibt es (`FileCheer`, `/api/file-cheer`), Kommentare an Dateien gibt es noch nicht.
+- OFFEN, dem Nutzer nummeriert gestellt: 1. wer freigeben darf (nur ADMIN oder Recht `FREIGABE`), 2. Ablauf einer
+  Freigabe, 3. welche Felder ein Besucher sieht und wo das eingestellt wird, 4. Download als Original mit EXIF/GPS,
+  5. Kommentare an Bildern jetzt oder später. Noch nichts gebaut.
+- 17:05 ENTSCHIEDEN vom Nutzer:
+  - Das Modul löst nach dem Schlüssel auf, lädt die Dateien aus Solr und zeigt sie; Viewer und Download müssen mit dem
+    Schlüssel ebenfalls gehen.
+  - Freigabe eintragen: „admin und ar freigabe soll erforderlich sein“ (und/oder nachgefragt).
+  - Laufzeit einstellbar in der eigenen Galerie unter „Freigabe“: dauerhaft, zeitlich begrenzt oder Aufrufe begrenzt.
+    Steht in Postgres und wird getrennt geprüft (nicht über den Solr-Filter).
+  - Beim Erteilen über alle Dateien der Galerie in Solr gehen und den Schlüssel hineinschreiben; die Dateianzahl in
+    Postgres mitführen, als Fehlerkontrolle.
+  - Felder: erst dem Admin alle zeigen; was ein Besucher sieht, sagt der Nutzer, wenn das Modul steht.
+  - EXIF darf der Besucher sehen und bleibt in der Datei (Download = Original).
+  - Kommentare und Bewertungen werden allen angezeigt; eintragen nur ein bekannter (angemeldeter) User.
+- OFFEN, nummeriert gefragt: 1. ADMIN oder `FREIGABE` (oder beides nötig), 2. was als Aufruf zählt. Dazu Reihenfolge der
+  Stücke vorgeschlagen. Noch nichts gebaut.
+- 17:12 ENTSCHIEDEN vom Nutzer: 1. Freigeben darf, wer ADMIN ist ODER das Recht `FREIGABE` hat. 2. Ein Aufruf ist: ein
+  Bild wird heruntergeladen oder der Viewer lädt es. Dazu: alle Bilder einer Galerie herunterladen UND eine Auswahl
+  (beliebig viele Kacheln anwählen). 3. AUFTRAG: Code zuerst lokal im Projekt; dann testen über die gemappten Ports
+  (Solr und Postgres auf dem Pi werden dabei erweitert); wenn alles läuft, auf den Pi schieben und neu bauen.
+- Reihenfolge der Stücke (von mir vorgeschlagen, nicht widersprochen): 1. Freigabe anlegen (Tabelle, Feld im Kern
+  `FILE`, Schlüssel in alle Bilder schreiben mit Zählkontrolle, „Freigabe“ in der eigenen Galerie). 2. Besucherseite
+  (auflösen, Kacheln, Viewer, Download einzeln). 3. Download Auswahl und alle. 4. Bewertungen/Kommentare anzeigen,
+  Hinweis zur Anmeldung, Kommentare an Bildern neu.
+- LÄUFT, Stück 1, Backend: zuerst Regeln (`Vollidiot/`: Code-Stil, Naming, Schichten, YAML, Entity-Doku) und die
+  Vorbilder lesen (`gallery/`, `FileUploadService.uploadFileIntoGallery`, Felder im Solr-Manager, `FileConfig`).
+- 17:20 Ansage: „sag mir dann noch wie wir es mit dem downloader machen […] sicherheitstechnisch höllisch aufpassen
+  […] prüfe da die logik bitte öfters auch gegen“.
+  - Entwurf dem Nutzer vorgelegt (Stück 2/3, noch nicht gebaut): Abholschein je Zugriff. POST mit Schlüssel + id(s) im
+    Body → Prüfung Form, Freigabe in Postgres, Dokument trägt die Freigabe in Solr, Aufruf zählen in EINER
+    SQL-Anweisung mit Grenze und Ablauf → Abholschein (32 Byte Zufall, ~60 s, nur im Speicher) → GET mit dem Schein als
+    einzigem Wert, Solr-Prüfung erneut, Stream mit den heutigen Schutz-Headern. Auswahl/alle: ein Schein für eine Liste,
+    ZIP wird durchgestreamt, Dateinamen bereinigt.
+  - Im Code geprüft: `SftpConnectionPool.borrowSftpChannel` zählt Aufrufer ohne Anmeldung nur gegen die Gesamtgrenze
+    (10) → eigener Deckel für Besucher nötig. `CurrentUsersProvider.currentUsersAccessRoleKeys/Guid` werfen ohne
+    Anmeldung → Besucherwege dürfen sie nie rufen (`isAuthenticated` ist sicher). `generate_entity_docs.py` schreibt das
+    erste Dokument des Exports nach `docu/solr-cores/FILE.md` (öffentlich) → in Solr nur der SHA-256 des Schlüssels.
+    Link mit dem Schlüssel hinter `#`. Galerie löschen muss die Freigaben mit entfernen.
+  - Gefragt: 1. Schlüssel auch in Postgres nur als Hash (Link nur einmal sichtbar)? 2. Bezeichnung je Freigabe?
+    Bis zur Antwort gebaut wird: Hash in Solr und Postgres, ohne Bezeichnung.
+- 17:30 KORREKTUR des Nutzers: KEINE Abholscheine. Der Schlüssel ist ein dauerhaftes Access-Token, Link etwa
+  `<host>/share/galerie/<id>/<token>`; mit genau diesem Token holt man auch die Dateien, solange es gültig ist und im
+  mehrwertigen Feld des Dokuments steht. Das Feature läuft parallel zur anderen Freigabe.
+  - Entwurf angepasst (Stück 2/3): Viewer/Download direkt mit Schlüssel + Datei-id; je Abruf Solr-Prüfung (Dokument
+    trägt den Hash, nicht gelöscht), dann Aufruf zählen in EINER SQL-Anweisung (Ablauf, Grenze), dann Stream. „Alle“:
+    Abruf nur mit dem Schlüssel, ZIP wird gestreamt. nginx-Log für diese Adressen aus (Schlüssel steht in der Adresse).
+  - Gefragt: 1. Ausnahme von der Regel „GET nur ein Wert“ (Schlüssel + Datei-id, beide Hex)? 2. weiter offen: Link
+    wieder abrufbar (Klartext in Postgres) oder nur einmal sichtbar (Hash)?
+- 17:36 VORGABE des Nutzers für Stück 3: Die Urlaubsgalerie wird 50 bis 100 GB groß; der Download muss auf dem Pi
+  speicherschonend laufen, „bilderbuchmäßig“. Also: ZIP nie als Ganzes (kein RAM, kein `/tmp`, das ist tmpfs), Bild für
+  Bild vom SFTP mit festem Puffer in die Antwort, ohne Kompression, ZIP64, nginx ungepuffert.
+- Stand 17:47, Stück 1 BACKEND GEBAUT (lokal, `./mvnw -o -DskipTests clean compile` ok; nichts getestet, nichts auf
+  dem Pi, Postgres und Solr unberührt):
+  - Neu: `gallery/model/GalleryShare` (Tabelle `gallery_share`), `gallery/repository/GalleryShareRepository`,
+    `gallery/service/GalleryShareService`, `gallery/controller/GalleryShareController` (`/api/gallery-share`: POST
+    anlegen, POST `/resolve`), DTOs `NewGalleryShare`, `GalleryShareResolveRequest`, `GalleryShareForClient`,
+    `CreatedGalleryShare`.
+  - Geändert: `Helper.createRandomHexKey`; `application.yaml` (`gebiter.gallery-share.key-bytes`,
+    `gebiter.file.field.gallery-share-key-hashes`); `FileSolrFieldNames.galleryShareKeyHashes`;
+    `SolrDocumentService.addFieldValueToSolrDocuments`/`removeFieldValueFromSolrDocuments` (Atomic Update
+    `add-distinct`/`remove`); `FileDocumentWriteService.addBackendFieldValueToFileDocuments`/`remove…`;
+    `FileDocumentResolveService.countActiveFileDocumentsWithGalleryShareKeyHash`;
+    `GalleryService.checkOwnGalleryExists`; `FileUploadService.uploadFileIntoGallery` (Hashes der Freigaben ins neue
+    Dokument, danach `fileCount` +1).
+  - Doku: `docu/konzept-galerie-freigabe.md` (Entscheidungen, zwei Schlösser, Stück 1, offene Punkte),
+    `docu/entities/GalleryShare.md`, Zeile in `docu/entities/README.md`.
+  - VORFALL 1: `python3 docu/tools/generate_entity_docs.py` (ohne `--solr-export`) hat 15 von Hand ergänzte
+    Entity-Dokus überschrieben und in drei Controllern den Verweis auf `docu/solr-cores/FILE.md` entfernt. Alle 18
+    Dateien sofort mit `git checkout` auf den Stand davor zurückgesetzt (sie waren vorher unverändert); behalten nur die
+    neue `GalleryShare.md` und die Verweise in den zwei neuen Klassen. Das Werkzeug nicht blind laufen lassen.
+  - VORFALL 2 (17:50): Ein eigenes Python-Skript zum Nachziehen dieses Protokolls hat die Datei zerstört (falsche
+    Endmarke, leerer Suchtext, der neue Absatz stand zwischen jedem Zeichen, 133 MB). Zurückgerechnet auf den Stand
+    davor und per Gegenprobe Zeichen für Zeichen bestätigt (52593 Zeichen, 562 Zeilen). Lehre: dieses Protokoll nur
+    mit dem Edit-Werkzeug ändern, nie per Skript mit berechneten Grenzen.
+  - Tunnel: Der Steuer-Socket ist weg (17:47), der Tunnel über Tor ist abgerissen. Vor dem Testen neu öffnen.
+- OFFEN vor dem Testen, den Nutzer gefragt: 1. Ausnahme „GET nur ein Wert“ für Schlüssel + Datei-id. 2. Link wieder
+  abrufbar oder nur einmal sichtbar (bestimmt die Spalte `share_key_hash`; deshalb die Tabelle noch nicht angelegt).
+  3. Bezeichnung je Freigabe. 4. Löschvorgänge (Freigabe löschen, Galerie löschen) so bauen wie vorgeschlagen.
+- NÄCHSTES nach den Antworten: Löschvorgänge, dann Test über den Tunnel (legt `gallery_share` in Postgres und das Feld
+  `galleryShareKeyHashes` im Solr-Manager und in Solr an), dann die Oberfläche „Freigabe“. Für das Frontend fehlt Node
+  auf dem Laptop.
+
+## 2026-11-11 23:55 – Zweiter Rechner (Debian-Laptop) einrichten
+
+- Ansage: „ich würde gern hier jetzt mein Repo klonen und einrichten, dass wir es hier auch pushen können, wenn wir
+  unterwegs an was dran arbeiten. […] Schau mal das Ding durch, ob du damit was anfangen kannst und ob da noch weitere
+  Dinge holen müssen. […] npm-dev und Spring […] Datenbank auf dem Pi […] SSH-Tunnel […] Ports von Solr und Postgres
+  […] DynDNS gebieter.ddns.net“. Regeln gelten aus `Vollidiot/`.
+- Rechner: Debian 13 (`microslop`), Projekt unter `~/Dokumente/coding/fullstackprojekt/gebieter9k` (Ordner mit „ie“).
+- Vorgefunden: Klon sauber auf `origin/main`. `.env` und `gebiter9k.env` (gleich) und `setup.md` liegen im
+  Projektordner statt in `code/.env` und `docu/setup.md`; `Vollidiot/` ist da, `.claude/` fehlt. Werkzeuge: Git und
+  Java 25 da; es fehlen `gh`, nvm/Node, Tesseract, libheif, `~/.ssh`.
+- Plan: 1. Abschnitte 4.3, 5.8, 5.15 der `setup.md`, `start.sh`, `vite.config.ts` lesen. 2. Dateien an ihren Platz
+  (`code/.env`, `docu/setup.md`, chmod 600). 3. `.claude/settings.local.json` (Memory-Ordner `Vollidiot`). 4. Werkzeuge.
+  5. SSH zum Pi über `gebieter.ddns.net` (Tunnel für Postgres, Solr, SFTP). 6. Git-Autor und `gh`-Anmeldung.
+- Stand 2026-11-12 00:05:
+  - ERLEDIGT: `code/.env` und `docu/setup.md` an ihrem Platz (600, von Git ignoriert), Duplikat `gebiter9k.env` gelöscht
+    (war identisch). Git-Autor `codergod1337` + noreply nur für dieses Repo. Pi (LAN und `gebieter.ddns.net:6969`) in
+    `~/.ssh/known_hosts`, Fingerprint wie in `setup.md` 5.1; `~/.ssh/config` nicht angelegt (Regel). Dev-Zertifikat in
+    `code/frontend/.cert`. `./mvnw clean compile` ok. Kontext-Test gegen den Pi ok (Profil `LAN`, SFTP-Host-Key geprüft).
+    Tunnel über DynDNS mit Passwort getestet (Ports 19005/19009/19022, Solr 200, SFTP-Host-Key richtig), wieder zu.
+    `docu/neuer-rechner.md`: nvm und `gh` für Debian ergänzt.
+  - BLOCKIERT durch die Rechteprüfung von Claude Code, macht der Nutzer: `.claude/settings.local.json` (Memory-Ordner
+    `Vollidiot`), nvm-Installation (Skript aus dem Netz). Braucht sudo, macht der Nutzer: `gh`, Tesseract, libheif.
+  - OFFEN: danach `npm ci`, `gh auth login` + `gh auth setup-git`. Nichts committet; Nutzer (00:10): die
+    Doku-Änderungen nicht pushen. Er testet den Tunnel selbst von zu Hause aus.
+  - Vorfall: Beim Auflisten der `.env`-Schlüssel stand die Kommentarzeile mit dem Kennwort von `thomas` in der
+    Tool-Ausgabe (der `sed` hat nur Werte nach `=` maskiert). Dem Nutzer gemeldet.
+
 ## 2026-11-11 23:35 – Anleitung für einen neuen Rechner ins Repo (fertig, auf GitHub)
 
 - Ansage: „ist jetzt der Stand endlich auf Git? So komplett, dass wir loslegen können auf einem anderen Rechner. Also

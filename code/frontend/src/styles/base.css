@@ -4032,4 +4032,19 @@
   .gallery-viewer-footer {
     justify-content: space-between;
   }
+
+  /* Besucherseite einer Galerie-Freigabe: die Zeile über den Kacheln (auswählen, Auswahl herunterladen) */
+  .gallery-share-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  /* das Kästchen zum Auswählen in der Kopfzeile einer Bildkachel, links vor der Überschrift */
+  .gallery-share-select {
+    flex: none;
+    margin: 0;
+  }
 }

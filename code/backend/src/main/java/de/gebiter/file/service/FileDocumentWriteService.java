@@ -148,6 +148,33 @@ public class FileDocumentWriteService {
 	}
 
 	/**
+	 * UPDATE (Backend): Nimmt in mehreren Dateien EINEN Wert in ein mehrwertiges Feld auf, das nur das Backend schreibt,
+	 * z. B. den Hash einer Freigabe in alle Bilder einer Galerie. Die übrigen Werte des Feldes bleiben; in einem Rutsch
+	 * (eine Anfrage an Solr, ein Commit). Ohne Rechteprüfung: Die macht der Aufrufer (der {@code GalleryShareService}).
+	 * Über keinen Endpunkt direkt erreichbar. Ohne Dateien geschieht nichts.
+	 *
+	 * @throws EntityNotFoundException wenn es eines der Dokumente nicht gibt
+	 */
+	public void addBackendFieldValueToFileDocuments(Collection<String> ids, String fieldName, Object fieldValue) {
+		String solrCoreKey = fileConfig.solrCoreKey();
+		String idFieldName = fileSolrFieldNames.id();
+		solrDocumentService.addFieldValueToSolrDocuments(solrCoreKey, idFieldName, ids, fieldName, fieldValue);
+	}
+
+	/**
+	 * UPDATE (Backend): Nimmt in mehreren Dateien EINEN Wert aus einem mehrwertigen Feld heraus, das Gegenstück zu
+	 * {@link #addBackendFieldValueToFileDocuments}. Ohne Rechteprüfung: Die macht der Aufrufer. Über keinen Endpunkt direkt
+	 * erreichbar. Ohne Dateien geschieht nichts.
+	 *
+	 * @throws EntityNotFoundException wenn es eines der Dokumente nicht gibt
+	 */
+	public void removeBackendFieldValueFromFileDocuments(Collection<String> ids, String fieldName, Object fieldValue) {
+		String solrCoreKey = fileConfig.solrCoreKey();
+		String idFieldName = fileSolrFieldNames.id();
+		solrDocumentService.removeFieldValueFromSolrDocuments(solrCoreKey, idFieldName, ids, fieldName, fieldValue);
+	}
+
+	/**
 	 * UPDATE: Ändert die Metadaten der EIGENEN Datei (eigene Datei mit Schreibrolle). Nur die genannten Felder, die der Client
 	 * ändern darf; ein leerer Wert nimmt das Feld heraus. Liefert das Dokument, wie der User es danach lesen darf.
 	 *

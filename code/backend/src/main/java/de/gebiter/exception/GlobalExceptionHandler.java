@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import de.gebiter.file.FileAccessDeniedException;
+import de.gebiter.gallery.GalleryShareBusyException;
 import de.gebiter.file.FileStagingFullException;
 import de.gebiter.file.FileUploadLimitReachedException;
 import de.gebiter.guestbook.GuestbookAccessDeniedException;
@@ -156,6 +157,17 @@ public class GlobalExceptionHandler {
 		ResponseEntity.BodyBuilder serviceUnavailableResponse = ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE);
 		serviceUnavailableResponse.header(HttpHeaders.RETRY_AFTER, retryAfterSeconds);
 		return serviceUnavailableResponse.body(problemDetail);
+	}
+
+	/** 429 mit {@code Retry-After}: Über Galerie-Freigaben laufen gerade so viele Abrufe, wie für Besucher vorgesehen. */
+	@ExceptionHandler(GalleryShareBusyException.class)
+	public ResponseEntity<ProblemDetail> handleGalleryShareBusy(GalleryShareBusyException exception) {
+		String detailMessage = exception.getMessage();
+		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, detailMessage);
+		String retryAfterSeconds = exception.getRetryAfterSeconds();
+		ResponseEntity.BodyBuilder tooManyRequestsResponse = ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS);
+		tooManyRequestsResponse.header(HttpHeaders.RETRY_AFTER, retryAfterSeconds);
+		return tooManyRequestsResponse.body(problemDetail);
 	}
 
 	/** 429 mit {@code Retry-After}: Der User hat schon so viele Übertragungen offen, wie ihm zustehen. */

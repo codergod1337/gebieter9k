@@ -40,6 +40,7 @@ import de.gebiter.file.dto.FileUploadResult;
 import de.gebiter.file.model.FileClassDestination;
 import de.gebiter.file.model.FileUploadStatus;
 import de.gebiter.gallery.service.GalleryService;
+import de.gebiter.gallery.service.GalleryShareService;
 import de.gebiter.security.CurrentUsersProvider;
 import de.gebiter.sftp.service.SftpPathService;
 import de.gebiter.shop.service.ShopCategoryService;
@@ -104,6 +105,8 @@ public class FileUploadService {
 	private final FileClassDestinationAssignmentService fileClassDestinationAssignmentService;
 	private final GalleryService galleryService;
 
+	private final GalleryShareService galleryShareService;
+
 	private final UsersPointBookingService usersPointBookingService;
 	private final ShopCategoryService shopCategoryService;
 	private final ShopItemService shopItemService;
@@ -126,6 +129,7 @@ public class FileUploadService {
 			TikaService tikaService, SftpPathService sftpPathService, UsersDetailService usersDetailService,
 			CurrentUsersProvider currentUsersProvider, ObjectMapper objectMapper,
 			FileClassDestinationAssignmentService fileClassDestinationAssignmentService, GalleryService galleryService,
+			GalleryShareService galleryShareService,
 			UsersPointBookingService usersPointBookingService,
 			ShopCategoryService shopCategoryService, ShopItemService shopItemService,
 			@Value("${gebiter.point-activity.gallery-upload.key}") String galleryUploadPointActivityKey) {
@@ -151,6 +155,7 @@ public class FileUploadService {
 		this.objectMapper = objectMapper;
 		this.fileClassDestinationAssignmentService = fileClassDestinationAssignmentService;
 		this.galleryService = galleryService;
+		this.galleryShareService = galleryShareService;
 	}
 
 	/**
@@ -191,6 +196,9 @@ public class FileUploadService {
 	 * - Die Galerie gehört dem User ({@code GalleryService}).
 	 * - Die FileClass wird am Ziel {@link FileClassDestination#GALLERY} angeboten.
 	 * - Das Dokument bekommt die Galerie, ihre Sichtbarkeit und den Platz am Ende der Galerie.
+	 * - Ist die Galerie über einen Token freigegeben ({@code GalleryShareService}, Konzept
+	 *   {@code docu/konzept-galerie-freigabe.md}), bekommt das Dokument die Hashes ihrer Freigaben, und nach dem Anlegen
+	 *   zählt jede Freigabe ein Bild mehr.
 	 *
 	 * @throws jakarta.persistence.EntityNotFoundException (404) wenn die Galerie nicht dem User gehört
 	 * @throws IllegalArgumentException (400) wie beim normalen Upload, dazu ohne Galerie oder mit einer FileClass, die
@@ -203,12 +211,33 @@ public class FileUploadService {
 		Long galleryId = galleryData.galleryId();
 		Helper.requireNotNull(galleryId, "galleryId");
 		Map<String, Object> galleryFieldValues = galleryService.prepareOwnGalleryUpload(galleryId);
+		// Ist die Galerie über einen Token freigegeben, trägt das neue Bild ihre Freigaben von Anfang an
+		Map<String, Object> galleryShareFieldValues = galleryShareService.prepareGalleryShareUpload(galleryId);
+		galleryFieldValues.putAll(galleryShareFieldValues);
 		Map<String, Object> rawClientFieldValues = galleryData.fieldValuesByFieldName();
 		if (rawClientFieldValues == null) {
 			rawClientFieldValues = Map.of();
 		}
-		return doUploadFromMultipart(multipartReader, rawClientFieldValues, requestContentLength,
-				FileClassDestination.GALLERY, galleryFieldValues, null);
+		FileUploadResult uploadResult = doUploadFromMultipart(multipartReader, rawClientFieldValues,
+				requestContentLength, FileClassDestination.GALLERY, galleryFieldValues, null);
+		FileUploadStatus uploadStatus = uploadResult.status();
+		if (uploadStatus == FileUploadStatus.CREATED) {
+			doIncreaseFileCountOfGalleryShares(galleryId);
+		}
+		return uploadResult;
+	}
+
+	/**
+	 * Ein Bild ist neu in der Galerie: Ihre Freigaben zählen eins mehr. Scheitert das Zählen, bleibt der Upload gültig
+	 * und meldet keinen Fehler; die Kontrolle der Freigabe zeigt die Abweichung dann an.
+	 */
+	private void doIncreaseFileCountOfGalleryShares(Long galleryId) {
+		try {
+			galleryShareService.increaseFileCountOfGalleryShares(galleryId);
+		} catch (RuntimeException exception) {
+			LOGGER.warn("Galerie {}: Zahl der Bilder an den Freigaben nach dem Upload nicht nachgezogen", galleryId,
+					exception);
+		}
 	}
 
 	/**
