@@ -131,8 +131,11 @@ Code einfügen, „Continue“, „Authorize github“. Danach geht `git push` o
   Server selbst.
 - **Upload-Puffer.** Eine Datei, die über das Backend dieses Rechners hochgeladen wird, liegt zuerst lokal in
   `mounts/staging` (neben `code/`, wird selbst angelegt). Das Backend erst beenden, wenn sie „ausgewertet“ ist.
-- **Bau auf dem Server.** Der Stand kommt per Archiv und `scp` auf den Server, nicht über Git (private `setup.md`,
-  Abschnitt 5.16). Dafür braucht dieser Rechner den SSH-Zugang zum Server.
+- **Bau auf dem Server.** Code kommt ausschließlich über Git auf den Server (seit 2026-11-20): Der Projektordner dort
+  ist ein Klon dieses Repos. Also committen und pushen, dann auf dem Server `git pull --ff-only`, erst das Backend,
+  dann das Frontend bauen (`docker compose build …`) und erst danach starten (`docker compose up -d --wait …`). Die
+  genauen Schritte stehen in der privaten `setup.md`, Abschnitt 5.16. Dafür braucht dieser Rechner den SSH-Zugang
+  zum Server. Nicht im Repo und deshalb weiter von Hand dorthin: `code/.env` und alles unter `mounts/`.
 - **Nie ins Repo:** `code/.env`, `docu/setup.md`, Schlüssel, Zertifikate, alles unter `mounts/`. Die `.gitignore` im
   Projektordner hält das fest.
 

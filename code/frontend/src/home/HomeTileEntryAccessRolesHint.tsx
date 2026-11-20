@@ -1,7 +1,7 @@
 import type { AccessRole } from '../auth/access/AccessRole.ts'
 import { AccessRoleBadge } from '../auth/access/AccessRoleBadge.tsx'
 import { useCurrentSession } from '../auth/login/useCurrentSession.ts'
-import { Hoverlay } from '../components/Hoverlay.tsx'
+import { InfoHint } from '../components/InfoHint.tsx'
 import { useMasterData } from '../masterdata/useMasterData.ts'
 
 type HomeTileEntryAccessRolesHintProps = {
@@ -54,11 +54,5 @@ export function HomeTileEntryAccessRolesHint({ entryAccessRoleKeys }: HomeTileEn
     )
   }
 
-  return (
-    <Hoverlay text={hoverlayText}>
-      <span className="tile-corner-hint" tabIndex={0} aria-label="Welche AR dieses Modul öffnen">
-        <i className="bi bi-info-circle"></i>
-      </span>
-    </Hoverlay>
-  )
+  return <InfoHint text={hoverlayText} label="Welche AR dieses Modul öffnen" />
 }

@@ -32,6 +32,7 @@ import { useFileDocument } from '../useFileDocument.ts'
 import { useFileManagerOrAdmin } from '../useFileManagerOrAdmin.ts'
 import { useFileSolrFields } from '../useFileSolrFields.ts'
 import { FileCheerBar } from '../cheer/FileCheerBar.tsx'
+import { FileCommentSection } from '../comment/FileCommentSection.tsx'
 import { FileDocumentActionButtons } from './FileDocumentActionButtons.tsx'
 import { FileDocumentFieldValue } from './FileDocumentFieldValue.tsx'
 import { FileEditorsPopup } from './FileEditorsPopup.tsx'
@@ -655,6 +656,8 @@ export function FileDocumentDetailPage() {
                 Beschreibung hinzufügen
               </button>
             )}
+
+            <FileCommentSection fileDocumentId={fileDocumentId} originLabel={heading} />
           </div>
         </div>
       </ContentBox>

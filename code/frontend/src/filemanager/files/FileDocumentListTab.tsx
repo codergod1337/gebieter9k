@@ -21,6 +21,8 @@ import { FileDocumentActionButtons } from '../../file/document/FileDocumentActio
 import { FileDocumentPreviewImage } from '../../file/document/FileDocumentPreviewImage.tsx'
 import { getFileDocumentViewerKind } from '../../file/document/fileDocumentViewerKind.ts'
 import { getFileDocumentPath } from '../../file/fileDocumentPaths.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
+import { getFirstErrorDetail } from '../../api/getFirstErrorDetail.ts'
 
 /** Der Parameter der Adresse mit der gewählten FileClass, z. B. `?fileClass=FOTO_URLAUB`. */
 const FILE_CLASS_URL_PARAM = 'fileClass'
@@ -98,16 +100,13 @@ export function FileDocumentListTab() {
   const isFirstPage = page === 0
   const isLastPage = page >= pageCount - 1
 
-  let footer
-  if (resolveFileDocumentHook.error !== null) {
-    footer = <span className="text-danger">{resolveFileDocumentHook.error.detail}</span>
-  } else if (selectedFileClassKey === null) {
-    footer = <span className="small">Erst eine FileClass wählen.</span>
-  } else if (fileDocumentPage === null) {
-    footer = <Spinner animation="border" size="sm" />
-  } else {
+  const footerErrorMessage = getFirstErrorDetail([resolveFileDocumentHook.error])
+  const fileClassSelected = selectedFileClassKey !== null
+  const isLoadingPage = fileClassSelected && fileDocumentPage === null
+  let footerContent = <span className="small">Erst eine FileClass wählen.</span>
+  if (fileClassSelected && fileDocumentPage !== null) {
     const pageText = 'Seite ' + (page + 1) + ' von ' + pageCount + ' · ' + fileDocumentPage.totalCount + ' Dateien'
-    footer = (
+    footerContent = (
       <div className="d-flex justify-content-between align-items-center gap-2">
         <span className="small">{pageText}</span>
         <span>
@@ -121,6 +120,11 @@ export function FileDocumentListTab() {
       </div>
     )
   }
+  const footer = (
+    <LoadStatus errorMessage={footerErrorMessage} isLoading={isLoadingPage}>
+      {footerContent}
+    </LoadStatus>
+  )
 
   return (
     <ContentBox title="Dateien" footer={footer}>

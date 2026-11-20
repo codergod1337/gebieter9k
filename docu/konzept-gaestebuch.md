@@ -142,7 +142,7 @@ JPA-Beziehungen.
 | `guestbook/GuestbookEntryCard.tsx` | ein Eintrag: Kopf, Text, Smileys, Verlauf |
 | `guestbook/GuestbookCommentThread.tsx`, `GuestbookCommentItem.tsx` | der Verlauf (älteste zuerst) und ein Kommentar mit kleinem Avatar |
 | `guestbook/GuestbookReactionBar.tsx` | Smileys als Pillen mit Zahl, die eigenen hervorgehoben und gesperrt; ein Klick auf eine fremde Pille vergibt dasselbe Emoji, der Knopf öffnet den `EmojiPickerPopup` |
-| `guestbook/GuestbookHead.tsx`, `GuestbookTextForm.tsx`, `GuestbookDeleteButton.tsx` | gemeinsam für Eintrag und Kommentar: Kopf mit Avatar, Name und Zeit; Textfeld mit Knopf; Mülleimer mit `ConfirmDeletePopup` |
+| `components/AuthorHead.tsx`, `RichTextForm.tsx`, `ConfirmDeleteButton.tsx`, `CommentItem.tsx` | seit 2026-11-20 global (vorher `GuestbookHead`, `GuestbookTextForm`, `GuestbookDeleteButton`), gemeinsam für Eintrag, Kommentar und die Kommentare an Bildern: Kopf mit Avatar, Name und Zeit; Textfeld mit Knopf; Mülleimer mit `ConfirmDeletePopup`; ein Kommentar im Verlauf |
 
 - Nach jeder Änderung lädt die Box die aktuelle Seite neu. Ist eine Seite durch Löschen leer geworden, springt sie auf
   die letzte Seite, die es noch gibt.

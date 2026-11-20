@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import Spinner from 'react-bootstrap/Spinner'
 import { useLoadedData } from '../../api/useLoadedData.ts'
 import { Hoverlay } from '../../components/Hoverlay.tsx'
 import { Matrix } from '../../components/Matrix.tsx'
@@ -17,6 +16,7 @@ import {
 import { useFileClassFileExtension } from '../../file/useFileClassFileExtension.ts'
 import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguage.ts'
 import { useMasterData } from '../../masterdata/useMasterData.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
 
 /** Die Pinsel oben in der Ecke, wie bei ARC-AR. */
 const BRUSHES: MatrixBrush<boolean>[] = [
@@ -372,8 +372,7 @@ export function FileClassFileExtensionMatrixTab() {
     <>
       {(errorMessage !== null || isLoading) && (
         <div className="matrix-message">
-          {errorMessage !== null && <span className="text-danger">{errorMessage}</span>}
-          {errorMessage === null && <Spinner animation="border" size="sm" />}
+          <LoadStatus errorMessage={errorMessage} isLoading={isLoading} />
         </div>
       )}
       {!isLoading && fileClasses !== null && (

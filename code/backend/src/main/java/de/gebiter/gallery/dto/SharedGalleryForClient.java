@@ -17,7 +17,10 @@ import de.gebiter.file.dto.FileSolrFieldNameSet;
  * @param filePage eine Seite der Bilder in der Reihenfolge der Galerie, mit der Gesamtzahl
  * @param fileSolrFieldNameSet wie die Felder eines Bildes heißen (nur die Namen): Ein Besucher hat keine Anmeldung und
  *        bekommt die Stammdaten des Frontends sonst nicht
+ * @param commentCountsByFileDocumentId je Bild der Seite die Zahl seiner Kommentare, für die Sprechblase an der Kachel;
+ *        ein Bild ohne Kommentar fehlt
  */
 public record SharedGalleryForClient(String title, Map<String, String> description, Instant expiresAt,
-		Long remainingAccessCount, FileDocumentPage filePage, FileSolrFieldNameSet fileSolrFieldNameSet) {
+		Long remainingAccessCount, FileDocumentPage filePage, FileSolrFieldNameSet fileSolrFieldNameSet,
+		Map<String, Long> commentCountsByFileDocumentId) {
 }

@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,6 +48,16 @@ public class GalleryShareController {
 		GalleryShareForClient createdGalleryShare = galleryShareService.createOwnGalleryShare(galleryId, label, expiresAt,
 				maxAccessCount);
 		return ResponseEntity.ok(createdGalleryShare);
+	}
+
+	/**
+	 * READ: Alle Freigaben aller eigenen Galerien, die älteste zuerst, je mit ihrem Token für den Link und der
+	 * Kontrollzahl aus Solr. Für die Liste der eigenen Galerien.
+	 */
+	@GetMapping
+	public ResponseEntity<List<GalleryShareForClient>> getAllOwnGalleryShare() {
+		List<GalleryShareForClient> ownGalleryShares = galleryShareService.getAllOwnGalleryShare();
+		return ResponseEntity.ok(ownGalleryShares);
 	}
 
 	/**

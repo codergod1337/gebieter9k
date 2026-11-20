@@ -13,6 +13,202 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-20 21:24 – Bauen: Header mobil, Galerien mobil als Tabelle, Kommentare an Bildern, Fuß-Baustein
+
+- Ansage: „ja baue alle punkte so“ (Antwort auf die vier Fragen von 21:20).
+- Uhrzeiten in diesem und im vorigen Eintrag nach der Systemuhr berichtigt (ich hatte sie zuerst geschätzt).
+- Zu Frage 2 (Tabelle nur mobil oder überall) sagt das „so“ nichts Eigenes; es gilt seine Ansage von 21:08 („ich rede
+  jetzt nur von der mobilen Ansicht“): mobil Tabelle, am Desktop bleiben die Kacheln. Nicht noch einmal fragen.
+- Plan: 1. Header mobil (`OnlineUsersCount` nur Punkt und Zahl, Position als Medaille über `AccessRoleCollectionBadge`
+  mit neuem Schalter). 2. Globaler Baustein für den Fuß „Fehler / lädt / Anzahl“, alle Tabs umstellen. 3. Galerien
+  mobil über die zentrale `Table`; Backend: letztes Bild und Freigaben je Galerie. 4. Kommentare an Bildern: Entity
+  `FileComment`, Endpunkte, Kommentar-Bausteine des Gästebuchs nach `components/`, Sprechblase neben den Smileys,
+  Bereich am großen Bild und auf der Seite der Datei, Besucherseite lesend. 5. Je Schritt bauen, Doku nachziehen.
+- Stand 21:27, Schritt 1 Header gebaut (`npm run build` ohne Fehler, nicht in der Oberfläche gesehen):
+  `layout/OnlineUsersCount.tsx` (mobil nur Punkt und Zahl), `auth/access/AccessRoleCollectionBadge.tsx` (neuer Schalter
+  `compact`: Medaillon, ohne Symbol zwei Buchstaben), `layout/OwnAccessRoleCollection.tsx` (mobil das Medaillon, im
+  Popup weiter die Pille), `styles/base.css` (Maß des Medaillons im Header, engerer Abstand unter 768 px).
+- Stand 21:31, Schritt 2 Fuß-Baustein gebaut (`npm run build` ohne Fehler): neu `components/LoadStatus.tsx` und
+  `api/getFirstErrorDetail.ts`. Umgestellt 16 Stellen: Achievement-, ShopCategory-, PointActivity-, AccessRole-, Users-,
+  FileClass-, Rank-, SolrCoreFields-, AccessRoleCollection-, GalleryShare-, FileExtension- (zwei Füße) und
+  FileDocumentListTab (Fuß mit Blättern), dazu die Meldung über den vier Matrizen. Vom alten Muster ist nichts übrig.
+- Stand 21:37, Schritt 3 Galerien mobil gebaut (Backend `clean compile` rc=0, `npm run build` ohne Fehler, nicht in
+  der Oberfläche gesehen, nicht gegen Solr getestet):
+  - Backend: `FileDocumentResolveService.resolveLastUploadedAtOfGallery`; `GalleryForClient.lastUploadedAt`;
+    `GalleryService.resolveOwnGalleryIds`; `GalleryShareRepository.findByGalleryIdInOrderByIdAsc`;
+    `GalleryShareService.getAllOwnGalleryShare`; `GalleryShareController`: `GET /api/gallery-share`.
+  - Frontend neu: `components/InfoHint.tsx` (das „i“ mit Hoverlay, global; die Startseite nutzt es jetzt auch, die
+    Klasse `.tile-corner-hint` heißt `.info-hint`), `gallery/galleryColumns.tsx`. Geändert: `gallery/GalleryListTab.tsx`
+    (mobil die zentrale `Table`, am Desktop weiter `GalleryTile`; Fuß mit Anzahl über `LoadStatus`), `Gallery.ts`,
+    `useGalleryShare.ts` (`getAllOwnGalleryShare`), `galleryTexts.ts`, `base.css` (`.gallery-table-title*`).
+- Stand 21:47, Schritt 4 Kommentare an Bildern gebaut (Backend `clean compile` rc=0, `npm run build` ohne Fehler):
+  - Backend neu: `file/model/FileComment` (Tabelle `file_comment`, legt Hibernate beim nächsten Start auf dem Pi an),
+    `file/repository/FileCommentRepository`, `file/service/FileCommentService`, `file/controller/FileCommentController`
+    (`POST`, `GET /{id}`, `GET /count/{id}`, `DELETE` unter `/api/file-comment`), DTOs `FileCommentCount`,
+    `FileCommentDeleteRequest`, `FileCommentForClient`, `FileCommentThread`, `NewFileComment`; YAML
+    `gebiter.file.comment-text-max-length: 2000`, `FileConfig.commentTextMaxLength`.
+  - Backend geändert: `GalleryShareVisitorService` (`resolveSharedGallery` mit der Zahl der Kommentare je Bild, neu
+    `getSharedFileCommentThread`), `SharedGalleryForClient.commentCountsByFileDocumentId`,
+    `GalleryShareShareController`: `GET /api/share/token/{shareToken}/comment/{fileDocumentId}`.
+  - Frontend, Bausteine aus dem Gästebuch nach `components/` gezogen: `AuthorHead` (vorher `GuestbookHead`),
+    `CommentItem` (neu, `GuestbookCommentItem` nutzt ihn), `RichTextForm` (vorher `GuestbookTextForm`),
+    `ConfirmDeleteButton` (vorher `GuestbookDeleteButton`); CSS-Klassen umbenannt (`author-head*`, `comment-thread`,
+    `comment-item*`, `rich-text-form`). Das Gästebuch nutzt jetzt diese Bausteine; sein Aussehen sollte gleich sein,
+    gesehen habe ich es nicht.
+  - Frontend neu: `file/FileComment.ts`, `file/useFileComment.ts`, `file/comment/FileCommentBubble.tsx`,
+    `FileCommentSection.tsx`, `fileCommentTexts.ts`. Eingehängt in `gallery/GalleryImageTile.tsx` (Sprechblase neben
+    den Smileys), `GalleryImageViewerPopup.tsx` (Verlauf neben dem Bild), `GalleryPage.tsx`,
+    `GalleryShareVisitorPage.tsx` (nur lesen, „Zum Kommentieren anmelden“), `file/document/FileDocumentDetailPage.tsx`.
+  - Geprüft mit einem Wegwerf-Test `RepositoryQueriesThrowawayTest` (gelöscht): Die JPA-Schicht baut sich ohne
+    Datenbankverbindung auf, also stimmen die Entities und alle Abfragen der Repositories (auch die neuen).
+  - Von mir entschieden: Besucher bekommen die Zahl je Bild mit der Seite (eine Abfrage) statt je Kachel; löschen dürfen
+    Autor des Kommentars und Autor der Datei, ein Admin-Endpunkt fehlt noch; keine Punkte fürs Kommentieren.
+- Doku nachgezogen: neu `entities/FileComment.md`; `entities/README.md`, `Gallery.md`, `GalleryShare.md`,
+  `Guestbook.md`, `GuestbookComment.md`, `Users.md`, `konzept-galerie-freigabe.md` (Abschnitt 7 gebaut, Adresse
+  `…/comment/{fileId}`), `konzept-galerie.md` (neuer Abschnitt 9), `konzept-gaestebuch.md`, `konzept-navigation.md`.
+- NICHT getestet: nichts davon gegen die Pi-DB und den Solr, nichts in der Oberfläche (der Tunnel ist zu, die Anmeldung
+  braucht 2FA). Der Nutzer sieht an: Header auf dem Handy; Galerien-Liste auf dem Handy; Sprechblase an einer Bildkachel,
+  Kommentieren am großen Bild und auf der Seite einer Datei; die Besucherseite einer Freigabe; das Gästebuch (soll
+  aussehen wie vorher); die Füße der Admin-Tabs.
+- Lokal nicht committet (im Index stehen nur die drei Umbenennungen der Gästebuch-Bausteine). Als Nächstes: sein Push,
+  dann `git pull` und Bau auf dem Pi.
+
+## 2026-11-20 21:08 – Sitzung merken, mobile Ansicht (Header, Galerien), eigenen Code prüfen, Kommentare an Bildern
+
+- Ansage (gekürzt, wörtlich): 1. „warum kann ich verdammt nochmal nicht den VS Code hier den aktuellen Zustand […]
+  abspeichern in unserem Projekt? Ich habe da extra einen Workspace angelegt. […] Jedes Mal, wenn ich einen Laptop neu
+  starte, kann ich mit einem neuen Chatverlauf mit dir beginnen. Und du […] weiß nichts mehr.“ 2. Mobile Ansicht:
+  „Online 1“ und die Gruppe (eigene ARC) im Header kompakter, „weil der Platz nicht ausreicht“; „Bevor du da aber
+  irgendwas lospusht, bitte davor einen Ansatz vorschlagen und eine Skizze im Chat.“ 3. Mobil die Galerien nicht als
+  Kachel wie ein Bild, sondern „mehr in einem Tabellendesign“: Überschrift, Beschreibung als Hoverlay, wie viele
+  Bilder, wann das letzte, wann erstellt, wer Zugriff hat bzw. welche Freigaben laufen; „kannst du auch einen neuen
+  Vorschlag machen“. 4. „Du machst hier […] schon wieder lauter Gallery-Komponenten […] Du sollst solid arbeiten. […]
+  Tabellen sind allgemeingültige Komponenten. Entweder […] recyceln […] oder wir bauen eine neue […] globale
+  Komponenten“; „die ganze Gülle, die du gerade hier zusammengepfuscht hast, nochmal überprüfen“. 5. „Die Kommentare
+  möchte ich auch noch drin haben […] Da sollst du einen vernünftigen Vorschlag machen. Also ich hätte irgendwie so
+  eine Sprechblase neben die Smileys“.
+- Zur Frage von 21:05 (Lücke beim Upload während des Anlegens einer Freigabe) kam keine Antwort: bleibt liegen, nicht
+  noch einmal fragen.
+- Plan: 1. Nachsehen, warum eine neue Sitzung hier ohne Regeln beginnt (Einstellungen von Claude Code im Workspace,
+  Speicherort `Vollidiot`), Ursache nennen, beheben oder ihm die Zeilen zum Einfügen geben. 2. Den Code von heute Abend
+  (Admin-Reiter „Freigaben“) gegen die Regeln prüfen: Was davon ist allgemeingültig und gehört nach `components/`?
+  Umbauen, bauen. 3. Für Header mobil, Galerieliste mobil und Kommentare an Bildern nur lesen und je einen Ansatz mit
+  Skizze im Chat vorlegen; gebaut wird davon nichts vor seinem Ja.
+- Nachricht 21:10 dazu: Die Lücke beim Upload ist ihm „komplett egal“, kein Code dafür („Sorg du lieber mal, dass die
+  ganze Codestruktur vernünftig aussieht“). Eingetragen als entschieden: `Vollidiot/decided-leave-as-is.md`,
+  `gallery-share-key-link.md`, Konzept 4.4 und 8.
+- Stand 21:12, Punkt 1 (Sitzung): Ursache gefunden. Auf dem Laptop gab es keine Einstellung von Claude Code, die auf
+  `Vollidiot` zeigt (kein `.claude/` im geöffneten Ordner `fullstackprojekt`, auch keins im Projekt); jede neue Sitzung
+  nahm den leeren Standard-Ordner und kannte keine Regel. Behoben: `fullstackprojekt/.claude/settings.local.json` mit
+  `autoMemoryDirectory` = `…/gebieter9k/Vollidiot` (liegt außerhalb des Git-Repos). Wirkt ab der nächsten Sitzung,
+  hier nicht prüfbar. Die Chatverläufe selbst liegen auf dem Laptop (5 Sitzungen zu diesem Ordner) und lassen sich in
+  der Erweiterung über den Verlauf wieder öffnen; in den Projektordner lassen sie sich nicht legen.
+- Stand 21:17, Punkt 2 (eigener Code): geprüft und umgebaut (`npm run build` ohne Fehler, Backend unverändert rc=0).
+  - Fund: Ich hatte drei kleine Galerie-Zellkomponenten angelegt (`GalleryShareLinkCell`, im Reiter
+    `GalleryShareOwnerCell` und `GalleryShareGalleryCell`). Alle drei weg.
+  - Neu und global: `components/CopyableLink.tsx` (Adresse zum Anklicken mit `CopyButton`). Nutzen jetzt: die Spalte
+    „Link“ beider Listen (`galleryShareColumns.tsx`) und der letzte Schritt von `NewGallerySharePopup` (vorher ein
+    Eingabefeld mit Kopierknopf, jetzt derselbe Baustein).
+  - `admin/galleryshare/GalleryShareTab.tsx` besteht nur noch aus globalen Bausteinen (`ContentBox`, `Table`,
+    `UsersGuidName`, `StatusMark`, `Link` mit Origin wie in `FileDocumentListTab`).
+  - `galleryShareColumns.tsx`: keine Aufrufe mehr als Argumente (je Zelle erst die Freigabe in eine Variable).
+  - Offen gelassen und ihm als eine Frage vorgelegt: Der Fuß „Fehler / Ladeanzeige / Anzahl“ steht in 16 Tabs von Hand.
+- Stand 21:20, Punkt 3: gelesen `layout/AppHeader`, `OnlineUsersCount`, `OwnAccessRoleCollection`, `LookBadge`
+  (Form `medal`), `gallery/GalleryListTab`, `GalleryTile`, `components/Table` (blendet unwichtige Spalten mobil aus,
+  Tipp auf die Zeile zeigt alle), `guestbook/*`, `file/cheer/FileCheerBar`, `GalleryImageTile`. Drei Vorschläge mit
+  Skizze im Chat vorgelegt, nichts davon gebaut. Wartet auf seine Antworten.
+- Lokal nicht committet: alles von heute Abend.
+
+## 2026-11-20 20:54 – Freigabe: neue Bilder einer freigegebenen Galerie; Admin-Modul „alle Freigaben“
+
+- Ansage (gekürzt, wörtlich): „wenn ich eine Galerie schon freigegeben habe und dann noch Bilder hochlade, müssen wir
+  sicherstellen, dass auch weitere Bilder, die in einer Galerie hochgeladen werden, dann auch freigegeben werden,
+  solange diese Freigabe existiert. […] Und ich will auch nochmal eine allgemeine Freigabenübersicht haben. Wo wir dann
+  ein Interface brauchen, um alle Freigaben anzuzeigen für einen Admin. Also rede ich jetzt von einem Admin-Modul.“
+- Plan, in seiner Reihenfolge: 1. Prüfen, was der Code heute tut, wenn ein Bild in eine freigegebene Galerie kommt
+  (`FileUploadService.uploadFileIntoGallery`, `GalleryShareService`; dazu jeder andere Weg, auf dem ein Bild in eine
+  Galerie kommt oder sie verlässt). Lücken schließen. 2. Admin-Modul: `GalleryShareAdminController`
+  (`/api/admin/gallery-share`), Service-Methode für alle Freigaben, Seite im Frontend nach dem Muster der vorhandenen
+  Admin-Module. 3. Kompilieren, bauen, Doku (`GalleryShare.md`, `Gallery.md`, Konzept).
+- BEFUND 21:00 zu Punkt 1 (nur gelesen, nichts geändert): Der Upload in eine freigegebene Galerie ist seit dem
+  2026-11-19 gebaut: `FileUploadService.uploadFileIntoGallery` holt über `GalleryShareService.prepareGalleryShareUpload`
+  die Hashes aller Freigaben der Galerie und schreibt sie ins neue Dokument, danach `fileCount` +1. Einen anderen Weg
+  in eine Galerie gibt es nicht (`galleryIds` ist kein Feld „vom Client“, kein Verschieben, kein Wiederherstellen).
+  LÜCKE: Die Freigaben werden gelesen, bevor die Bytes ankommen; eine Freigabe, die während eines laufenden Uploads
+  angelegt wird, fehlt an den Dateien, die gerade unterwegs sind (höchstens 2 gleichzeitig). Steht im Konzept 4.4
+  („Bekannte Lücke“). NICHT behoben: dem Nutzer als eine Frage vorgelegt (ja/nein), erst danach bauen.
+- Stand 21:05, Punkt 2 gebaut (`./mvnw -q -o -DskipTests clean compile` rc=0, `npm run build` ohne Fehler):
+  - Backend neu: `gallery/controller/GalleryShareAdminController` (`GET /api/admin/gallery-share`),
+    `gallery/dto/GalleryShareForAdmin`; geändert: `GalleryShareService.getAllGalleryShare` (nur ADMIN),
+    `GalleryService.resolveGalleriesForGalleryShares`, `GalleryShareRepository.findAllByOrderByIdDesc`, Javadoc in
+    `GalleryShare` und `GalleryShareForClient` (den Token sieht auch der Admin).
+  - Frontend neu: `admin/galleryshare/GalleryShareTab.tsx` und `gallerySharePaths.ts` (Reiter „Freigaben“ der
+    Administration, `/admin/gallery-share`), `gallery/galleryShareColumns.tsx` (die Spalten einer Freigabe, jetzt für
+    beide Listen), `gallery/GalleryShareLinkCell.tsx` (aus `GalleryShareBox` herausgezogen); geändert:
+    `GalleryShareBox.tsx`, `GalleryShare.ts` (`GalleryShareForAdmin`), `useGalleryShare.ts` (`getAllGalleryShare`),
+    `galleryShareTexts.ts`, `admin/Admin.tsx`, `App.tsx`.
+  - Von mir entschieden, er kann es anders wollen: Reiter in der Administration (kein eigenes Modul mit Kachel); nur
+    Ansicht (kein Löschen durch den Admin); der Admin sieht den Link jeder Freigabe; die neueste Freigabe oben.
+  - Doku: `entities/GalleryShare.md`, `entities/Gallery.md`, `konzept-galerie-freigabe.md` (Entscheidungen 16 und 17,
+    Abschnitt 4.4, neuer Abschnitt 9), `konzept-navigation.md` (Abschnitt 4).
+- NICHT getestet: gegen die echten Daten (der Tunnel ist zu, geöffnet wird er nur auf Ansage) und in der Oberfläche
+  (Anmeldung braucht 2FA). Geprüft ist nur: Backend kompiliert, Frontend baut mit Typprüfung.
+- Lokal nicht committet. Als Nächstes: Antwort des Nutzers zur Lücke; nach seinem Push `git pull` und Bau auf dem Pi.
+
+## 2026-11-20 18:06 – Frage: Sind alle Dokumentationen auf dem aktuellen Codestand?
+
+- Ansage: „sind alle dokumentationen auf dem aktuellen codestand?“
+- Plan (nur lesen, nichts am Projekt ändern, bis der Befund steht): 1. Das Doku-Werkzeug in einer KOPIE des Projekts
+  im Scratchpad laufen lassen (im Projekt selbst überschreibt es von Hand Ergänztes, Vorfall vom 2026-11-19) und sein
+  Ergebnis mit `docu/entities/` vergleichen. 2. Eigener Abgleich: jede Entity hat eine Doku, jedes Feld steht drin,
+  jeder Endpunkt aus den Controllern steht in einer Doku und umgekehrt. 3. `solr-cores/FILE.md` gegen `solr_field` in
+  der Pi-DB. 4. Rückverweise im Code („Doku: …“). 5. Die übrigen Dokus nach überholten Namen und Abläufen durchsuchen.
+  Danach den Befund melden; was fehlt, ziehe ich nach.
+- BEFUND 18:10: Nein, nicht alle.
+  - Entity-Dokus: 41 Entities, 41 Dokus, kein Feld fehlt, kein dokumentierter Endpunkt ist überholt. Aber 58
+    Abweichungen in 13 Dokus: Verwendungen und Methodennamen fehlten, die meisten aus dem Markt-Umbau vom 2026-11-11
+    (`FileClass.md` allein 16), dazu von heute `resolveGalleryTags` in `Gallery.md`; ein überholter Name
+    (`getAccessRolesWithAccessLevel` in `AccessRole.md`, heißt `getAccessRolesWithFileClassGrant`); in `Gallery.md`
+    fehlten die fünf Endpunkte der Freigabe, die auch `Gallery` übertragen.
+  - Endpunkte: 212 im Code. Nirgends beschrieben waren `GET` und `POST /api/admin/solr-sync` und
+    `DELETE /api/share/session` (Logout).
+  - `solr-cores/FILE.md`: alle 35 Felder stimmen mit `solr_field` in der Pi-DB überein (Typ, Platz, „Wer liest“,
+    Suchgewicht), alle 19 Endpunkte der Datei-Controller stehen drin; es fehlte der neue `POST /api/gallery/tag/resolve`.
+  - Rückverweise im Code: drei fehlten (`GalleryShareShareController` → `Gallery.md`, `ShopItemController` →
+    `ShopOffer.md` und `UsersShopItem.md`, Typ `NewGalleryShare` in `GalleryShare.ts`).
+  - Übrige Dokus: `neuer-rechner.md` (öffentlich) beschrieb den Bau auf dem Server noch per Archiv und `scp`.
+    `konzept-galerie.md` Abschnitt 6 beschrieb die Oberfläche von 2026-11-09 ohne Hinweis auf Abschnitt 8. Was die
+    Shop-Konzepte an Klassen und Endpunkten nennen, die es nicht gibt (Truhe, Handel, Saison, Admin-Controller), ist
+    dort als Planung ausgewiesen, nicht überholt.
+- NACHGEZOGEN 18:15 (nur Doku und drei Kommentare, kein Verhalten geändert; Backend kompiliert, Frontend baut):
+  12 Entity-Dokus per Skript aus dem Ergebnis des Werkzeugs ergänzt (von Hand Geschriebenes bleibt), `ShopCategory.md`
+  (DTO), `Users.md` (Logout), `solr-cores/FILE.md`, `solr-cores/README.md` (Abschnitt „Abgleich des Schemas“),
+  `neuer-rechner.md`, `konzept-galerie.md`, die drei Rückverweise. Zweiter Abgleich: keine echte Abweichung mehr (6
+  Meldungen sind Namen im Fließtext, die es an anderer Stelle im Code gibt); alle 212 Endpunkte stehen in einer Doku.
+- Nicht maschinell prüfbar und nicht Satz für Satz gelesen: der Fließtext der 13 Konzepte.
+- Lokal nicht committet: 17 Dokus und 3 Code-Dateien (nur Kommentare).
+
+## 2026-11-20 18:02 – Push des Nutzers auf den Pi bringen (pull, bauen, prüfen)
+
+- Ansage: „habe gepusht, mach du nun deinen job ;)“.
+- Geprüft: lokal = `origin/main` = `179c751` („pray beacoup2“, 18:01, 30 Dateien: die Änderungen an der Galerie von
+  17:05), Arbeitsverzeichnis sauber, kein Passwort und kein Schlüssel aus `code/.env` in den geänderten Dateien.
+- Plan (Regel: Code nur über Git, niemand kommt an den Pi): Zustand ansehen, laufende Images als `:vorher` sichern,
+  `git pull --ff-only`, erst `backend`, dann `frontend` bauen, erst danach starten, prüfen (Log, Endpunkte, Bundle).
+- Stand 18:04, **fertig und auf dem Pi** (Einzelheiten in `setup.md` 5.16):
+  - Pi vorher: Last 0,0, 13 GiB RAM frei, 45 °C. Pull von `c3299e8` auf `179c751`, Klon sauber.
+  - Bau `backend` 23 s, `frontend` 8 s; beide Container neu angelegt, Backend gestartet in 17,3 s, kein ERROR, kein
+    WARN. Alle 5 Container laufen.
+  - Über nginx und von außen: Startseite 200; `POST /api/gallery/tag/resolve`, `…/file/resolve` und
+    `/api/gallery-share/resolve` ohne Anmeldung 401 (die Endpunkte gibt es); unbekannter Token 404. Im Bundle
+    `index-D1gPyc9K.js` stehen „neue Bilder“, „alle Bilder zeigen“, die Route `galleries/:galleryId/share` und der
+    Pfad `/api/gallery/tag/resolve`; die Schalter stehen im CSS und im Theme.
+  - Die Tags `:vorher` zeigen jetzt auf die Images von 16:13 (der Stand vor diesem Bau) und bleiben bis zum nächsten Bau.
+  - Hilfsdateien auf dem Pi gelöscht. Der Tunnel ist offen. Lokal nicht committet: dieses Protokoll.
+- NICHT gesehen: die Seiten mit Anmeldung (2FA). Der Nutzer testet: Galerie → Reiter „Freigabe“ → „neue Freigabe“ →
+  Link kopieren → privates Fenster; Knopf „neue Bilder“; Hashtag-Schalter.
+- Weiter offen: seine Antwort, ob die Schalter richtig herum sind (keiner an = alle Bilder).
+
 ## 2026-11-20 17:05 – Galerie: Upload hinter Knopf, Freigabe als eigener Reiter, Filter nach Hashtags
 
 - Ansage (gekürzt, wörtlich): „in einer galerie will ich nicht immer den hässlichen upload angezeigt haben, das will ich

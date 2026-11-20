@@ -46,7 +46,8 @@ public class GalleryShare {
 
 	/**
 	 * Der Token der Freigabe als Hex-Text ({@code gebiter.gallery-share.token-bytes} Byte Zufall). Er steht im Link, den
-	 * der Besitzer weiterschickt: {@code /share/galerie/<shareToken>}. Nur der Besitzer der Galerie bekommt ihn zu sehen.
+	 * der Besitzer weiterschickt: {@code /share/galerie/<shareToken>}. Zu sehen bekommt ihn nur der Besitzer der Galerie,
+	 * dazu der Admin in seiner Übersicht über alle Freigaben.
 	 */
 	@Column(nullable = false, unique = true, updatable = false, length = 500)
 	private String shareToken;

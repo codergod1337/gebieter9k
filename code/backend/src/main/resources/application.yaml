@@ -505,6 +505,8 @@ gebiter:
     # Seite nach der anderen; so viele GUIDs hat eine Seite. Nicht größer als gebiter.users.avatar-resolve-max-guids:
     # Zu jeder Seite fragt sie gleich die Namen ab.
     cheer-users-page-size: 100
+    # Höchstlänge eines Kommentars zu einer Datei in Zeichen sichtbaren Texts (wie ein Kommentar im Gästebuch).
+    comment-text-max-length: 2000
     # Den Stand der Auswertung fragt die Upload-Liste für höchstens so viele Dateien auf einmal ab (wie die Liste groß ist).
     analysis-progress-max-ids: 25
     # So viele User darf der Autor einer Datei höchstens zum Bearbeiten freigeben.

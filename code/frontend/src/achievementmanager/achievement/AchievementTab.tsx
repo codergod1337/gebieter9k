@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import Spinner from 'react-bootstrap/Spinner'
 import { useNavigate } from 'react-router'
 import type { Achievement } from '../../achievement/Achievement.ts'
 import { AchievementBadge } from '../../achievement/AchievementBadge.tsx'
@@ -17,6 +16,8 @@ import { getEditAchievementPath, NEW_ACHIEVEMENT_PATH } from './achievementPaths
 import { useOrigin } from '../../navigation/useOrigin.ts'
 import { useMasterData } from '../../masterdata/useMasterData.ts'
 import { ACHIEVEMENT_TRACKING_KEY_LOOKS } from '../../achievement/achievementTrackingKeys.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
+import { getFirstErrorDetail } from '../../api/getFirstErrorDetail.ts'
 
 /** Breiten und ausgeblendete Spalten je User (UsersSetting `TABLE_ACHIEVEMENT`). */
 const ACHIEVEMENT_TABLE_SETTING_KEY = 'ACHIEVEMENT'
@@ -98,17 +99,16 @@ export function AchievementTab() {
     await masterDataHook.reload()
   }
 
-  let footer
-  if (achievementHook.error !== null) {
-    footer = <span className="text-danger">{achievementHook.error.detail}</span>
-  } else if (orderAchievementHook.error !== null) {
-    footer = <span className="text-danger">{orderAchievementHook.error.detail}</span>
-  } else if (achievements === null) {
-    footer = <Spinner animation="border" size="sm" />
-  } else {
-    const achievementsCountText = achievements.length + ' Achievements, am Griff links verschieben'
-    footer = <span>{achievementsCountText}</span>
+  const footerErrorMessage = getFirstErrorDetail([achievementHook.error, orderAchievementHook.error])
+  let achievementsCountText = ''
+  if (achievements !== null) {
+    achievementsCountText = achievements.length + ' Achievements, am Griff links verschieben'
   }
+  const footer = (
+    <LoadStatus errorMessage={footerErrorMessage} isLoading={achievements === null}>
+      {achievementsCountText}
+    </LoadStatus>
+  )
   const newAchievementButton = <NewEntityButton label="neues Achievement" onClick={handleNewAchievement} />
 
   let deleteErrorMessage: string | null = null

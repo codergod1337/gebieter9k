@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import Spinner from 'react-bootstrap/Spinner'
 import { useLoadedData } from '../../api/useLoadedData.ts'
 import type { AccessRoleCollection } from '../../auth/access/AccessRoleCollection.ts'
 import { AccessRoleCollectionBadge } from '../../auth/access/AccessRoleCollectionBadge.tsx'
@@ -8,6 +7,7 @@ import { Matrix } from '../../components/Matrix.tsx'
 import { useMasterData } from '../../masterdata/useMasterData.ts'
 import type { Users } from '../../users/Users.ts'
 import { useUsers } from '../../users/useUsers.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
 
 /**
  * Tab „User-ARC“ der Administration, wie in der Vorlage: welcher User auf welcher Position (ARC) sitzt. Links alle
@@ -100,8 +100,7 @@ export function UsersArcMatrixTab() {
       {/* Nur bei Fehler oder während des Ladens, sonst steht die Matrix allein */}
       {(errorMessage !== null || isLoading) && (
         <div className="matrix-message">
-          {errorMessage !== null && <span className="text-danger">{errorMessage}</span>}
-          {errorMessage === null && <Spinner animation="border" size="sm" />}
+          <LoadStatus errorMessage={errorMessage} isLoading={isLoading} />
         </div>
       )}
       {!isLoading && accessRoleCollections !== null && (

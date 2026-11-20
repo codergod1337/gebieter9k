@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import Spinner from 'react-bootstrap/Spinner'
 import { useLoadedData } from '../../api/useLoadedData.ts'
 import type { AccessRole } from '../../auth/access/AccessRole.ts'
 import { AccessRoleBadge } from '../../auth/access/AccessRoleBadge.tsx'
@@ -17,6 +16,7 @@ import {
 } from '../../components/useMatrixCellEdits.ts'
 import { useListingOrder } from '../../components/useListingOrder.ts'
 import { useMasterData } from '../../masterdata/useMasterData.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
 
 /** Die Pinsel oben in der Ecke, wie in der Vorlage. */
 const BRUSHES: MatrixBrush<boolean>[] = [
@@ -251,8 +251,7 @@ export function AccessRoleCollectionAccessRoleMatrixTab() {
       {/* Nur bei Fehler oder während des Ladens, sonst steht die Matrix allein */}
       {(errorMessage !== null || isLoading) && (
         <div className="matrix-message">
-          {errorMessage !== null && <span className="text-danger">{errorMessage}</span>}
-          {errorMessage === null && <Spinner animation="border" size="sm" />}
+          <LoadStatus errorMessage={errorMessage} isLoading={isLoading} />
         </div>
       )}
       {!isLoading && accessRoleCollections !== null && accessRoles !== null && (

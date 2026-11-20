@@ -23,7 +23,7 @@ import jakarta.servlet.http.HttpServletRequest;
  * die Artikel einer Rubrik auflösen. Wer hochladen darf, hängt an der FileClass (Schalter „Hochladen“) und daran, ob sie
  * in der Rubrik erlaubt ist. Er nutzt den {@link FileUploadService} und den {@link ShopItemService}, nie ein Repository.
  * <p>
- * Doku: {@code docu/entities/ShopItem.md}.
+ * Doku: {@code docu/entities/ShopItem.md}, {@code docu/entities/ShopOffer.md}, {@code docu/entities/UsersShopItem.md}.
  */
 @RestController
 @RequestMapping("/api/shop-item")

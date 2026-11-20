@@ -1,4 +1,3 @@
-import Spinner from 'react-bootstrap/Spinner'
 import Table from 'react-bootstrap/Table'
 import { useNavigate } from 'react-router'
 import type { AccessRoleCollection } from '../../auth/access/AccessRoleCollection.ts'
@@ -13,6 +12,8 @@ import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguag
 import { useMasterData } from '../../masterdata/useMasterData.ts'
 import { getEditAccessRoleCollectionPath } from './accessRoleCollectionPaths.ts'
 import { useOrigin } from '../../navigation/useOrigin.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
+import { getFirstErrorDetail } from '../../api/getFirstErrorDetail.ts'
 
 function getAccessRoleCollectionKey(accessRoleCollection: AccessRoleCollection): string {
   return accessRoleCollection.key
@@ -53,17 +54,16 @@ export function AccessRoleCollectionTab() {
     navigate(editAccessRoleCollectionPath, { state: originState })
   }
 
-  let footer
-  if (masterDataHook.error !== null) {
-    footer = <span className="text-danger">{masterDataHook.error.detail}</span>
-  } else if (orderAccessRoleCollectionHook.error !== null) {
-    footer = <span className="text-danger">{orderAccessRoleCollectionHook.error.detail}</span>
-  } else if (accessRoleCollections === null) {
-    footer = <Spinner animation="border" size="sm" />
-  } else {
-    const accessRoleCollectionsCountText = accessRoleCollections.length + ' Positionen, am Griff links verschieben'
-    footer = <span>{accessRoleCollectionsCountText}</span>
+  const footerErrorMessage = getFirstErrorDetail([masterDataHook.error, orderAccessRoleCollectionHook.error])
+  let accessRoleCollectionsCountText = ''
+  if (accessRoleCollections !== null) {
+    accessRoleCollectionsCountText = accessRoleCollections.length + ' Positionen, am Griff links verschieben'
   }
+  const footer = (
+    <LoadStatus errorMessage={footerErrorMessage} isLoading={accessRoleCollections === null}>
+      {accessRoleCollectionsCountText}
+    </LoadStatus>
+  )
 
   return (
     <ContentBox title="Positionen (ARC)" footer={footer}>

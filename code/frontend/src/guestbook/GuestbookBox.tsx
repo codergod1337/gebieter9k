@@ -4,10 +4,10 @@ import { useLoadedData } from '../api/useLoadedData.ts'
 import { ContentBox } from '../components/ContentBox.tsx'
 import { ErrorAlert } from '../components/ErrorAlert.tsx'
 import { PageNavigation } from '../components/PageNavigation.tsx'
+import { RichTextForm } from '../components/RichTextForm.tsx'
 import { GUESTBOOK_BOX_ELEMENT_ID } from './guestbookBoxElementId.ts'
 import { formatUrlPage, parseUrlPage, type UrlParamChange, useUrlParam } from '../navigation/useUrlParam.ts'
 import { GuestbookEntryCard } from './GuestbookEntryCard.tsx'
-import { GuestbookTextForm } from './GuestbookTextForm.tsx'
 import { useGuestbook } from './useGuestbook.ts'
 import type { MultilingualText } from '../language/MultilingualText.ts'
 
@@ -123,7 +123,7 @@ export function GuestbookBox({ profileUsersGuid }: GuestbookBoxProps) {
   return (
     <div ref={guestbookBoxRef} id={GUESTBOOK_BOX_ELEMENT_ID} className="guestbook-box">
       <ContentBox title="Gästebuch" footer={footer}>
-        <GuestbookTextForm
+        <RichTextForm
           placeholder="Etwas ins Gästebuch schreiben …"
           ariaLabel="Neuer Gästebucheintrag"
           submitLabel="Eintragen"

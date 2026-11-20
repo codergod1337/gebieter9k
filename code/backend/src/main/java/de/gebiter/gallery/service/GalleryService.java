@@ -1,7 +1,9 @@
 package de.gebiter.gallery.service;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -239,6 +241,24 @@ public class GalleryService {
 	}
 
 	/**
+	 * READ (Backend): Die ids aller Galerien des angemeldeten Users, in ihrer Reihenfolge. Für einen anderen Service, der
+	 * etwas zu allen eigenen Galerien liefert (der {@code GalleryShareService}: alle Freigaben der eigenen Galerien für
+	 * die Liste der Galerien). Die GUID kommt aus dem Token. Über keinen Endpunkt direkt erreichbar.
+	 */
+	@Transactional(readOnly = true)
+	public List<Long> resolveOwnGalleryIds() {
+		UUID currentUsersGuid = currentUsersProvider.currentUsersGuid();
+		List<Gallery> ownGalleries = galleryRepository.findByOwnerUsersGuidOrderByListingPositionAscIdAsc(
+				currentUsersGuid);
+		List<Long> ownGalleryIds = new ArrayList<>();
+		for (Gallery ownGallery : ownGalleries) {
+			Long ownGalleryId = ownGallery.getId();
+			ownGalleryIds.add(ownGalleryId);
+		}
+		return ownGalleryIds;
+	}
+
+	/**
 	 * READ (Backend): Die Galerie zu einer gültigen Freigabe, für die Besucheransicht (Titel und Beschreibung). Ohne
 	 * Rechteprüfung und ohne angemeldeten User: Dass der Besucher sie sehen darf, hat der Aufrufer geprüft (der
 	 * {@code GalleryShareVisitorService}: gültiger Token). Über keinen Endpunkt direkt erreichbar.
@@ -248,6 +268,19 @@ public class GalleryService {
 	@Transactional(readOnly = true)
 	public Gallery getGalleryForGalleryShare(Long id) {
 		return doGetGallery(id);
+	}
+
+	/**
+	 * READ (Backend): Die Galerien zu den Freigaben in der Übersicht des Admins (Titel und Besitzer). Ohne
+	 * Rechteprüfung: Die hat der Aufrufer gemacht (der {@code GalleryShareService}, nur ADMIN). Über keinen Endpunkt
+	 * direkt erreichbar. Eine Galerie, die es nicht (mehr) gibt, fehlt im Ergebnis; ein Fehler ist das nicht.
+	 *
+	 * @param ids die ids der gesuchten Galerien
+	 */
+	@Transactional(readOnly = true)
+	public List<Gallery> resolveGalleriesForGalleryShares(Collection<Long> ids) {
+		Helper.requireNotNull(ids, "ids");
+		return galleryRepository.findAllById(ids);
 	}
 
 	/**
@@ -515,7 +548,7 @@ public class GalleryService {
 		return filterTags;
 	}
 
-	/** Eine Galerie für die Anzeige: Zahl und Vorschau mit dem Lesefilter des Betrachters aus Solr. */
+	/** Eine Galerie für die Anzeige: Zahl, Vorschau und letzter Upload mit dem Lesefilter des Betrachters aus Solr. */
 	private GalleryForClient createGalleryForClient(Gallery gallery) {
 		Long galleryId = gallery.getId();
 		List<String> noTags = List.of();
@@ -537,8 +570,12 @@ public class GalleryService {
 		Visibility visibility = gallery.getVisibility();
 		int listingPosition = gallery.getListingPosition();
 		OffsetDateTime createdAt = gallery.getCreatedAt();
+		Instant lastUploadedAt = null;
+		if (fileCount > 0) {
+			lastUploadedAt = fileDocumentResolveService.resolveLastUploadedAtOfGallery(galleryId);
+		}
 		return new GalleryForClient(galleryId, ownerUsersGuid, title, description, visibility, listingPosition, createdAt,
-				fileCount, coverPreviewBase64Png);
+				fileCount, coverPreviewBase64Png, lastUploadedAt);
 	}
 
 	/** Die Galerie, nur wenn der angemeldete User sie sehen darf; sonst sieht es aus wie „gibt es nicht“. */

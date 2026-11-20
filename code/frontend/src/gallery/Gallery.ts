@@ -17,13 +17,16 @@ export type Gallery = {
 }
 
 /**
- * Eine Galerie für die Anzeige: dazu wie viele Bilder der Betrachter darin sieht und die Vorschau des ersten.
+ * Eine Galerie für die Anzeige: dazu wie viele Bilder der Betrachter darin sieht, die Vorschau des ersten und wann
+ * zuletzt eines hochgeladen wurde.
  * Doku: `docu/entities/Gallery.md`
  */
 export type GalleryForClient = Gallery & {
   fileCount: number
   /** PNG als Base64 ohne Präfix, `null` ohne Bild. */
   coverPreviewBase64Png: string | null
+  /** Wann zuletzt ein Bild hochgeladen wurde (ISO-Text), `null` ohne Bild. */
+  lastUploadedAt: string | null
 }
 
 /**

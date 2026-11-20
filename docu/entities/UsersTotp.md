@@ -53,7 +53,7 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 ## Verwendung im Backend
 
 - [`code/backend/src/main/java/de/gebiter/security/repository/UsersTotpRepository.java`](../../code/backend/src/main/java/de/gebiter/security/repository/UsersTotpRepository.java): (Import, Felder)
-- [`code/backend/src/main/java/de/gebiter/security/service/UsersTotpService.java`](../../code/backend/src/main/java/de/gebiter/security/service/UsersTotpService.java): `checkOwnUsersTotpCode`, `confirmOwnUsersTotp`, `redeemUsersTotpCode`, `deleteOwnUsersTotp`, `deleteUsersTotp`, `doCreateUsersTotpSetup`, `doGetUsersTotpStatus`, `doAcceptCode`, `doGetUsersTotp`, `doMatchesSecret`, `doFindMatchingTimeStep`
+- [`code/backend/src/main/java/de/gebiter/security/service/UsersTotpService.java`](../../code/backend/src/main/java/de/gebiter/security/service/UsersTotpService.java): `checkOwnUsersTotpCode`, `confirmOwnUsersTotp`, `redeemUsersTotpCode`, `deleteOwnUsersTotp`, `deleteUsersTotp`, `doCreateUsersTotpSetup`, `doGetUsersTotpStatus`, `doAcceptCode`, `doGetUsersTotp`, `doMatchesSecret`, `doFindMatchingTimeStep`, `deleteUsersTotpIfExists`
 
 ## Verwendung im Frontend
 

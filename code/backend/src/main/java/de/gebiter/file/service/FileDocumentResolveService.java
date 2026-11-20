@@ -220,6 +220,39 @@ public class FileDocumentResolveService {
 	}
 
 	/**
+	 * READ: Wann zuletzt eine Datei in die Galerie hochgeladen wurde, unter den Dateien, die der User lesen darf
+	 * (derselbe Lesefilter wie überall). Für die Liste der Galerien (Nutzer 2026-11-20: „wann das letzte“). Eine Abfrage
+	 * mit einer Zeile, die neueste zuerst.
+	 *
+	 * @return der Zeitpunkt des neuesten Uploads; {@code null}, wenn der User in der Galerie keine Datei lesen darf, sie
+	 *         leer ist oder er das Feld {@code uploadedAt} nicht lesen darf
+	 * @throws IllegalArgumentException ohne Galerie
+	 */
+	public Instant resolveLastUploadedAtOfGallery(Long galleryId) {
+		Helper.requireNotNull(galleryId, "galleryId");
+		String galleryFilterQuery = createGalleryFilterQuery(galleryId);
+		List<String> conditionFilterQueries = List.of(galleryFilterQuery);
+		Map<String, String> noReferencedQueryParams = Map.of();
+		String uploadedAtFieldName = fileSolrFieldNames.uploadedAt();
+		String newestFirstSort = uploadedAtFieldName + " desc";
+		int firstRow = 0;
+		int oneRow = 1;
+		FileDocumentPage newestFilePage = doResolveReadableFileDocuments(conditionFilterQueries,
+				noReferencedQueryParams, firstRow, oneRow, newestFirstSort);
+		List<Map<String, Object>> newestFiles = newestFilePage.documents();
+		if (newestFiles.isEmpty()) {
+			return null;
+		}
+		Map<String, Object> newestFile = newestFiles.get(0);
+		Object rawUploadedAt = newestFile.get(uploadedAtFieldName);
+		if (rawUploadedAt == null) {
+			return null;
+		}
+		String uploadedAtText = rawUploadedAt.toString();
+		return Instant.parse(uploadedAtText);
+	}
+
+	/**
 	 * READ: Die Tags der Dateien einer Galerie, die der User lesen darf (derselbe Lesefilter wie überall), je mit der
 	 * Zahl dieser Dateien, häufigste zuerst, höchstens {@code maxTagCount}. Für die Schalter über den Kacheln einer
 	 * Galerie (Filter nach Hashtags, Nutzer 2026-11-20). Eine Facette in Solr über die ganze Galerie, nicht nur über

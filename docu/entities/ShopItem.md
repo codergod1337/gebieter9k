@@ -58,17 +58,19 @@ Beide für jeden angemeldeten User. Antworten des Uploads bei Fehlern, alle vor 
 ## Verwendung im Backend
 
 - [`code/backend/src/main/java/de/gebiter/shop/repository/ShopItemRepository.java`](../../code/backend/src/main/java/de/gebiter/shop/repository/ShopItemRepository.java): `findAllByShopCategoryKeyOrderByIdDesc`, `existsByFileDocumentId`
-- [`code/backend/src/main/java/de/gebiter/shop/service/ShopItemService.java`](../../code/backend/src/main/java/de/gebiter/shop/service/ShopItemService.java): `prepareShopCategoryUpload` (Rubrik prüfen, Sichtbarkeit fürs Dokument), `createShopItemOfUploadedFile`, `getShopItem` (für den Kauf: Datei und Verkäufer), `resolveShopItems` (mit laufenden Angeboten und dem Besitz des Betrachters), `requireExistingShopCategory`
+- [`code/backend/src/main/java/de/gebiter/shop/service/ShopItemService.java`](../../code/backend/src/main/java/de/gebiter/shop/service/ShopItemService.java): `prepareShopCategoryUpload`, `createShopOfferOfOwnShopItem`, `requireCurrentUsersSellerOrAdmin` (Rubrik prüfen, Sichtbarkeit fürs Dokument), `createShopItemOfUploadedFile`, `getShopItem` (für den Kauf: Datei und Verkäufer), `resolveShopItems` (mit laufenden Angeboten und dem Besitz des Betrachters), `requireExistingShopCategory`
 - [`code/backend/src/main/java/de/gebiter/file/service/FileUploadService.java`](../../code/backend/src/main/java/de/gebiter/file/service/FileUploadService.java): `uploadFileIntoShopCategory` (der Upload-Weg des Markts: setzt die FileClass der Rubrik über `ShopCategoryService.getFileClassKeyOfShopCategory` in die Felder), `doUploadFromMultipart` (der gemeinsame Kern: Recht „Hochladen“, Endung, Grenze), `doCheckInFile` (legt nach dem Einchecken den Artikel an)
 - [`code/backend/src/main/java/de/gebiter/shop/controller/ShopItemController.java`](../../code/backend/src/main/java/de/gebiter/shop/controller/ShopItemController.java): `uploadFileIntoShopCategory`, `resolveShopItems`
 - [`ShopOffer.shopItemId`](../../code/backend/src/main/java/de/gebiter/shop/model/ShopOffer.java) verweist auf die id.
+- [`code/backend/src/main/java/de/gebiter/shop/dto/ShopItemForClient.java`](../../code/backend/src/main/java/de/gebiter/shop/dto/ShopItemForClient.java): `(Record-Komponenten)`
+- [`code/backend/src/main/java/de/gebiter/shop/service/ShopOrderService.java`](../../code/backend/src/main/java/de/gebiter/shop/service/ShopOrderService.java): `createShopOrder`
 
 ## Verwendung im Frontend
 
 - [`code/frontend/src/shop/useShopItem.ts`](../../code/frontend/src/shop/useShopItem.ts): `useShopItem`, `uploadFileIntoShopCategory`, `resolveShopItems`; leert nach dem Hochladen die Bereiche `FILE_DOCUMENT` und `SHOP_ITEM` im Zwischenspeicher der Ansichten ([`shopItemViewCacheScope.ts`](../../code/frontend/src/shop/shopItemViewCacheScope.ts))
 - [`code/frontend/src/market/MarketUploadBox.tsx`](../../code/frontend/src/market/MarketUploadBox.tsx): der Upload-Schritt von „neues Angebot“, über den globalen Upload-Ablauf (`FileUploadForm` mit `fixedFileClass`: die FileClass der Rubrik wird nur gezeigt, nicht gewählt und nicht mitgeschickt), je Datei Beschreibung und Tags
 - [`code/frontend/src/market/NewShopOfferPopup.tsx`](../../code/frontend/src/market/NewShopOfferPopup.tsx): der geführte Ablauf, Schritt 1 ist das Hochladen
-- [`code/frontend/src/market/MarketCategoryTab.tsx`](../../code/frontend/src/market/MarketCategoryTab.tsx): oben rechts „neues Angebot“ (nur wer die FileClass der Rubrik hochladen darf), darunter die Artikel als Bildkacheln (`GalleryImageTile`: Vorschau, Stimmen, Info, Download, im Fuß das Angebot); ein Klick auf das Bild öffnet die Seite der Datei mit „Zurück zu <Rubrik>“
+- [`code/frontend/src/market/MarketCategoryTab.tsx`](../../code/frontend/src/market/MarketCategoryTab.tsx): `getShopItemKey`, `openFileDocument`, `handleShopItemsChanged`, `openNewShopOffer`, `closeNewShopOffer`, `renderShopOffers`; oben rechts „neues Angebot“ (nur wer die FileClass der Rubrik hochladen darf), darunter die Artikel als Bildkacheln (`GalleryImageTile`: Vorschau, Stimmen, Info, Download, im Fuß das Angebot); ein Klick auf das Bild öffnet die Seite der Datei mit „Zurück zu <Rubrik>“
 
 ## Getestet (2026-11-11, Wegwerf-Test gegen die Pi-DB, danach gelöscht)
 

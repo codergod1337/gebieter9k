@@ -1,9 +1,10 @@
 import { findGuestbookAuthor, type GuestbookEntryForClient, type GuestbookPage } from './Guestbook.ts'
 import { GuestbookCommentThread } from './GuestbookCommentThread.tsx'
-import { GuestbookDeleteButton } from './GuestbookDeleteButton.tsx'
-import { GuestbookHead } from './GuestbookHead.tsx'
+import { GUESTBOOK_ORIGIN_LABEL } from './guestbookOriginLabel.ts'
 import { GuestbookReactionBar } from './GuestbookReactionBar.tsx'
 import { useGuestbook } from './useGuestbook.ts'
+import { AuthorHead } from '../components/AuthorHead.tsx'
+import { ConfirmDeleteButton } from '../components/ConfirmDeleteButton.tsx'
 import { RichTextView } from '../components/RichTextView.tsx'
 
 type GuestbookEntryCardProps = {
@@ -40,7 +41,7 @@ export function GuestbookEntryCard({ entry, guestbookPage, onChanged }: Guestboo
   let deleteButton = null
   if (entry.deletableByCurrentUsers) {
     deleteButton = (
-      <GuestbookDeleteButton
+      <ConfirmDeleteButton
         label="Eintrag löschen"
         question="Soll dieser Eintrag samt allen Kommentaren und Smileys wirklich gelöscht werden?"
         isDeleting={guestbookHook.isLoading}
@@ -52,7 +53,14 @@ export function GuestbookEntryCard({ entry, guestbookPage, onChanged }: Guestboo
 
   return (
     <article className="guestbook-entry">
-      <GuestbookHead author={entryAuthor} avatarSize="medium" actionText="hat geschrieben" writtenAt={entry.writtenAt} actions={deleteButton} />
+      <AuthorHead
+        author={entryAuthor}
+        originLabel={GUESTBOOK_ORIGIN_LABEL}
+        avatarSize="medium"
+        actionText="hat geschrieben"
+        writtenAt={entry.writtenAt}
+        actions={deleteButton}
+      />
       <RichTextView richText={entry.entryText} className="guestbook-text" />
       <GuestbookReactionBar guestbookId={entry.id} guestbookCommentId={null} reactionCounts={entry.reactionCounts} onReacted={onChanged} />
       <GuestbookCommentThread entry={entry} guestbookPage={guestbookPage} onChanged={onChanged} />

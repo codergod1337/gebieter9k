@@ -2,7 +2,7 @@ import { type ChangeEvent, useState } from 'react'
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import Modal from 'react-bootstrap/Modal'
-import { CopyButton } from '../components/CopyButton.tsx'
+import { CopyableLink } from '../components/CopyableLink.tsx'
 import { ErrorAlert } from '../components/ErrorAlert.tsx'
 import { getTextInCurrentLanguage } from '../language/getTextInCurrentLanguage.ts'
 import { getTextInCurrentLanguageWithValues } from '../language/getTextInCurrentLanguageWithValues.ts'
@@ -232,13 +232,8 @@ export function NewGallerySharePopup({ galleryId, onCreated, onClose }: NewGalle
         {step === 'LINK' && (
           <>
             <p>{linkCreatedText}</p>
-            <Form.Group controlId="galleryShareLink">
-              <Form.Label>{getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.linkInputLabel)}</Form.Label>
-              <div className="d-flex align-items-center gap-2">
-                <Form.Control type="text" readOnly value={galleryShareLink} onFocus={(event) => event.target.select()} />
-                <CopyButton label={getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.copyLinkLabel)} value={galleryShareLink} />
-              </div>
-            </Form.Group>
+            <div className="form-label">{getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.linkInputLabel)}</div>
+            <CopyableLink href={galleryShareLink} copyLabel={getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.copyLinkLabel)} />
             <p className="small text-body-secondary mt-3 mb-0">{getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.linkStaysAvailable)}</p>
           </>
         )}

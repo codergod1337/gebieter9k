@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { ConfirmDeletePopup } from '../components/ConfirmDeletePopup.tsx'
-import { DeleteButton } from '../components/DeleteButton.tsx'
+import { ConfirmDeletePopup } from './ConfirmDeletePopup.tsx'
+import { DeleteButton } from './DeleteButton.tsx'
 
-type GuestbookDeleteButtonProps = {
+type ConfirmDeleteButtonProps = {
   /** Für Screenreader und als Titel der Sicherheitsabfrage, z. B. „Eintrag löschen“. */
   label: string
   /** Die Frage der Sicherheitsabfrage. */
@@ -14,8 +14,11 @@ type GuestbookDeleteButtonProps = {
   onDelete: () => Promise<boolean>
 }
 
-/** Der Mülleimer an einem Eintrag oder Kommentar, gelöscht wird erst nach der Sicherheitsabfrage. */
-export function GuestbookDeleteButton({ label, question, isDeleting, errorMessage, onDelete }: GuestbookDeleteButtonProps) {
+/**
+ * Der Mülleimer samt Sicherheitsabfrage in einem Stück, überall gleich: an einem Eintrag oder Kommentar im Gästebuch,
+ * an einem Kommentar zu einem Bild. Gelöscht wird erst nach der Abfrage ({@link ConfirmDeletePopup}).
+ */
+export function ConfirmDeleteButton({ label, question, isDeleting, errorMessage, onDelete }: ConfirmDeleteButtonProps) {
   const [confirmOpen, setConfirmOpen] = useState<boolean>(false)
 
   async function handleConfirm() {

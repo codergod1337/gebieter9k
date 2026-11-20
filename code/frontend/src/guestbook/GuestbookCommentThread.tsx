@@ -1,7 +1,7 @@
 import { findGuestbookAuthor, type GuestbookEntryForClient, type GuestbookPage } from './Guestbook.ts'
 import { GuestbookCommentItem } from './GuestbookCommentItem.tsx'
-import { GuestbookTextForm } from './GuestbookTextForm.tsx'
 import { useGuestbook } from './useGuestbook.ts'
+import { RichTextForm } from '../components/RichTextForm.tsx'
 import type { MultilingualText } from '../language/MultilingualText.ts'
 
 type GuestbookCommentThreadProps = {
@@ -34,7 +34,7 @@ export function GuestbookCommentThread({ entry, guestbookPage, onChanged }: Gues
   }
 
   return (
-    <div className="guestbook-comments">
+    <div className="comment-thread">
       {entry.comments.map((comment) => {
         const commentAuthor = findGuestbookAuthor(guestbookPage, comment.authorUsersGuid)
         return (
@@ -47,7 +47,7 @@ export function GuestbookCommentThread({ entry, guestbookPage, onChanged }: Gues
           />
         )
       })}
-      <GuestbookTextForm
+      <RichTextForm
         placeholder="Antworten …"
         ariaLabel="Antwort auf den Eintrag"
         submitLabel="Antworten"

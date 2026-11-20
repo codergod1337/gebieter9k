@@ -3,9 +3,12 @@ package de.gebiter.gallery.service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +23,9 @@ import de.gebiter.file.dto.FileDocumentSoftDeletedEvent;
 import de.gebiter.file.service.FileDocumentResolveService;
 import de.gebiter.file.service.FileDocumentWriteService;
 import de.gebiter.gallery.dto.GalleryDeletedEvent;
+import de.gebiter.gallery.dto.GalleryShareForAdmin;
 import de.gebiter.gallery.dto.GalleryShareForClient;
+import de.gebiter.gallery.model.Gallery;
 import de.gebiter.gallery.model.GalleryShare;
 import de.gebiter.gallery.repository.GalleryShareRepository;
 import de.gebiter.util.Helper;
@@ -41,7 +46,8 @@ import jakarta.persistence.EntityNotFoundException;
  * 2026-11-20). Ein Hash in einem Dokument, zu dem es keine Zeile (mehr) gibt, öffnet nichts.
  * <p>
  * Anlegen darf, wer ADMIN ist oder das Recht FREIGABE hat (Nutzer 2026-11-19), und nur für eine eigene Galerie; die GUID
- * kommt aus dem Token.
+ * kommt aus dem Token. Der Admin sieht dazu alle Freigaben aller Galerien in einer Übersicht
+ * ({@link #getAllGalleryShare()}, Nutzer 2026-11-20).
  * <p>
  * Gelöscht wird immer in dieser Reihenfolge (Nutzer 2026-11-19): zuerst der Hash aus den Solr-Dokumenten, erst danach die
  * Zeile in Postgres. Solange die Zeile steht, weiß das Backend, welcher Hash aus den Dokumenten muss, und ein
@@ -159,6 +165,66 @@ public class GalleryShareService {
 			gallerySharesForClient.add(galleryShareForClient);
 		}
 		return gallerySharesForClient;
+	}
+
+	/**
+	 * READ: Alle Freigaben aller eigenen Galerien, die älteste zuerst, je wie in
+	 * {@link #resolveOwnGalleryShares(Long)}. Für die Liste der eigenen Galerien (Nutzer 2026-11-20: „welche Freigaben
+	 * auf die Galerie laufen“): Sie zeigt je Galerie, wie viele Freigaben es gibt und wie sie heißen. Die GUID kommt aus
+	 * dem Token; ohne Galerie oder ohne Freigabe eine leere Liste.
+	 */
+	@Transactional(readOnly = true)
+	public List<GalleryShareForClient> getAllOwnGalleryShare() {
+		List<Long> ownGalleryIds = galleryService.resolveOwnGalleryIds();
+		List<GalleryShareForClient> ownGallerySharesForClient = new ArrayList<>();
+		if (ownGalleryIds.isEmpty()) {
+			return ownGallerySharesForClient;
+		}
+		List<GalleryShare> ownGalleryShares = galleryShareRepository.findByGalleryIdInOrderByIdAsc(ownGalleryIds);
+		for (GalleryShare ownGalleryShare : ownGalleryShares) {
+			GalleryShareForClient galleryShareForClient = createGalleryShareForClient(ownGalleryShare);
+			ownGallerySharesForClient.add(galleryShareForClient);
+		}
+		return ownGallerySharesForClient;
+	}
+
+	/**
+	 * READ: Alle Freigaben aller Galerien für die Übersicht des Admins (Nutzer 2026-11-20), die neueste zuerst. Je
+	 * Freigabe dasselbe, was ihr Besitzer sieht (Token für den Link, Laufzeit, Aufrufe, Zahl der Bilder laut Postgres und
+	 * laut Solr), dazu der Titel der Galerie und wem sie gehört. Steht eine Freigabe an einer Galerie, die es nicht mehr
+	 * gibt, bleibt sie in der Liste, ohne Titel und ohne Besitzer: Genau so ein Rest soll hier auffallen.
+	 */
+	@PreAuthorize("hasRole('ADMIN')")
+	@Transactional(readOnly = true)
+	public List<GalleryShareForAdmin> getAllGalleryShare() {
+		List<GalleryShare> allGalleryShares = galleryShareRepository.findAllByOrderByIdDesc();
+		Set<Long> sharedGalleryIds = new HashSet<>();
+		for (GalleryShare galleryShare : allGalleryShares) {
+			Long sharedGalleryId = galleryShare.getGalleryId();
+			sharedGalleryIds.add(sharedGalleryId);
+		}
+		List<Gallery> sharedGalleries = galleryService.resolveGalleriesForGalleryShares(sharedGalleryIds);
+		Map<Long, Gallery> sharedGalleriesById = new HashMap<>();
+		for (Gallery sharedGallery : sharedGalleries) {
+			Long sharedGalleryId = sharedGallery.getId();
+			sharedGalleriesById.put(sharedGalleryId, sharedGallery);
+		}
+		List<GalleryShareForAdmin> gallerySharesForAdmin = new ArrayList<>();
+		for (GalleryShare galleryShare : allGalleryShares) {
+			GalleryShareForClient galleryShareForClient = createGalleryShareForClient(galleryShare);
+			Long sharedGalleryId = galleryShare.getGalleryId();
+			Gallery sharedGallery = sharedGalleriesById.get(sharedGalleryId);
+			String galleryTitle = null;
+			UUID ownerUsersGuid = null;
+			if (sharedGallery != null) {
+				galleryTitle = sharedGallery.getTitle();
+				ownerUsersGuid = sharedGallery.getOwnerUsersGuid();
+			}
+			GalleryShareForAdmin galleryShareForAdmin = new GalleryShareForAdmin(galleryShareForClient, galleryTitle,
+					ownerUsersGuid);
+			gallerySharesForAdmin.add(galleryShareForAdmin);
+		}
+		return gallerySharesForAdmin;
 	}
 
 	/**

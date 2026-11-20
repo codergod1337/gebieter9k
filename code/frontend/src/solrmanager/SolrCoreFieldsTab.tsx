@@ -1,6 +1,5 @@
 import { type ChangeEvent, useCallback, useState } from 'react'
 import Form from 'react-bootstrap/Form'
-import Spinner from 'react-bootstrap/Spinner'
 import { useParams } from 'react-router'
 import { useLoadedData } from '../api/useLoadedData.ts'
 import type { AccessRole } from '../auth/access/AccessRole.ts'
@@ -40,6 +39,8 @@ import {
   SOLR_FIELD_SEARCH_WEIGHT_HINT,
   SOLR_FIELD_TYPE_HINT,
 } from './solrFieldColumnHints.tsx'
+import { LoadStatus } from '../components/LoadStatus.tsx'
+import { getFirstErrorDetail } from '../api/getFirstErrorDetail.ts'
 
 /** Die Kennung der Feldtabelle für die Spalteneinstellungen des Users (`TABLE_SOLR_FIELD`), in jedem Kern dieselbe. */
 const SOLR_FIELD_TABLE_SETTING_KEY = 'SOLR_FIELD'
@@ -476,15 +477,16 @@ export function SolrCoreFieldsTab() {
     deleteErrorMessage = deleteSolrFieldHook.error.detail
   }
   const loaded = solrFields !== null && accessRoles !== null
-  let footer
-  if (solrFieldHook.error !== null) {
-    footer = <span className="text-danger">{solrFieldHook.error.detail}</span>
-  } else if (!loaded) {
-    footer = <Spinner animation="border" size="sm" />
-  } else {
-    const solrFieldsCountText = solrFields.length + ' Felder.'
-    footer = <span>{solrFieldsCountText}</span>
+  const footerErrorMessage = getFirstErrorDetail([solrFieldHook.error])
+  let solrFieldsCountText = ''
+  if (loaded) {
+    solrFieldsCountText = solrFields.length + ' Felder.'
   }
+  const footer = (
+    <LoadStatus errorMessage={footerErrorMessage} isLoading={!loaded}>
+      {solrFieldsCountText}
+    </LoadStatus>
+  )
   const solrCoreExportUrl = getSolrCoreExportUrl(requestedSolrCoreKey)
   const contentBoxActions = (
     <span className="d-inline-flex align-items-center gap-2">

@@ -5,7 +5,8 @@ import java.time.Instant;
 /**
  * Eine Freigabe für die Anzeige beim Besitzer der Galerie, mit ihrem Token: Aus ihm baut die Oberfläche den Link, den
  * der Besitzer jederzeit wieder ansehen und weiterschicken kann (Nutzer 2026-11-20). Der Hash des Tokens steht nicht
- * darin. Nur der Besitzer der Galerie bekommt dieses Objekt.
+ * darin. Dieses Objekt bekommt nur der Besitzer der Galerie, dazu der Admin in seiner Übersicht über alle Freigaben
+ * ({@link GalleryShareForAdmin}).
  *
  * @param id die Freigabe
  * @param galleryId die freigegebene Galerie

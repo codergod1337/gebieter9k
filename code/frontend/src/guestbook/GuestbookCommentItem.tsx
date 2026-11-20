@@ -1,19 +1,23 @@
-import type { GuestbookAuthor, GuestbookCommentForClient } from './Guestbook.ts'
-import { GuestbookDeleteButton } from './GuestbookDeleteButton.tsx'
-import { GuestbookHead } from './GuestbookHead.tsx'
+import type { GuestbookCommentForClient } from './Guestbook.ts'
+import { GUESTBOOK_ORIGIN_LABEL } from './guestbookOriginLabel.ts'
 import { GuestbookReactionBar } from './GuestbookReactionBar.tsx'
 import { useGuestbook } from './useGuestbook.ts'
-import { RichTextView } from '../components/RichTextView.tsx'
+import { CommentItem } from '../components/CommentItem.tsx'
+import { ConfirmDeleteButton } from '../components/ConfirmDeleteButton.tsx'
+import type { UsersAvatarForClient } from '../users/UsersAvatarForClient.ts'
 
 type GuestbookCommentItemProps = {
   guestbookId: number
   comment: GuestbookCommentForClient
-  author: GuestbookAuthor
+  author: UsersAvatarForClient
   /** Nach Löschen oder Smiley: der Aufrufer lädt die Seite neu. */
   onChanged: () => Promise<void>
 }
 
-/** Ein Kommentar im Verlauf: kleiner Avatar, Name, Zeit, Text, darunter seine Smileys; mit Recht der Mülleimer. */
+/**
+ * Ein Kommentar im Verlauf eines Gästebucheintrags: der globale {@link CommentItem} (kleiner Avatar, Name, Zeit, Text),
+ * darunter seine Smileys; mit Recht der Mülleimer.
+ */
 export function GuestbookCommentItem({ guestbookId, comment, author, onChanged }: GuestbookCommentItemProps) {
   const guestbookHook = useGuestbook()
   let deleteErrorMessage: string | null = null
@@ -34,7 +38,7 @@ export function GuestbookCommentItem({ guestbookId, comment, author, onChanged }
   let deleteButton = null
   if (comment.deletableByCurrentUsers) {
     deleteButton = (
-      <GuestbookDeleteButton
+      <ConfirmDeleteButton
         label="Kommentar löschen"
         question="Soll dieser Kommentar samt seinen Smileys wirklich gelöscht werden?"
         isDeleting={guestbookHook.isLoading}
@@ -45,15 +49,18 @@ export function GuestbookCommentItem({ guestbookId, comment, author, onChanged }
   }
 
   return (
-    <div className="guestbook-comment">
-      <GuestbookHead author={author} avatarSize="small" actionText={null} writtenAt={comment.writtenAt} actions={deleteButton} />
-      <RichTextView richText={comment.commentText} className="guestbook-text" />
+    <CommentItem
+      author={author}
+      originLabel={GUESTBOOK_ORIGIN_LABEL}
+      commentText={comment.commentText}
+      writtenAt={comment.writtenAt}
+      actions={deleteButton}>
       <GuestbookReactionBar
         guestbookId={guestbookId}
         guestbookCommentId={comment.id}
         reactionCounts={comment.reactionCounts}
         onReacted={onChanged}
       />
-    </div>
+    </CommentItem>
   )
 }

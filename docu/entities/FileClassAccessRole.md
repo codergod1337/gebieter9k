@@ -66,7 +66,7 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 
 ## Verwendung im Frontend
 
-- [`code/frontend/src/admin/fileclass/FileClassAccessRoleMatrixTab.tsx`](../../code/frontend/src/admin/fileclass/FileClassAccessRoleMatrixTab.tsx): `getCellValueOfGrants`, `getGrantsOfCellValue`, `findFileClassAccessRole`, `getCellValue`, `FileClassAccessRoleMatrixTab`, `getServerCellValue`, `reloadServerFileClassAccessRoles`
+- [`code/frontend/src/admin/fileclass/FileClassAccessRoleMatrixTab.tsx`](../../code/frontend/src/admin/fileclass/FileClassAccessRoleMatrixTab.tsx): `getCellValueOfGrants`, `getGrantsOfCellValue`, `findFileClassAccessRole`, `getCellValue`, `FileClassAccessRoleMatrixTab`, `getServerCellValue`, `reloadServerFileClassAccessRoles`, `saveFileClassAccessCell`
 - [`code/frontend/src/admin/fileclass/FileClassTab.tsx`](../../code/frontend/src/admin/fileclass/FileClassTab.tsx): `getAccessRolesWithFileClassGrant` (Spalten Lesen, Bearbeiten, Hochladen)
 - [`code/frontend/src/file/FileClassAccessRole.ts`](../../code/frontend/src/file/FileClassAccessRole.ts): `hasFileClassGrant`, `getUploadableFileClassKeys` (Upload-Masken), `getReadableFileClassKeys` (Dateiliste)
 - [`code/frontend/src/file/useFileClassAccessRole.ts`](../../code/frontend/src/file/useFileClassAccessRole.ts): `useFileClassAccessRole`, `createFileClassAccessRole`, `getAllFileClassAccessRole`, `changeFileClassAccessRole`
@@ -75,3 +75,4 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 - [`code/frontend/src/gallery/GalleryUploadBox.tsx`](../../code/frontend/src/gallery/GalleryUploadBox.tsx): (Typ)
 - [`code/frontend/src/masterdata/MasterDataStore.ts`](../../code/frontend/src/masterdata/MasterDataStore.ts): (Typ)
 - [`code/frontend/src/masterdata/useMasterData.ts`](../../code/frontend/src/masterdata/useMasterData.ts): `useMasterData`, `reload`
+- [`code/frontend/src/market/MarketCategoryTab.tsx`](../../code/frontend/src/market/MarketCategoryTab.tsx): (Typ)

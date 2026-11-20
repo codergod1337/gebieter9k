@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import Form from 'react-bootstrap/Form'
-import Spinner from 'react-bootstrap/Spinner'
 import { useLoadedData } from '../../api/useLoadedData.ts'
 import { ContentBox } from '../../components/ContentBox.tsx'
 import { EditableCellButton } from '../../components/EditableCellButton.tsx'
@@ -20,6 +19,8 @@ import type { ShopCategory } from '../../shop/ShopCategory.ts'
 import { useShopCategory } from '../../shop/useShopCategory.ts'
 import { EditShopCategoryFileClassPopup } from './EditShopCategoryFileClassPopup.tsx'
 import { SHOP_CATEGORY_TEXTS } from './shopCategoryTexts.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
+import { getFirstErrorDetail } from '../../api/getFirstErrorDetail.ts'
 
 /** Die Kennung der Tabelle für die Spalteneinstellungen des Users (`TABLE_SHOP_CATEGORY`). */
 const SHOP_CATEGORY_TABLE_SETTING_KEY = 'SHOP_CATEGORY'
@@ -165,20 +166,19 @@ export function ShopCategoryTab() {
   if (changeShopCategoryHook.error !== null) {
     changeErrorMessage = changeShopCategoryHook.error.detail
   }
-  let footer
-  if (shopCategoryHook.error !== null) {
-    footer = <span className="text-danger">{shopCategoryHook.error.detail}</span>
-  } else if (orderShopCategoryHook.error !== null) {
-    footer = <span className="text-danger">{orderShopCategoryHook.error.detail}</span>
-  } else if (shopCategories === null) {
-    footer = <Spinner animation="border" size="sm" />
-  } else {
+  const footerErrorMessage = getFirstErrorDetail([shopCategoryHook.error, orderShopCategoryHook.error])
+  let footerCountText = ''
+  if (shopCategories !== null) {
     const shopCategoriesCount = shopCategories.length.toLocaleString('de-DE')
-    const footerCountText = getTextInCurrentLanguageWithValues(SHOP_CATEGORY_TEXTS.footerCount, {
+    footerCountText = getTextInCurrentLanguageWithValues(SHOP_CATEGORY_TEXTS.footerCount, {
       count: shopCategoriesCount,
     })
-    footer = <span>{footerCountText}</span>
   }
+  const footer = (
+    <LoadStatus errorMessage={footerErrorMessage} isLoading={shopCategories === null}>
+      {footerCountText}
+    </LoadStatus>
+  )
   const newShopCategoryLabel = getTextInCurrentLanguage(SHOP_CATEGORY_TEXTS.newShopCategory)
   const newShopCategoryButton = <NewEntityButton label={newShopCategoryLabel} onClick={openNewShopCategory} />
   // Im Popup zum Anlegen: die FileClass der neuen Rubrik, Pflicht

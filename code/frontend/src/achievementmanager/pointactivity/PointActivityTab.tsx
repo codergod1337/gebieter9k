@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import Spinner from 'react-bootstrap/Spinner'
 import { useNavigate } from 'react-router'
 import { useLoadedData } from '../../api/useLoadedData.ts'
 import { ConfirmDeletePopup } from '../../components/ConfirmDeletePopup.tsx'
@@ -15,6 +14,8 @@ import { useOrigin } from '../../navigation/useOrigin.ts'
 import type { PointActivity } from '../../point/PointActivity.ts'
 import { usePointActivity } from '../../point/usePointActivity.ts'
 import { getEditPointActivityPath, NEW_POINT_ACTIVITY_PATH } from './pointActivityPaths.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
+import { getFirstErrorDetail } from '../../api/getFirstErrorDetail.ts'
 
 /** Breiten und ausgeblendete Spalten je User (UsersSetting `TABLE_POINT_ACTIVITY`). */
 const POINT_ACTIVITY_TABLE_SETTING_KEY = 'POINT_ACTIVITY'
@@ -112,16 +113,16 @@ export function PointActivityTab() {
     )
   }
 
-  let footer
-  if (pointActivityHook.error !== null) {
-    footer = <span className="text-danger">{pointActivityHook.error.detail}</span>
-  } else if (orderPointActivityHook.error !== null) {
-    footer = <span className="text-danger">{orderPointActivityHook.error.detail}</span>
-  } else if (pointActivities === null) {
-    footer = <Spinner animation="border" size="sm" />
-  } else {
-    footer = <span>{pointActivities.length + ' Tätigkeiten, am Griff links verschieben'}</span>
+  const footerErrorMessage = getFirstErrorDetail([pointActivityHook.error, orderPointActivityHook.error])
+  let pointActivitiesCountText = ''
+  if (pointActivities !== null) {
+    pointActivitiesCountText = pointActivities.length + ' Tätigkeiten, am Griff links verschieben'
   }
+  const footer = (
+    <LoadStatus errorMessage={footerErrorMessage} isLoading={pointActivities === null}>
+      {pointActivitiesCountText}
+    </LoadStatus>
+  )
   let deleteErrorMessage: string | null = null
   if (deletePointActivityHook.error !== null) {
     deleteErrorMessage = deletePointActivityHook.error.detail

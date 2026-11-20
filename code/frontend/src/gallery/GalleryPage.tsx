@@ -78,6 +78,11 @@ export function GalleryPage() {
   const selectedTags = useMemo(() => parseUrlTags(selectedTagsUrlText), [selectedTagsUrlText])
   /** Ob das Hochladen offen ist (Popup hinter dem Knopf „neue Bilder“). */
   const [uploadOpen, setUploadOpen] = useState<boolean>(false)
+  /**
+   * Die Zahl der Kommentare je Bild, sobald das große Bild sie gemeldet hat: So zeigt die Sprechblase der Kachel nach
+   * dem Kommentieren gleich die neue Zahl. Für alle anderen Bilder lädt die Sprechblase selbst.
+   */
+  const [commentCountsByFileDocumentId, setCommentCountsByFileDocumentId] = useState<Record<string, number>>({})
   /** Ob das Bild hier per Klick geöffnet wurde: Dann schließt Zurück im Verlauf, sonst wird der Parameter entfernt. */
   const imageOpenedHereRef = useRef<boolean>(false)
   /** Die Reihenfolge nach dem Ziehen, bis das Backend sie bestätigt; `null`: die geladene. */
@@ -179,6 +184,16 @@ export function GalleryPage() {
   function changePage(changedPage: number) {
     const urlPageText = formatUrlPage(changedPage)
     changeUrlParams({ [PAGE_URL_PARAM]: urlPageText, [IMAGE_URL_PARAM]: null }, 'PUSH')
+  }
+
+  /** Das große Bild meldet die Zahl seiner Kommentare: Die Sprechblase seiner Kachel zeigt sie ab jetzt. */
+  function rememberCommentCount(fileDocumentId: string, commentCount: number) {
+    setCommentCountsByFileDocumentId((knownCommentCounts) => {
+      if (knownCommentCounts[fileDocumentId] === commentCount) {
+        return knownCommentCounts
+      }
+      return { ...knownCommentCounts, [fileDocumentId]: commentCount }
+    })
   }
 
   function openImage(fileDocumentId: string) {
@@ -293,6 +308,7 @@ export function GalleryPage() {
                     changeable={changeable}
                     originState={imageOriginState}
                     onOpen={openImage}
+                    commentCount={commentCountsByFileDocumentId[fileDocumentId]}
                   />
                 )
               })}
@@ -328,6 +344,7 @@ export function GalleryPage() {
           originLabel={gallery.title}
           onShow={showImage}
           onClose={closeImage}
+          onCommentCountChange={rememberCommentCount}
         />
       )}
     </>

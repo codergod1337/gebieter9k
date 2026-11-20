@@ -9,6 +9,7 @@ import {
   FILE_CLASS_TAB_PATH,
 } from './fileclass/fileClassPaths.ts'
 import { FILE_EXTENSION_TAB_PATH } from './fileextension/fileExtensionPaths.ts'
+import { GALLERY_SHARE_TAB_PATH } from './galleryshare/gallerySharePaths.ts'
 import { MAIL_TEST_TAB_PATH } from './mailtest/mailTestPaths.ts'
 import { RANK_TAB_PATH } from './rank/rankPaths.ts'
 
@@ -28,6 +29,7 @@ const ADMIN_TABS: SubheaderTab[] = [
   { label: 'FileClass-Endung', iconClassName: 'bi bi-grid-3x3', to: FILE_CLASS_FILE_EXTENSION_MATRIX_PATH },
   { label: 'FileClass-AR', iconClassName: 'bi bi-grid-3x3', to: FILE_CLASS_ACCESS_ROLE_MATRIX_PATH },
   { label: 'FileClass-Ziel', iconClassName: 'bi bi-signpost-split', to: FILE_CLASS_DESTINATION_TAB_PATH },
+  { label: 'Freigaben', iconClassName: 'bi bi-share', to: GALLERY_SHARE_TAB_PATH },
   { label: 'Mail-Test', iconClassName: 'bi bi-envelope', to: MAIL_TEST_TAB_PATH },
 ]
 

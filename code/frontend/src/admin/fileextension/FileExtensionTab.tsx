@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import Spinner from 'react-bootstrap/Spinner'
 import Table from 'react-bootstrap/Table'
 import { useNavigate } from 'react-router'
 import { ConfirmDeletePopup } from '../../components/ConfirmDeletePopup.tsx'
@@ -27,6 +26,7 @@ import {
   NEW_FILE_EXTENSION_PATH,
 } from './fileExtensionPaths.ts'
 import { useOrigin } from '../../navigation/useOrigin.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
 
 function getFileExtensionGroupKey(fileExtensionGroup: FileExtensionGroup): string {
   return fileExtensionGroup.key
@@ -192,20 +192,23 @@ export function FileExtensionTab() {
     deleteFileExtensionErrorMessage = deleteFileExtensionHook.error.detail
   }
 
-  let fileExtensionGroupFooter
-  let fileExtensionFooter
-  if (errorMessage !== null) {
-    fileExtensionGroupFooter = <span className="text-danger">{errorMessage}</span>
-    fileExtensionFooter = fileExtensionGroupFooter
-  } else if (fileExtensionGroups === null || fileExtensions === null) {
-    fileExtensionGroupFooter = <Spinner animation="border" size="sm" />
-    fileExtensionFooter = fileExtensionGroupFooter
-  } else {
-    const fileExtensionGroupCountText = fileExtensionGroups.length + ' Gruppen, am Griff links verschieben'
-    const fileExtensionCountText = fileExtensions.length + ' Endungen, am Griff innerhalb der Gruppe verschieben'
-    fileExtensionGroupFooter = <span>{fileExtensionGroupCountText}</span>
-    fileExtensionFooter = <span>{fileExtensionCountText}</span>
+  const isLoadingFileExtensions = fileExtensionGroups === null || fileExtensions === null
+  let fileExtensionGroupCountText = ''
+  let fileExtensionCountText = ''
+  if (fileExtensionGroups !== null && fileExtensions !== null) {
+    fileExtensionGroupCountText = fileExtensionGroups.length + ' Gruppen, am Griff links verschieben'
+    fileExtensionCountText = fileExtensions.length + ' Endungen, am Griff innerhalb der Gruppe verschieben'
   }
+  const fileExtensionGroupFooter = (
+    <LoadStatus errorMessage={errorMessage} isLoading={isLoadingFileExtensions}>
+      {fileExtensionGroupCountText}
+    </LoadStatus>
+  )
+  const fileExtensionFooter = (
+    <LoadStatus errorMessage={errorMessage} isLoading={isLoadingFileExtensions}>
+      {fileExtensionCountText}
+    </LoadStatus>
+  )
   let fileExtensionGroupToDeleteName = ''
   if (fileExtensionGroupToDelete !== null) {
     fileExtensionGroupToDeleteName = getTextInCurrentLanguage(fileExtensionGroupToDelete.displayName)

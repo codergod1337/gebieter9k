@@ -72,6 +72,8 @@ public class FileConfig {
 
 	private final int cheerUsersPageSize;
 
+	private final int commentTextMaxLength;
+
 	private final String adminAccessRoleKey;
 
 	private final String fileManagerAccessRoleKey;
@@ -102,6 +104,7 @@ public class FileConfig {
 			@Value("${gebiter.file.analysis-retry-min-age}") Duration analysisRetryMinAge,
 			@Value("${gebiter.file.cheer-shown-users-max}") int cheerShownUsersMax,
 			@Value("${gebiter.file.cheer-users-page-size}") int cheerUsersPageSize,
+			@Value("${gebiter.file.comment-text-max-length}") int commentTextMaxLength,
 			@Value("${gebiter.accessrole.admin-key}") String adminAccessRoleKey,
 			@Value("${gebiter.accessrole.file-manager-key}") String fileManagerAccessRoleKey) {
 		this.solrCoreKey = solrCoreKey;
@@ -131,6 +134,7 @@ public class FileConfig {
 		this.analysisRetryMinAge = analysisRetryMinAge;
 		this.cheerShownUsersMax = cheerShownUsersMax;
 		this.cheerUsersPageSize = cheerUsersPageSize;
+		this.commentTextMaxLength = commentTextMaxLength;
 		this.adminAccessRoleKey = adminAccessRoleKey;
 		this.fileManagerAccessRoleKey = fileManagerAccessRoleKey;
 	}
@@ -252,6 +256,11 @@ public class FileConfig {
 	/** Erst wenn der Upload so lange her ist, gilt eine Datei auf PENDING als hängend. */
 	public Duration analysisRetryMinAge() {
 		return analysisRetryMinAge;
+	}
+
+	/** Höchstlänge eines Kommentars zu einer Datei in Zeichen sichtbaren Texts. */
+	public int commentTextMaxLength() {
+		return commentTextMaxLength;
 	}
 
 	/** So viele User nennt der Stand der Stimmen einer Datei je Richtung höchstens beim Namen. */

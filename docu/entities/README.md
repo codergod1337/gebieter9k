@@ -12,6 +12,7 @@ zurück (Javadoc der Entity und der Controller, Kommentar am Frontend-Typ). Erze
 - [Achievement](Achievement.md): Ein Achievement, ähnlich wie bei Steam: ein Abzeichen, das man sich freischaltet, z.
 - [AchievementTracking](AchievementTracking.md): Eine Zeile im universellen Protokoll für Achievements (Nutzer 2026-11-09): was ein User getan hat, mit dem Kontrollcounter danach.
 - [DiscardedSymbol](DiscardedSymbol.md): Ein Symbol, das im Icon-Manager gelöscht wurde: Es gefällt nicht und taucht nirgends mehr zur Auswahl auf.
+- [FileComment](FileComment.md): Ein Kommentar eines Users zu einer Datei, z. B. zu einem Bild einer Galerie; die Kommentare einer Datei bilden einen Verlauf, die ältesten zuerst.
 - [FileCheer](FileCheer.md): Die Stimme eines Users zu einer Datei: begeistert (cheerUp) oder angewidert (cheerDown), je User und Datei höchstens eine.
 - [FileClass](FileClass.md): Eine Dateiart, z.
 - [FileClassAccessRole](FileClassAccessRole.md): Welche `de.gebiter.access.model.AccessRole` an den Dateien einer `FileClass` was darf, als drei Schalter: lesen, bearbeiten, hochladen.

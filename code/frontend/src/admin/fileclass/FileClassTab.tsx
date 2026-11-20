@@ -1,4 +1,3 @@
-import Spinner from 'react-bootstrap/Spinner'
 import Table from 'react-bootstrap/Table'
 import { useNavigate } from 'react-router'
 import type { AccessRole } from '../../auth/access/AccessRole.ts'
@@ -15,6 +14,8 @@ import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguag
 import { FILE_CLASS_ACCESS_TEXTS } from './fileClassAccessTexts.ts'
 import { getEditFileClassPath, NEW_FILE_CLASS_PATH } from './fileClassPaths.ts'
 import { useOrigin } from '../../navigation/useOrigin.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
+import { getFirstErrorDetail } from '../../api/getFirstErrorDetail.ts'
 
 /** Die Rechte, bei denen an der FileClass dieser Schalter an ist, in der Reihenfolge der Rechte. */
 function getAccessRolesWithFileClassGrant(
@@ -87,15 +88,16 @@ export function FileClassTab() {
     )
   }
 
-  let footer
-  if (masterDataHook.error !== null) {
-    footer = <span className="text-danger">{masterDataHook.error.detail}</span>
-  } else if (fileClasses === null) {
-    footer = <Spinner animation="border" size="sm" />
-  } else {
-    const fileClassesCountText = fileClasses.length + ' FileClasses'
-    footer = <span>{fileClassesCountText}</span>
+  const footerErrorMessage = getFirstErrorDetail([masterDataHook.error])
+  let fileClassesCountText = ''
+  if (fileClasses !== null) {
+    fileClassesCountText = fileClasses.length + ' FileClasses'
   }
+  const footer = (
+    <LoadStatus errorMessage={footerErrorMessage} isLoading={fileClasses === null}>
+      {fileClassesCountText}
+    </LoadStatus>
+  )
   const newFileClassButton = <NewEntityButton label="neue FileClass" onClick={handleNewFileClass} />
 
   return (

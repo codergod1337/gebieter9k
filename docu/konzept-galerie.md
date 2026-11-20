@@ -91,6 +91,10 @@ Weitere Ziele (Profilbanner, Shop-Grafik), offizielle Galerien und Challenges de
 
 ## 6. Gebaut (2026-11-09)
 
+Stand vom 2026-11-09. Seitdem geändert, siehe Abschnitt 8 (2026-11-20): Das Hochladen steht nicht mehr über den
+Kacheln, sondern hinter dem Knopf „neue Bilder“; die Galerie hat die Reiter „Bilder“ und „Freigabe“ und einen
+Filter nach Hashtags.
+
 **Backend**
 - `file/model/FileClassDestination` (Enum, nur `GALLERY`), `FileClassDestinationAssignment` (Tabelle
   `file_class_destination_assignment`), Service, `FileClassDestinationAssignmentController`
@@ -231,3 +235,19 @@ Technik:
 - Die Wahl steht in der Adresse (`?tags=sky+beach`), Filtern ist ein Eintrag im Verlauf und springt auf Seite 1.
 - Solange ein Hashtag gewählt ist, lässt sich nicht sortieren: Die Plätze gelten für die ganze Galerie.
 - Die Besucherseite einer Freigabe (`/share/galerie/<token>`) hat den Filter noch nicht.
+
+## 9. Liste der Galerien auf dem Handy als Tabelle (2026-11-20)
+
+Nutzer 2026-11-20: Auf dem Handy die Galerien nicht als Kachel wie ein Bild, sondern „mehr in einem Tabellendesign“ mit
+mehr Angaben. Am Desktop bleiben die Kacheln (`GalleryTile`).
+
+- **Unter 768 px** (`useIsMobile`) zeigt `GalleryListTab` die zentrale `components/Table` mit den Spalten aus
+  `gallery/galleryColumns.tsx`: Galerie (kleine Vorschau, Titel als Link, Beschreibung hinter dem „i“ im Hoverlay,
+  `components/InfoHint`), Bilder, letztes Bild, sichtbar für (`VisibilityPicker`, nur Anzeige), im eigenen Profil
+  Freigaben (Zahl und Bezeichnungen, Link zum Reiter „Freigabe“), erstellt.
+- Was nicht in die Breite passt, lässt die Tabelle von rechts weg; ein Tipp auf die Zeile zeigt alle Angaben im Popup,
+  dort stehen auch Bearbeiten und Löschen. Im eigenen Profil lassen sich die Zeilen am Griff verschieben.
+- **Backend:** `GalleryForClient.lastUploadedAt` (`FileDocumentResolveService.resolveLastUploadedAtOfGallery`, mit dem
+  Lesefilter des Betrachters); `GET /api/gallery-share` liefert alle Freigaben aller eigenen Galerien
+  (`GalleryShareService.getAllOwnGalleryShare`). Die Freigaben lädt der Tab nur im eigenen Profil auf dem Handy.
+- Im Fuß der Box steht die Zahl der Galerien (`components/LoadStatus`).

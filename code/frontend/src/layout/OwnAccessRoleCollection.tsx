@@ -6,17 +6,22 @@ import type { AccessRoleCollection } from '../auth/access/AccessRoleCollection.t
 import { AccessRoleCollectionBadge } from '../auth/access/AccessRoleCollectionBadge.tsx'
 import { useCurrentSession } from '../auth/login/useCurrentSession.ts'
 import { LookBadge } from '../badge/LookBadge.tsx'
+import { useIsMobile } from '../components/useIsMobile.ts'
 import { useMasterData } from '../masterdata/useMasterData.ts'
 
 /**
  * Die eigene Position im Header, wie in der Vorlage: die eigene AccessRoleCollection als Badge. Ein Klick öffnet ein
  * Popup mit der Position und allen Rechten aus dem Token. Namen kommen aus den Stammdaten, steht etwas (noch) nicht
  * darin, steht dort sein Key. Ohne Anmeldung zeigt es nichts.
+ *
+ * Auf dem Handy steht im Header nur das kleine Medaillon der Position (Nutzer 2026-11-20: die Pille mit dem Namen
+ * stauchte den Header zusammen); der Name und die Rechte stehen weiter im Popup.
  */
 export function OwnAccessRoleCollection() {
   const { session } = useCurrentSession()
   const { accessRoles, accessRoleCollections } = useMasterData()
   const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false)
+  const isMobile = useIsMobile()
 
   if (session === null) {
     return null
@@ -58,10 +63,23 @@ export function OwnAccessRoleCollection() {
     ownPosition = <code>{ownAccessRoleCollectionKey}</code>
   }
 
+  // Im Header: am Desktop die Position wie im Popup, auf dem Handy nur ihr Medaillon
+  let headerPosition = ownPosition
+  if (isMobile) {
+    headerPosition = (
+      <LookBadge look={null} shape="medal">
+        –
+      </LookBadge>
+    )
+    if (ownAccessRoleCollection !== null) {
+      headerPosition = <AccessRoleCollectionBadge accessRoleCollection={ownAccessRoleCollection} compact />
+    }
+  }
+
   return (
     <>
       <button type="button" className="header-position" aria-label="Meine Position zeigen" onClick={handleOpenPopup}>
-        {ownPosition}
+        {headerPosition}
       </button>
       <Modal show={isPopupOpen} onHide={handleClosePopup} centered>
         <Modal.Header closeButton>

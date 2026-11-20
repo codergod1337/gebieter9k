@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import de.gebiter.file.dto.FileCommentThread;
 import de.gebiter.gallery.dto.SharedGalleryForClient;
 import de.gebiter.gallery.dto.SharedGalleryPageRequest;
 import de.gebiter.gallery.service.GalleryShareVisitorService;
@@ -35,7 +36,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * Der Token steht in der Adresse: nginx schreibt diese Adressen deshalb in kein Log, und die Antworten sagen dem Browser,
  * dass er die Adresse nie als Herkunft weitergibt ({@code Referrer-Policy: no-referrer}).
  * <p>
- * Doku: {@code docu/entities/GalleryShare.md}.
+ * Doku: {@code docu/entities/Gallery.md}, {@code docu/entities/GalleryShare.md}.
  */
 @RestController
 @RequestMapping("/api/share/token")
@@ -74,6 +75,22 @@ public class GalleryShareShareController {
 			HttpServletResponse response) {
 		setNoReferrer(response);
 		galleryShareVisitorService.streamSharedFile(shareToken, fileDocumentId, false, rangeHeader, response);
+	}
+
+	/**
+	 * READ: Die Kommentare eines Bildes der Freigabe, die ältesten zuerst, mit ihren Autoren. Zählt nicht als Aufruf. 404,
+	 * wenn der Token nichts öffnet oder das Bild nicht zur Freigabe gehört.
+	 */
+	@GetMapping("/{shareToken}/comment/{fileDocumentId}")
+	public ResponseEntity<FileCommentThread> getSharedFileCommentThread(@PathVariable String shareToken,
+			@PathVariable String fileDocumentId) {
+		FileCommentThread fileCommentThread = galleryShareVisitorService.getSharedFileCommentThread(shareToken,
+				fileDocumentId);
+		CacheControl noStore = CacheControl.noStore();
+		ResponseEntity.BodyBuilder okResponse = ResponseEntity.ok();
+		okResponse.cacheControl(noStore);
+		okResponse.header("Referrer-Policy", "no-referrer");
+		return okResponse.body(fileCommentThread);
 	}
 
 	/** READ: Ein Bild der Freigabe als Download, das Original. Zählt als ein Aufruf. 404 wie beim Viewer. */

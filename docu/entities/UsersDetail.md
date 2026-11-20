@@ -67,7 +67,7 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 - [`code/backend/src/main/java/de/gebiter/users/controller/UsersDetailController.java`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersDetailController.java): `getVisibleUsersDetail`, `changeOwnUsersDetailProfileImage`, `changeOwnUsersDetailStatusText`, `changeOwnUsersDetailAboutText`, `changeOwnUsersDetailBannerDriftSpeed`, `changeOwnUsersDetailAvatarColors`
 - [`code/backend/src/main/java/de/gebiter/users/repository/UsersDetailRepository.java`](../../code/backend/src/main/java/de/gebiter/users/repository/UsersDetailRepository.java): (Import, Felder)
 - [`code/backend/src/main/java/de/gebiter/users/service/UsersDetailService.java`](../../code/backend/src/main/java/de/gebiter/users/service/UsersDetailService.java): `createUsersDetail`, `getUsersDetail`, `getAllUsersDetail`, `increaseUsersDetailUploadCount`, `increaseUsersDetailWrittenGuestbookEntryCount`, `changeOwnUsersDetailProfileImage`, `changeOwnUsersDetailStatusText`, `changeOwnUsersDetailAboutText`, `changeOwnUsersDetailBannerDriftSpeed`, `changeOwnUsersDetailAvatarColors`, `doGetOrCreateOwnUsersDetail`, `doCreateUsersDetail`, `doGetUsersDetail`, `doGetAllUsersDetail`
-- [`code/backend/src/main/java/de/gebiter/users/service/UsersService.java`](../../code/backend/src/main/java/de/gebiter/users/service/UsersService.java): `getUsersAvatarForClient`, `getVisibleUsersDetail`
+- [`code/backend/src/main/java/de/gebiter/users/service/UsersService.java`](../../code/backend/src/main/java/de/gebiter/users/service/UsersService.java): `getUsersAvatarForClient`, `getVisibleUsersDetail`, `doGetUsersAvatarForClient`
 
 ## Verwendung im Frontend
 

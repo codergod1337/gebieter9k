@@ -6,20 +6,16 @@ import { galleryShareAccessRoleKey } from '../auth/access/galleryShareAccessRole
 import { useCurrentSession } from '../auth/login/useCurrentSession.ts'
 import { ConfirmDeletePopup } from '../components/ConfirmDeletePopup.tsx'
 import { ContentBox } from '../components/ContentBox.tsx'
-import { CopyButton } from '../components/CopyButton.tsx'
-import { DateTimeText } from '../components/DateTimeText.tsx'
 import { DeleteButton } from '../components/DeleteButton.tsx'
 import { ErrorAlert } from '../components/ErrorAlert.tsx'
-import { formatDateTime } from '../components/formatDateTime.ts'
 import { NewEntityButton } from '../components/NewEntityButton.tsx'
 import { Table } from '../components/Table.tsx'
-import type { TableColumn } from '../components/TableColumn.ts'
 import { showToast } from '../components/toastStore.ts'
 import { getTextInCurrentLanguage } from '../language/getTextInCurrentLanguage.ts'
 import { getTextInCurrentLanguageWithValues } from '../language/getTextInCurrentLanguageWithValues.ts'
 import type { GalleryShare } from './GalleryShare.ts'
+import { createGalleryShareColumns } from './galleryShareColumns.tsx'
 import { GALLERY_SHARE_TEXTS } from './galleryShareTexts.ts'
-import { getGalleryShareLink } from './galleryShareUrls.ts'
 import { NewGallerySharePopup } from './NewGallerySharePopup.tsx'
 import { useGalleryShare } from './useGalleryShare.ts'
 
@@ -30,59 +26,9 @@ type GalleryShareBoxProps = {
   galleryTitle: string
 }
 
-/** Wie lange eine Freigabe gilt, als Text für die Liste. */
-function getGalleryShareDurationText(galleryShare: GalleryShare): string {
-  if (galleryShare.expiresAt !== null) {
-    const dateTime = formatDateTime(galleryShare.expiresAt)
-    const expired = new Date(galleryShare.expiresAt).getTime() <= Date.now()
-    if (expired) {
-      return getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.durationExpired, { dateTime })
-    }
-    return getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.durationUntil, { dateTime })
-  }
-  if (galleryShare.maxAccessCount !== null) {
-    const maxAccessCount = String(galleryShare.maxAccessCount)
-    const accessesUsedUp = galleryShare.accessCount >= galleryShare.maxAccessCount
-    if (accessesUsedUp) {
-      return getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.durationAccessesUsedUp, { maxAccessCount })
-    }
-    return getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.durationAccessLimited, { maxAccessCount })
-  }
-  return getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.durationPermanent)
-}
-
-/** Die Zahl der Bilder einer Freigabe; weicht der Stand in Solr von dem in Postgres ab, stehen beide da. */
-function getGalleryShareFileCountText(galleryShare: GalleryShare): string {
-  if (galleryShare.sharedFileCount === galleryShare.fileCount) {
-    return String(galleryShare.fileCount)
-  }
-  return getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.fileCountMismatch, {
-    sharedFileCount: String(galleryShare.sharedFileCount),
-    fileCount: String(galleryShare.fileCount),
-  })
-}
-
-type GalleryShareLinkCellProps = {
-  galleryShare: GalleryShare
-}
-
-/**
- * Der Link einer Freigabe zum Weitergeben, in der Liste des Besitzers: zum Anklicken (die Besucherseite geht in einem
- * neuen Tab auf) und daneben der Knopf zum Kopieren.
- */
-function GalleryShareLinkCell({ galleryShare }: GalleryShareLinkCellProps) {
-  const galleryShareLink = getGalleryShareLink(galleryShare.shareToken)
-  const copyLabel = getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.copyLinkOfShareLabel, {
-    label: galleryShare.label,
-  })
-  return (
-    <span className="d-flex align-items-center">
-      <a className="small text-break" href={galleryShareLink} target="_blank" rel="noopener noreferrer">
-        {galleryShareLink}
-      </a>
-      <CopyButton label={copyLabel} value={galleryShareLink} />
-    </span>
-  )
+/** In der Liste des Besitzers ist die Zeile der Tabelle die Freigabe selbst. */
+function getGalleryShareOfRow(galleryShare: GalleryShare): GalleryShare {
+  return galleryShare
 }
 
 /**
@@ -133,47 +79,7 @@ export function GalleryShareBox({ galleryId, galleryTitle }: GalleryShareBoxProp
     }
     return <Spinner animation="border" size="sm" />
   }
-  const columns: TableColumn<GalleryShare>[] = [
-    {
-      key: 'LABEL',
-      header: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnLabel),
-      headerHint: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnLabelHint),
-      cell: (galleryShare) => <span className="text-break">{galleryShare.label}</span>,
-    },
-    {
-      key: 'LINK',
-      header: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnLink),
-      headerHint: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnLinkHint),
-      cell: (galleryShare) => <GalleryShareLinkCell galleryShare={galleryShare} />,
-    },
-    {
-      key: 'DURATION',
-      header: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnDuration),
-      headerHint: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnDurationHint),
-      cell: (galleryShare) => getGalleryShareDurationText(galleryShare),
-    },
-    {
-      key: 'ACCESS_COUNT',
-      header: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnAccessCount),
-      headerHint: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnAccessCountHint),
-      cell: (galleryShare) => String(galleryShare.accessCount),
-      width: '7rem',
-    },
-    {
-      key: 'FILE_COUNT',
-      header: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnFileCount),
-      headerHint: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnFileCountHint),
-      cell: (galleryShare) => getGalleryShareFileCountText(galleryShare),
-      width: '7rem',
-    },
-    {
-      key: 'CREATED_AT',
-      header: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnCreatedAt),
-      headerHint: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnCreatedAtHint),
-      cell: (galleryShare) => <DateTimeText isoDateTime={galleryShare.createdAt} />,
-      unimportant: true,
-    },
-  ]
+  const columns = createGalleryShareColumns<GalleryShare>(getGalleryShareOfRow)
 
   let newShareButton = null
   if (mayCreate) {

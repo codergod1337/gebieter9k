@@ -10,21 +10,43 @@ type AccessRoleCollectionBadgeProps = {
   accessRoleCollection: AccessRoleCollection
   /** `false`: ohne Hoverlay, z. B. wenn die Pille selbst in einem Hoverlay steht (Hoverlay im Hoverlay geht nicht) */
   withHoverlay?: boolean
+  /**
+   * `true`: statt der Pille mit dem Namen nur ein kleines Medaillon mit dem Symbol der Position, für Stellen mit wenig
+   * Platz (Header auf dem Handy). Hat die Position kein Symbol, stehen ihre ersten zwei Buchstaben darin.
+   */
+  compact?: boolean
 }
+
+/** So viele Buchstaben des Namens stehen im Medaillon einer Position ohne Symbol. */
+const COMPACT_INITIALS_LENGTH = 2
 
 /**
  * Eine Position als Pille, wie in der Vorlage (ein Recht ist eckig). Ihr Aussehen kommt aus den Daten
  * (`badgeLook`), gezeichnet wird in base.css: unten schlicht, oben edel. Beim Zeigen nennt das Hoverlay alle Rechte, die
- * sie verleiht, als Badges in der Reihenfolge der Stammdaten.
+ * sie verleiht, als Badges in der Reihenfolge der Stammdaten. Mit `compact` wird aus der Pille ein kleines Medaillon
+ * (dieselbe Position, nur ohne Namen).
  */
-export function AccessRoleCollectionBadge({ accessRoleCollection, withHoverlay = true }: AccessRoleCollectionBadgeProps) {
+export function AccessRoleCollectionBadge({
+  accessRoleCollection,
+  withHoverlay = true,
+  compact = false,
+}: AccessRoleCollectionBadgeProps) {
   const { accessRoles, accessRoleCollectionRoles } = useMasterData()
   const displayNameText = getTextInCurrentLanguage(accessRoleCollection.displayName)
-  const badge = (
+  let badge = (
     <LookBadge look={accessRoleCollection.badgeLook} shape="pill">
       {displayNameText}
     </LookBadge>
   )
+  if (compact) {
+    const displayNameStart = displayNameText.slice(0, COMPACT_INITIALS_LENGTH)
+    const initials = displayNameStart.toUpperCase()
+    badge = (
+      <LookBadge look={accessRoleCollection.badgeLook} shape="medal">
+        {initials}
+      </LookBadge>
+    )
+  }
   if (!withHoverlay || accessRoles === null || accessRoleCollectionRoles === null) {
     return badge
   }

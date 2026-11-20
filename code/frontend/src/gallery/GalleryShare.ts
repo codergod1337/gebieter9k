@@ -27,7 +27,23 @@ export type GalleryShare = {
   createdAt: string
 }
 
-/** Was man beim Anlegen einer Freigabe einträgt; höchstens eine der beiden Grenzen. */
+/**
+ * Eine Freigabe in der Übersicht des Admins über alle Freigaben aller Galerien (`GET /api/admin/gallery-share`): die
+ * Freigabe, wie sie auch der Besitzer sieht, dazu die Galerie und wem sie gehört.
+ * Doku: `docu/entities/GalleryShare.md`
+ */
+export type GalleryShareForAdmin = {
+  galleryShare: GalleryShare
+  /** Der Titel der freigegebenen Galerie, `null` wenn es die Galerie nicht mehr gibt. */
+  galleryTitle: string | null
+  /** Wem die Galerie gehört, `null` wenn es die Galerie nicht mehr gibt. */
+  ownerUsersGuid: string | null
+}
+
+/**
+ * Was man beim Anlegen einer Freigabe einträgt; höchstens eine der beiden Grenzen.
+ * Doku: `docu/entities/GalleryShare.md`
+ */
 export type NewGalleryShare = {
   galleryId: number
   label: string
@@ -47,6 +63,8 @@ export type SharedGallery = {
   remainingAccessCount: number | null
   filePage: FileDocumentPage
   fileSolrFieldNameSet: FileSolrFieldNameSet
+  /** Je Bild der Seite die Zahl seiner Kommentare, für die Sprechblase an der Kachel; ein Bild ohne Kommentar fehlt. */
+  commentCountsByFileDocumentId: Record<string, number>
 }
 
 /** Höchstlänge der Bezeichnung, wie `gebiter.gallery-share.label-max-length` im Backend. */

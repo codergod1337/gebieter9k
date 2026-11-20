@@ -2,7 +2,8 @@
 
 Stand 2026-11-19: **Stück 1 bis 3 gebaut (Freigabe anlegen, auflisten, löschen; Besucherseite; ZIP), Backend über den
 Tunnel gegen den Pi getestet.** Seit 2026-11-20 wird der Link gespeichert und steht in der Liste der Freigaben
-(Entscheidung 14). Offen: Kommentare an Bildern (Abschnitt 7 und 8). Entity: `docu/entities/GalleryShare.md`.
+(Entscheidung 14), der Admin hat eine Übersicht über alle Freigaben (Abschnitt 9), und Kommentare an Bildern gibt es
+seit 2026-11-20 (Abschnitt 7, Entity `docu/entities/FileComment.md`). Entity: `docu/entities/GalleryShare.md`.
 
 **Nicht verwechseln:** Dieses Konzept ist die Freigabe einer ganzen Galerie über einen Link mit Token (Freunde sehen
 die Bilder ohne Anmeldung und ohne Passwort). Die ältere Freigabe mit Abholtoken ist ein anderer Anwendungsfall und
@@ -51,6 +52,11 @@ einen Link weiter. Wer den Link hat, sieht die Galerie **ohne Anmeldung**.
 15. **Kommentare in der Kachelansicht asynchron (2026-11-20):** „kommentare würde ich auch schon in der kachelansicht
     asychron nachladen, die brauch ich noch nicht instantan“. Die Kacheln kommen sofort, die Kommentare lädt die Ansicht
     danach nach (Abschnitt 7).
+16. **Neue Bilder gehören dazu (2026-11-20):** „dass auch weitere Bilder, die in einer Galerie hochgeladen werden, dann
+    auch freigegeben werden, solange diese Freigabe existiert“. Jedes Bild, das in eine freigegebene Galerie
+    hochgeladen wird, trägt alle ihre Freigaben (Abschnitt 4.4).
+17. **Übersicht für den Admin (2026-11-20):** „eine allgemeine Freigabenübersicht […] um alle Freigaben anzuzeigen für
+    einen Admin“ (Abschnitt 9).
 
 ## 3. Sicherheit: zwei Schlösser
 
@@ -65,7 +71,8 @@ Ein Besucher bekommt ein Bild nur, wenn **beides** stimmt:
   Dokument eines Solr-Exports nach `docu/solr-cores/FILE.md` (öffentliches Repo), und Solr schreibt jeden Filter in
   sein Log. Mit dem Hash lässt sich kein Link bauen.
 - **In Postgres steht der Token selbst** (Spalte `share_token`, Entscheidung 14), daneben sein Hash zum Nachschlagen.
-  Nur der Besitzer der Galerie bekommt ihn (`POST /api/gallery-share`, `POST /api/gallery-share/resolve`). Folge, die
+  Nur der Besitzer der Galerie bekommt ihn (`POST /api/gallery-share`, `POST /api/gallery-share/resolve`), dazu der
+  Admin in seiner Übersicht (`GET /api/admin/gallery-share`, Abschnitt 9). Folge, die
   man kennen muss: Wer die Tabelle `gallery_share` lesen kann (Datenbank-Zugang, ein Dump), hat die Links.
 - **Ein Hash ohne Zeile öffnet nichts.** Bleibt nach einem Fehler ein Hash in einem Dokument stehen, fehlt das erste
   Schloss.
@@ -124,6 +131,20 @@ Scheitert Schritt 3, rollt die Transaktion zurück, und der Hash kommt aus den s
 und ein Upload laufen im selben Moment; das neue Bild bekommt den Hash nicht mehr, gezählt wird es trotzdem: Postgres 10,
 Solr 9.
 
+**Neue Bilder einer freigegebenen Galerie (Entscheidung 16, geprüft 2026-11-20):** Der Upload in die Galerie
+(`POST /api/gallery/upload`, `FileUploadService.uploadFileIntoGallery`) liest zu Beginn der Anfrage alle Freigaben der
+Galerie (`GalleryShareService.prepareGalleryShareUpload`) und schreibt ihre Hashes gleich mit ins neue Dokument. Das
+Bild gehört damit vom ersten Moment an zu jeder Freigabe; nachträglich wird nichts geschrieben. Ein anderer Weg, auf
+dem ein Bild in eine Galerie kommt, existiert nicht (kein Verschieben, kein Wiederherstellen gelöschter Bilder).
+
+**Bekannte Lücke (entschieden 2026-11-20: bleibt so, kein Code dafür):** Die Freigaben werden gelesen, BEVOR die Bytes der Datei
+ankommen, das Dokument entsteht erst danach. Wird in dieser Zeit eine Freigabe angelegt, trägt das Bild sie nicht.
+Beispiel: Ein Video von 3 GB lädt 20 Minuten in die Galerie „Urlaub“; in Minute 5 entsteht die Freigabe „für Oma“. Das
+Anlegen findet das Video noch nicht in Solr, der Upload hat „für Oma“ nicht gelesen: Oma sieht das Video nicht, in der
+Liste steht „41 von 42“. Betroffen sind nur Dateien, die genau beim Anlegen unterwegs sind (höchstens
+`VITE_UPLOAD_MAX_PARALLEL_UPLOADS`, also 2). Ein Weg, das ohne neuen Link zu richten, fehlt: Löschen und neu Anlegen
+ändert den Link. Der Nutzer dazu: „sehe auch keinen Grund für so einen Blödsinn extra Code zu opfern“.
+
 ### 4.5 Endpunkte
 
 | Methode | Pfad | Was |
@@ -131,6 +152,7 @@ Solr 9.
 | POST | `/api/gallery-share` | eigene Galerie freigeben: `{galleryId, label}`, dazu wahlweise `expiresAt` oder `maxAccessCount` |
 | POST | `/api/gallery-share/resolve` | die Freigaben einer eigenen Galerie, je mit ihrem Token für den Link: `{galleryId}` |
 | DELETE | `/api/gallery-share` | eine Freigabe einer eigenen Galerie löschen: `{id}` |
+| GET | `/api/admin/gallery-share` | nur ADMIN: alle Freigaben aller Galerien (Abschnitt 9) |
 
 ### 4.6 Löschen (gebaut)
 
@@ -194,6 +216,7 @@ Alles hängt unter dem Token. Für diese Adressen gilt die Ausnahme von der Rege
 |---|---|---|---|
 | GET | `/api/share/token/{token}` | die Standardansicht: die Galerie und die erste Seite ihrer Bilder | nein |
 | POST | `/api/share/token/{token}/resolve` | eine weitere Seite, Body `{"page": 2}` | nein |
+| GET | `/api/share/token/{token}/comment/{fileId}` | die Kommentare eines Bildes, nur lesen (seit 2026-11-20) | nein |
 | GET | `/api/share/token/{token}/view/{fileId}` | ein Bild für den Viewer (HEIF als JPEG) | 1 |
 | GET | `/api/share/token/{token}/download/{fileId}` | ein Bild herunterladen, das Original | 1 |
 | POST | `/api/share/token/{token}/selection` | eine Auswahl als ZIP; Formularfeld `fileIds`, ids durch Komma getrennt | je Bild 1 |
@@ -277,15 +300,46 @@ Dazu:
 ## 7. Stück 4: Bewertungen und Kommentare
 
 - **Gebaut:** Die Stimmen sind auf der Besucherseite für alle zu sehen, mit dem Hinweis zur Anmeldung beim Klick.
-- **Offen:** Kommentare an Bildern gibt es auf der Plattform noch nicht (nur am Gästebuch). Sie sind ein eigenes Stück:
-  Entity, Endpunkte, Anzeige in der Galerie und auf der Besucherseite.
-- **Vorgabe dafür (Entscheidung 15):** In der Kachelansicht werden die Kommentare asynchron nachgeladen. Die Kacheln
-  erscheinen sofort, die Kommentare kommen in einer eigenen Anfrage danach und halten die Ansicht nicht auf.
+- **Gebaut 2026-11-20: Kommentare an Bildern** (Entity `FileComment`, `docu/entities/FileComment.md`; Nutzer: „so eine
+  Sprechblase neben die Smileys“):
+  - An jeder Bildkachel steht neben den beiden Smileys die Sprechblase mit der Zahl der Kommentare. Ein Klick öffnet
+    das Bild groß; dort steht der Verlauf rechts neben dem Bild (auf einem schmalen Bildschirm darunter) mit dem Feld
+    zum Schreiben. Derselbe Bereich steht auf der Seite einer Datei.
+  - Entscheidung 15 gilt: Die Kacheln kommen sofort, die Zahl lädt jede Kachel danach selbst nach, den Verlauf erst,
+    wer ihn öffnet.
+  - Besucher über den Link lesen mit (Entscheidung 9): Die Zahl je Bild kommt mit der Seite der Freigabe, der Verlauf
+    über `…/comment/{fileId}`. Statt des Felds zum Schreiben steht „Zum Kommentieren anmelden“. Die Autoren kommen
+    mit dem Verlauf, nach der Sichtbarkeit ihres Profils (privat: „Anonym“).
+  - Gezeichnet wird mit globalen Bausteinen, die auch das Gästebuch nutzt (`components/CommentItem`, `AuthorHead`,
+    `RichTextForm`, `ConfirmDeleteButton`).
+  - Erstes Stück: keine Antworten auf Kommentare, keine Smileys an Kommentaren, kein Löschen durch den Admin.
 
 ## 8. Noch offen
 
-1. Kommentare an Bildern (Abschnitt 7).
+1. ~~Kommentare an Bildern~~: gebaut 2026-11-20 (Abschnitt 7). Offen daran: Löschen durch den Admin.
 2. Welche Felder ein Besucher sieht: legt der Nutzer fest, sobald er die Seite gesehen hat (Entscheidung 7). Bis dahin
    gilt die Liste aus der YAML.
-3. Das Recht `FREIGABE` gibt es in `access_role` noch nicht: Der Admin legt es im Rechte-Manager an, sobald ein anderer
-   User freigeben soll.
+3. ~~Das Recht `FREIGABE` gibt es in `access_role` noch nicht~~: seit 2026-11-20 angelegt.
+4. ~~Die Lücke beim Upload während des Anlegens einer Freigabe~~: entschieden, bleibt so (Abschnitt 4.4).
+
+## 9. Übersicht des Admins über alle Freigaben (gebaut 2026-11-20)
+
+Der Admin sieht alle Freigaben aller Galerien an einer Stelle (Entscheidung 17): in der Administration der Reiter
+„Freigaben“ (`/admin/gallery-share`, `admin/galleryshare/GalleryShareTab`).
+
+- **Endpunkt:** `GET /api/admin/gallery-share` (`GalleryShareAdminController`, nur ADMIN), Service
+  `GalleryShareService.getAllGalleryShare`. Antwort: je Freigabe ein `GalleryShareForAdmin`: die Freigabe, wie sie ihr
+  Besitzer sieht (`GalleryShareForClient`, also mit Token und beiden Zahlen der Bilder), dazu `galleryTitle` und
+  `ownerUsersGuid`. Die neueste Freigabe steht oben.
+- **Tabelle:** Besitzer (Avatar und Name, führt aufs Profil), Galerie (Titel, führt zur Galerie), dann dieselben
+  Spalten wie in der Liste des Besitzers (`galleryShareColumns.tsx`): Bezeichnung, Link mit „kopieren“ (globaler
+  Baustein `components/CopyableLink`), gilt, Aufrufe, Bilder, angelegt. Im Fuß die Zahl der Freigaben. Eigene
+  Komponenten hat der Reiter nicht: `Table`, `UsersGuidName`, `StatusMark` und `ContentBox` sind global.
+- **Nur Ansicht.** Angelegt und gelöscht wird eine Freigabe weiter in ihrer Galerie, im Reiter „Freigabe“.
+- **Der Admin sieht den Link jeder Freigabe.** Er liest ohnehin jede Datei; der Link ist kein Geheimnis vor ihm.
+- **Reste fallen auf:** Steht eine Freigabe an einer Galerie, die es nicht mehr gibt, bleibt sie in der Liste, mit der
+  Warnung „Galerie gibt es nicht mehr“ und ohne Besitzer. Beispiel: „8 von 9“ in der Spalte „Bilder“ zeigt hier für
+  jede Galerie, wo der Stand in Solr von dem in Postgres abweicht.
+- Eine fremde private Galerie öffnet der Klick auf den Titel nicht (der Admin hat beim Lesen von Galerien keinen
+  Sonderweg); ihre Bilder sieht er über den Link der Freigabe.
+- Ein Besitzer mit privatem Profil erscheint wie überall als „Anonym“ (`UsersGuidName`).

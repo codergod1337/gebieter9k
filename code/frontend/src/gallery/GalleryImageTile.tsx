@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { useSortableItem } from '../components/useSortableItem.tsx'
 import { FileCheerBar } from '../file/cheer/FileCheerBar.tsx'
+import { FileCommentBubble } from '../file/comment/FileCommentBubble.tsx'
 import { FileDocumentActionButtons } from '../file/document/FileDocumentActionButtons.tsx'
 import { FileDocumentPreviewImage } from '../file/document/FileDocumentPreviewImage.tsx'
 import { getFileDocumentPath } from '../file/fileDocumentPaths.ts'
@@ -29,10 +30,16 @@ type GalleryImageTileProps = {
   /** Optional, links in der Kopfzeile vor der Überschrift: z. B. das Kästchen zum Auswählen auf der Besucherseite. */
   headStart?: ReactNode
   /**
-   * Optional statt der Stimmen des angemeldeten Users ({@link FileCheerBar}): was über dem Bild steht, z. B. auf der
-   * Besucherseite einer Freigabe die Zahlen ohne Abstimmen.
+   * Optional statt der Stimmen und der Sprechblase des angemeldeten Users ({@link FileCheerBar},
+   * {@link FileCommentBubble}): was über dem Bild steht, z. B. auf der Besucherseite einer Freigabe die Zahlen ohne
+   * Abstimmen.
    */
   cheers?: ReactNode
+  /**
+   * Optional: die Zahl der Kommentare, wenn der Aufrufer sie schon kennt (nachdem im großen Bild kommentiert wurde).
+   * Ohne lädt die Sprechblase sie selbst nach.
+   */
+  commentCount?: number
   /**
    * Optional statt der Aktionsleiste einer Datei ({@link FileDocumentActionButtons}): z. B. auf der Besucherseite einer
    * Freigabe nur der Download über den Link.
@@ -49,7 +56,9 @@ const GALLERY_IMAGE_PREVIEW_PIXELS = 200
  *   Tags, ohne Tags der Dateiname);
  * - die Vorschau aus dem Solr-Dokument (PNG 200 × 200), ein Klick öffnet das Bild groß; oben mittig über dem Bild
  *   liegen die Stimmen ({@link FileCheerBar}: begeistert und angewidert; jede Kachel lädt sie selbst nach, wenn sie
- *   schon dasteht). Sie stehen oben, damit ihre Sprechblase nicht die Aktionsleiste verdeckt;
+ *   schon dasteht) und daneben die Sprechblase mit der Zahl der Kommentare ({@link FileCommentBubble}, Nutzer
+ *   2026-11-20; ein Klick öffnet das Bild groß, dort stehen die Kommentare). Sie stehen oben, damit ihre Sprechblase
+ *   nicht die Aktionsleiste verdeckt;
  * - die Aktionsleiste wie überall an einer Datei: Info
  * (Details mit allen Metadaten), Download und, wer bearbeiten darf, der Stift: Er führt auf dieselbe Seite, dort ändert
  * man jedes Feld per Klick im Popup (eine eigene Bearbeiten-Seite gibt es nicht mehr). Die Knöpfe stehen neben
@@ -70,6 +79,7 @@ export function GalleryImageTile({
   footer,
   headStart,
   cheers,
+  commentCount,
   actions,
 }: GalleryImageTileProps) {
   const navigate = useNavigate()
@@ -85,10 +95,19 @@ export function GalleryImageTile({
     navigate(fileDocumentPath, { state: originState })
   }
 
-  // Ohne eigene Teile des Aufrufers: die Stimmen und die Aktionsleiste des angemeldeten Users
+  // Ohne eigene Teile des Aufrufers: die Stimmen, die Sprechblase und die Aktionsleiste des angemeldeten Users
   let shownCheers = cheers
   if (shownCheers === undefined && originState !== undefined) {
-    shownCheers = <FileCheerBar fileDocumentId={fileDocumentId} originLabel={originState.origin.label} />
+    shownCheers = (
+      <>
+        <FileCheerBar fileDocumentId={fileDocumentId} originLabel={originState.origin.label} />
+        <FileCommentBubble
+          fileDocumentId={fileDocumentId}
+          commentCount={commentCount}
+          onOpen={() => onOpen(fileDocumentId)}
+        />
+      </>
+    )
   }
   let shownActions = actions
   if (shownActions === undefined && originState !== undefined) {

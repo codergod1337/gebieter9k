@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import Spinner from 'react-bootstrap/Spinner'
 import Table from 'react-bootstrap/Table'
 import { useNavigate } from 'react-router'
 import { useLoadedData } from '../../api/useLoadedData.ts'
@@ -17,6 +16,7 @@ import { NewUsersPopup } from './NewUsersPopup.tsx'
 import { NEW_USERS_TEXTS } from './newUsersTexts.ts'
 import { UsersTableRow } from './UsersTableRow.tsx'
 import { useOrigin } from '../../navigation/useOrigin.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
 
 /**
  * Tab „User“ der Administration, wie in der Vorlage: alle User mit Status, ARC und Rechten, rechts Bearbeiten und
@@ -105,15 +105,15 @@ export function UsersTab() {
   }
 
   const loaded = allUsers !== null && allAssignments !== null && accessRoles !== null
-  let footer
-  if (errorMessage !== null) {
-    footer = <span className="text-danger">{errorMessage}</span>
-  } else if (!loaded) {
-    footer = <Spinner animation="border" size="sm" />
-  } else {
-    const usersCountText = allUsers.length + ' User'
-    footer = <span>{usersCountText}</span>
+  let usersCountText = ''
+  if (loaded) {
+    usersCountText = allUsers.length + ' User'
   }
+  const footer = (
+    <LoadStatus errorMessage={errorMessage} isLoading={!loaded}>
+      {usersCountText}
+    </LoadStatus>
+  )
 
   const newUsersLabel = getTextInCurrentLanguage(NEW_USERS_TEXTS.newUsers)
   const newUsersButton = <NewEntityButton label={newUsersLabel} onClick={() => setNewUsersOpen(true)} />

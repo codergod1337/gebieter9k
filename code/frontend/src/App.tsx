@@ -24,6 +24,7 @@ import { EditFileExtensionTab } from './admin/fileextension/EditFileExtensionTab
 import { FileExtensionTab } from './admin/fileextension/FileExtensionTab.tsx'
 import { NewFileExtensionGroupTab } from './admin/fileextension/NewFileExtensionGroupTab.tsx'
 import { NewFileExtensionTab } from './admin/fileextension/NewFileExtensionTab.tsx'
+import { GalleryShareTab } from './admin/galleryshare/GalleryShareTab.tsx'
 import { MailTestTab } from './admin/mailtest/MailTestTab.tsx'
 import { EditRankTab } from './admin/rank/EditRankTab.tsx'
 import { NewRankTab } from './admin/rank/NewRankTab.tsx'
@@ -176,6 +177,7 @@ function LoggedInRoutes() {
         <Route path="file-extension/edit/:fileExtension" element={<EditFileExtensionTab />} />
         <Route path="file-extension/group/new" element={<NewFileExtensionGroupTab />} />
         <Route path="file-extension/group/edit/:fileExtensionGroupKey" element={<EditFileExtensionGroupTab />} />
+        <Route path="gallery-share" element={<GalleryShareTab />} />
         <Route path="mail-test" element={<MailTestTab />} />
         <Route path="file-class-extension" element={<FileClassFileExtensionMatrixTab />} />
         <Route path="file-class-destination" element={<FileClassDestinationTab />} />

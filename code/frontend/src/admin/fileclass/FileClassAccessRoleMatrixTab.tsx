@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import Spinner from 'react-bootstrap/Spinner'
 import { useLoadedData } from '../../api/useLoadedData.ts'
 import type { AccessRole } from '../../auth/access/AccessRole.ts'
 import { AccessRoleBadge } from '../../auth/access/AccessRoleBadge.tsx'
@@ -13,6 +12,7 @@ import type { MultilingualText } from '../../language/MultilingualText.ts'
 import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguage.ts'
 import { useMasterData } from '../../masterdata/useMasterData.ts'
 import { FILE_CLASS_ACCESS_TEXTS } from './fileClassAccessTexts.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
 
 /**
  * Was eine Zelle zeigt: welche der drei Schalter an sind, je Schalter ein Buchstabe (L lesen, B bearbeiten,
@@ -286,8 +286,7 @@ export function FileClassAccessRoleMatrixTab() {
     <>
       {(errorMessage !== null || isLoading) && (
         <div className="matrix-message">
-          {errorMessage !== null && <span className="text-danger">{errorMessage}</span>}
-          {errorMessage === null && <Spinner animation="border" size="sm" />}
+          <LoadStatus errorMessage={errorMessage} isLoading={isLoading} />
         </div>
       )}
       {!isLoading && fileClasses !== null && accessRoles !== null && (

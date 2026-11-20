@@ -1,4 +1,5 @@
 import type { MultilingualText } from '../language/MultilingualText.ts'
+import type { UsersAvatarForClient } from '../users/UsersAvatarForClient.ts'
 
 /**
  * Ein Gästebucheintrag, wie ihn das Backend nach dem Schreiben liefert (Tabelle `guestbook`). Wird nie geändert.
@@ -94,28 +95,29 @@ export type GuestbookPage = {
   pageSize: number
 }
 
-/** Was statt des Namens steht, wenn der Autor gelöscht ist. */
-const DELETED_AUTHOR_NAME = 'Gelöschter User'
-
-/** Der Autor aus der Seite; fehlt er (sollte nicht vorkommen), ein Autor ohne Namen und Bild. */
-export function findGuestbookAuthor(guestbookPage: GuestbookPage, authorUsersGuid: string): GuestbookAuthor {
+/**
+ * Der Autor aus der Seite in der Form, die die globalen Bausteine nehmen (`AuthorHead`, `CommentItem`); fehlt er (sollte
+ * nicht vorkommen), ein Autor ohne Namen und Bild. Im Gästebuch ist nie jemand anonym: Wer hineinschreibt, steht dort
+ * nach den Regeln dieses Profils mit Namen.
+ */
+export function findGuestbookAuthor(guestbookPage: GuestbookPage, authorUsersGuid: string): UsersAvatarForClient {
   const guestbookAuthor = guestbookPage.authorsByUsersGuid[authorUsersGuid]
   if (guestbookAuthor === undefined) {
     return {
       usersGuid: authorUsersGuid,
+      anonymous: false,
       username: null,
       profileImageSmallBase64Png: null,
       avatarTextColor: null,
       avatarBackgroundColor: null,
     }
   }
-  return guestbookAuthor
-}
-
-/** Der Name, der über einem Eintrag oder Kommentar steht. */
-export function getGuestbookAuthorName(guestbookAuthor: GuestbookAuthor): string {
-  if (guestbookAuthor.username === null) {
-    return DELETED_AUTHOR_NAME
+  return {
+    usersGuid: guestbookAuthor.usersGuid,
+    anonymous: false,
+    username: guestbookAuthor.username,
+    profileImageSmallBase64Png: guestbookAuthor.profileImageSmallBase64Png,
+    avatarTextColor: guestbookAuthor.avatarTextColor,
+    avatarBackgroundColor: guestbookAuthor.avatarBackgroundColor,
   }
-  return guestbookAuthor.username
 }

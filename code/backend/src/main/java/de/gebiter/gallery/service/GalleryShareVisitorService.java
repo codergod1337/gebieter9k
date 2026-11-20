@@ -16,10 +16,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import de.gebiter.file.FileSolrFieldNames;
+import de.gebiter.file.dto.FileCommentThread;
 import de.gebiter.file.dto.FileDocumentBackendFacts;
 import de.gebiter.file.dto.FileDocumentPage;
 import de.gebiter.file.dto.FileSolrFieldNameSet;
 import de.gebiter.file.dto.FileDocumentZipSource;
+import de.gebiter.file.service.FileCommentService;
 import de.gebiter.file.service.FileDocumentResolveService;
 import de.gebiter.file.service.FileDownloadService;
 import de.gebiter.gallery.GalleryShareBusyException;
@@ -64,6 +66,8 @@ public class GalleryShareVisitorService {
 
 	private final FileDownloadService fileDownloadService;
 
+	private final FileCommentService fileCommentService;
+
 	/** So viele Bilder zeigt eine Seite der Besucheransicht ({@code gebiter.gallery-share.file-page-size}). */
 	private final int filePageSize;
 
@@ -87,7 +91,8 @@ public class GalleryShareVisitorService {
 
 	public GalleryShareVisitorService(GalleryShareService galleryShareService, GalleryService galleryService,
 			FileDocumentResolveService fileDocumentResolveService, FileDownloadService fileDownloadService,
-			FileSolrFieldNames fileSolrFieldNames, @Value("${gebiter.gallery-share.file-page-size}") int filePageSize,
+			FileCommentService fileCommentService, FileSolrFieldNames fileSolrFieldNames,
+			@Value("${gebiter.gallery-share.file-page-size}") int filePageSize,
 			@Value("${gebiter.gallery-share.visitor-field-names}") List<String> visitorFieldNames,
 			@Value("${gebiter.gallery-share.max-parallel-deliveries}") int maxParallelDeliveries,
 			@Value("${gebiter.gallery-share.max-parallel-zip-downloads}") int maxParallelZipDownloads,
@@ -122,6 +127,7 @@ public class GalleryShareVisitorService {
 		this.galleryService = galleryService;
 		this.fileDocumentResolveService = fileDocumentResolveService;
 		this.fileDownloadService = fileDownloadService;
+		this.fileCommentService = fileCommentService;
 		this.filePageSize = filePageSize;
 		this.visitorFieldNames = List.copyOf(visitorFieldNames);
 		this.deliveryWait = deliveryWait;
@@ -133,7 +139,8 @@ public class GalleryShareVisitorService {
 
 	/**
 	 * READ (Besucher): Die Standardansicht einer Freigabe: Titel und Beschreibung der Galerie und eine Seite ihrer Bilder
-	 * als Kacheln (die Vorschau steht im Dokument). Das Ansehen der Kacheln ist kein Aufruf und wird nicht gezählt.
+	 * als Kacheln (die Vorschau steht im Dokument), dazu je Bild die Zahl seiner Kommentare. Das Ansehen der Kacheln ist
+	 * kein Aufruf und wird nicht gezählt.
 	 *
 	 * @param page die Seite der Bilder, ab 0
 	 * @throws EntityNotFoundException wenn der Token keine gültige Freigabe öffnet
@@ -156,8 +163,41 @@ public class GalleryShareVisitorService {
 			remainingAccessCount = Math.max(0L, maxAccessCount - accessCount);
 		}
 		FileSolrFieldNameSet fileSolrFieldNameSet = fileDocumentResolveService.getFileSolrFieldNameSet();
+		// Die Zahl der Kommentare je Bild der Seite, für die Sprechblase an der Kachel: eine Abfrage für die ganze Seite
+		String idFieldName = fileSolrFieldNameSet.id();
+		List<Map<String, Object>> pageFiles = filePage.documents();
+		List<String> pageFileIds = new ArrayList<>();
+		for (Map<String, Object> pageFile : pageFiles) {
+			Object rawPageFileId = pageFile.get(idFieldName);
+			if (rawPageFileId != null) {
+				String pageFileId = rawPageFileId.toString();
+				pageFileIds.add(pageFileId);
+			}
+		}
+		Map<String, Long> commentCountsByFileDocumentId = fileCommentService.resolveFileCommentCountsForGalleryShare(
+				pageFileIds);
 		return new SharedGalleryForClient(title, description, expiresAt, remainingAccessCount, filePage,
-				fileSolrFieldNameSet);
+				fileSolrFieldNameSet, commentCountsByFileDocumentId);
+	}
+
+	/**
+	 * READ (Besucher): Der Verlauf der Kommentare eines Bildes der Freigabe, die ältesten zuerst, mit ihren Autoren
+	 * (Entscheidung 9 im Konzept: Kommentare sieht auch ein Besucher, schreiben kann nur ein angemeldeter User). Das Lesen
+	 * der Kommentare ist kein Aufruf und wird nicht gezählt.
+	 *
+	 * @throws EntityNotFoundException wenn der Token keine gültige Freigabe öffnet oder das Bild nicht zu dieser Freigabe
+	 *         gehört
+	 */
+	public FileCommentThread getSharedFileCommentThread(String shareToken, String fileDocumentId) {
+		GalleryShare validGalleryShare = galleryShareService.getValidGalleryShare(shareToken);
+		Long galleryId = validGalleryShare.getGalleryId();
+		String shareTokenHash = validGalleryShare.getShareTokenHash();
+		FileDocumentBackendFacts sharedFileBackendFacts = fileDocumentResolveService
+				.resolveFileDocumentBackendFactsOfGalleryShare(fileDocumentId, galleryId, shareTokenHash);
+		if (sharedFileBackendFacts == null) {
+			throw new EntityNotFoundException("Dieses Bild gibt es in der Freigabe nicht.");
+		}
+		return fileCommentService.getFileCommentThreadForGalleryShare(fileDocumentId);
 	}
 
 	/**

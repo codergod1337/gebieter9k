@@ -56,6 +56,6 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 - [`code/frontend/src/guestbook/GuestbookCommentItem.tsx`](../../code/frontend/src/guestbook/GuestbookCommentItem.tsx): (Typ)
 - [`code/frontend/src/guestbook/GuestbookCommentThread.tsx`](../../code/frontend/src/guestbook/GuestbookCommentThread.tsx): (Typ)
 - [`code/frontend/src/guestbook/GuestbookEntryCard.tsx`](../../code/frontend/src/guestbook/GuestbookEntryCard.tsx): (Typ)
-- [`code/frontend/src/guestbook/GuestbookHead.tsx`](../../code/frontend/src/guestbook/GuestbookHead.tsx): (Typ)
+- [`code/frontend/src/components/AuthorHead.tsx`](../../code/frontend/src/components/AuthorHead.tsx): der Kopf eines Eintrags (Avatar, Name, Zeit), seit 2026-11-20 global statt `GuestbookHead`; ebenso [`RichTextForm.tsx`](../../code/frontend/src/components/RichTextForm.tsx) (vorher `GuestbookTextForm`) und [`ConfirmDeleteButton.tsx`](../../code/frontend/src/components/ConfirmDeleteButton.tsx) (vorher `GuestbookDeleteButton`)
 - [`code/frontend/src/guestbook/GuestbookReactionBar.tsx`](../../code/frontend/src/guestbook/GuestbookReactionBar.tsx): (Typ)
 - [`code/frontend/src/guestbook/useGuestbook.ts`](../../code/frontend/src/guestbook/useGuestbook.ts): `useGuestbook`, `resolveGuestbookPage`, `createOwnGuestbook`

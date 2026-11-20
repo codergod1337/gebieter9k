@@ -894,7 +894,7 @@ body {
 }
 
 /* Das i oben rechts in einer Kachel */
-.tile-corner-hint {
+.info-hint {
   color: var(--bordeaux-600);
 }
 
@@ -2147,17 +2147,21 @@ body {
   background: var(--bordeaux-50);
 }
 
-.guestbook-time {
+.author-head-time {
   color: var(--ink-muted);
 }
 
-.guestbook-comments {
+.comment-thread {
   border-left-color: var(--bordeaux-200);
 }
 
-/* Pillen mit Zahl: die Smileys des Gästebuchs und die Stimmen einer Datei; die eigene Bordeaux mit Neongelb */
+/*
+ * Pillen mit Zahl: die Smileys des Gästebuchs, die Stimmen einer Datei und die Sprechblase ihrer Kommentare; die
+ * eigene Bordeaux mit Neongelb
+ */
 .guestbook-reaction,
-.file-cheer-button {
+.file-cheer-button,
+.file-comment-button {
   border-color: var(--line-strong);
   background: var(--paper);
   color: var(--ink);
@@ -2183,7 +2187,8 @@ body {
  * einem Klick zeigt er den neuen Stand, bis der Zeiger ihn verlässt (`file-cheer-button-settled`): sonst sähe die
  * eben gegebene Stimme sofort wieder abgewählt aus.
  */
-.file-cheer-button {
+.file-cheer-button,
+.file-comment-button {
   transition:
     transform 0.12s ease,
     background-color 0.12s ease,
@@ -2193,10 +2198,24 @@ body {
 }
 
 .file-cheer-button:hover:not(:disabled),
-.file-cheer-button:focus-visible {
+.file-cheer-button:focus-visible,
+.file-comment-button:hover,
+.file-comment-button:focus-visible {
   box-shadow: 0 0 0 3px var(--neon-glow);
   outline: 0;
   transform: scale(1.14);
+}
+
+/* die Sprechblase der Kommentare beim Zeigen: Bordeaux mit Neongelb wie eine Stimme, die man gleich gibt */
+.file-comment-button:hover,
+.file-comment-button:focus-visible {
+  border-color: var(--bordeaux-700);
+  background: var(--bordeaux-700);
+  color: var(--neon-300);
+}
+
+.file-comments-title {
+  color: var(--bordeaux-700);
 }
 
 .file-cheer-button:hover:not(:disabled):not(.file-cheer-button-settled),
@@ -2215,12 +2234,14 @@ body {
 }
 
 /* über einem Bild (Bildkachel der Galerie): ein Schatten hebt die Pillen vom Bild ab */
-.gallery-image-tile-cheers .file-cheer-button {
+.gallery-image-tile-cheers .file-cheer-button,
+.gallery-image-tile-cheers .file-comment-button {
   box-shadow: 0 2px 8px rgb(29 4 9 / 0.4);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .file-cheer-button {
+  .file-cheer-button,
+  .file-comment-button {
     transition: none;
   }
 }

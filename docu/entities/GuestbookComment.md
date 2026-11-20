@@ -52,5 +52,5 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 
 ## Verwendung im Frontend
 
-- [`code/frontend/src/guestbook/GuestbookCommentItem.tsx`](../../code/frontend/src/guestbook/GuestbookCommentItem.tsx): (Typ)
+- [`code/frontend/src/guestbook/GuestbookCommentItem.tsx`](../../code/frontend/src/guestbook/GuestbookCommentItem.tsx): (Typ); gezeichnet wird seit 2026-11-20 mit dem globalen [`CommentItem.tsx`](../../code/frontend/src/components/CommentItem.tsx), den auch die Kommentare an Bildern nutzen (`docu/entities/FileComment.md`)
 - [`code/frontend/src/guestbook/useGuestbook.ts`](../../code/frontend/src/guestbook/useGuestbook.ts): `useGuestbook`, `resolveGuestbookPage`, `createOwnGuestbook`, `deleteOwnGuestbook`, `deleteGuestbook`, `createOwnGuestbookComment`

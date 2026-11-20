@@ -80,9 +80,10 @@ Stand 2026-11-09, gebaut und auf dem Pi 5. Vorgabe des Nutzers am selben Tag:
 | File-Manager, Tab „Hochladen“ | „Zuletzt hochgeladen“ bleibt in `useSessionState` | Datei mit „Zurück zu Hochladen“ |
 | Datei | – | Bearbeiten und Viewer mit „Zurück zu <Dateiname>“; Löschen springt zum Origin |
 | Viewer | – | „Details“ springt zurück, wenn man von der Datei kam, sonst öffnet er sie mit „Zurück zu Viewer“ |
-| Administration | – | Alle Bearbeiten- und Neu-Seiten mit „Zurück zu <Tab>“, Abbrechen und Speichern springen zurück |
+| Administration | – | Alle Bearbeiten- und Neu-Seiten mit „Zurück zu <Tab>“, Abbrechen und Speichern springen zurück; Reiter „Freigaben“ (2026-11-20): Profil des Besitzers und Galerie mit „Zurück zu Freigaben“ |
 | Profil, Gästebuch | `?guestbookPage=…`, 10 Einträge je Seite, `PageNavigation` | – |
 | Icon-Manager | `?q=…&view=…&page=…&symbol=…` | – |
+| Galerien, Liste auf dem Handy (2026-11-20) | – | Galerie und Reiter „Freigabe“ aus der Tabelle mit „Zurück zu Galerien“ |
 | Galerie (2026-11-20) | `/profile/<guid>/galleries/<id>?tags=sky+beach&page=…&image=…` (gewählte Hashtags, Seite, offenes Bild; Filtern und Blättern PUSH), Cache `FILE_DOCUMENT`; die Reiter „Bilder“ und „Freigabe“ (`…/share`) sind Routen im Subheader des Profils | Datei mit „Zurück zu <Galerie>“ |
 | Gebietermarkt (2026-11-11) | die Rubrik steht im Pfad: `/market/category/<Key>`, je Rubrik ein Tab; Artikel im Cache `SHOP_ITEM` | Datei mit „Zurück zu <Rubrik>“ |
 

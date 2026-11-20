@@ -81,6 +81,8 @@ Für jeden angemeldeten User. Antworten des Anlegens bei Fehlern: Angabe fehlt o
 - [`code/backend/src/main/java/de/gebiter/shop/controller/ShopOfferController.java`](../../code/backend/src/main/java/de/gebiter/shop/controller/ShopOfferController.java): `createShopOfferOfOwnShopItem`
 - [`code/backend/src/main/java/de/gebiter/shop/ShopAccessDeniedException.java`](../../code/backend/src/main/java/de/gebiter/shop/ShopAccessDeniedException.java): wird im `GlobalExceptionHandler` zu 403
 - [`ShopOrder.shopOfferId`](../../code/backend/src/main/java/de/gebiter/shop/model/ShopOrder.java) verweist auf die id.
+- [`code/backend/src/main/java/de/gebiter/shop/dto/ShopItemForClient.java`](../../code/backend/src/main/java/de/gebiter/shop/dto/ShopItemForClient.java): `(Record-Komponenten)`
+- [`code/backend/src/main/java/de/gebiter/shop/service/ShopOrderService.java`](../../code/backend/src/main/java/de/gebiter/shop/service/ShopOrderService.java): `createShopOrder`
 
 ## Verwendung im Frontend
 
@@ -90,6 +92,8 @@ Für jeden angemeldeten User. Antworten des Anlegens bei Fehlern: Angabe fehlt o
 - [`code/frontend/src/market/MarketCategoryTab.tsx`](../../code/frontend/src/market/MarketCategoryTab.tsx): der Knopf „neues Angebot“, `renderShopOffers` (das laufende Angebot im Fuß jeder Kachel, sonst „Angebot erstellen“ für den Verkäufer)
 - [`code/frontend/src/shop/useShopOffer.ts`](../../code/frontend/src/shop/useShopOffer.ts): `useShopOffer`, `createShopOfferOfOwnShopItem`; leert danach den Bereich `SHOP_ITEM` im Zwischenspeicher der Ansichten
 - Texte: [`code/frontend/src/market/marketTexts.ts`](../../code/frontend/src/market/marketTexts.ts)
+- [`code/frontend/src/market/BuyShopOfferPopup.tsx`](../../code/frontend/src/market/BuyShopOfferPopup.tsx): (Typ)
+- [`code/frontend/src/shop/ShopItem.ts`](../../code/frontend/src/shop/ShopItem.ts): (Typ)
 
 ## Getestet (2026-11-11, Wegwerf-Test gegen die Pi-DB mit Rollback, danach gelöscht)
 

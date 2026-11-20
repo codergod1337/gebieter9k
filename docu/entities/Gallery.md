@@ -7,7 +7,7 @@ Eine Galerie im Profil (Konzept `docu/konzept-galerie.md`): Titel, Beschreibung 
 - **Tabelle:** `gallery`
 - **Klasse:** [`code/backend/src/main/java/de/gebiter/gallery/model/Gallery.java`](../../code/backend/src/main/java/de/gebiter/gallery/model/Gallery.java)
 - **Frontend-Typ:** [`code/frontend/src/gallery/Gallery.ts`](../../code/frontend/src/gallery/Gallery.ts)
-- **DTOs:** `FileUploadIntoGalleryData`, `GalleryChangeRequest`, `GalleryDeletedEvent`, `GalleryDeleteRequest`, `GalleryFileListingOrder`, `GalleryFileResolveRequest`, `GalleryForClient`, `GalleryListingOrder`, `GalleryResolveRequest`, `GalleryTagCount`, `GalleryTagResolveRequest`, `NewGallery`
+- **DTOs:** `FileUploadIntoGalleryData`, `GalleryChangeRequest`, `GalleryDeletedEvent`, `GalleryDeleteRequest`, `GalleryFileListingOrder`, `GalleryFileResolveRequest`, `GalleryForClient`, `GalleryListingOrder`, `GalleryResolveRequest`, `GalleryTagCount`, `GalleryTagResolveRequest`, `NewGallery`, `SharedGalleryForClient`, `SharedGalleryPageRequest`
 
 ## Beispiel-JSON
 
@@ -53,12 +53,22 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 | PUT | `/api/gallery/listing-position` | [`GalleryController.changeOwnGalleryListingPositions`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) | `Gallery`, `GalleryListingOrder` |
 | PUT | `/api/gallery/file/listing-position` | [`GalleryController.changeOwnGalleryFileListingPositions`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) | `GalleryFileListingOrder` |
 | DELETE | `/api/gallery` | [`GalleryController.deleteOwnGallery`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) | `GalleryDeleteRequest` |
+| POST | `/api/gallery-share` | [`GalleryShareController.createOwnGalleryShare`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryShareController.java) | (eigener Controller) |
+| POST | `/api/gallery-share/resolve` | [`GalleryShareController.resolveOwnGalleryShares`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryShareController.java) | (eigener Controller) |
+| DELETE | `/api/gallery-share` | [`GalleryShareController.deleteOwnGalleryShare`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryShareController.java) | (eigener Controller) |
+| GET | `/api/gallery-share` | [`GalleryShareController.getAllOwnGalleryShare`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryShareController.java) | (eigener Controller; die Freigaben aller eigenen Galerien für ihre Liste) |
+| GET | `/api/admin/gallery-share` | [`GalleryShareAdminController.getAllGalleryShare`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryShareAdminController.java) | `GalleryShareForAdmin` (Titel und Besitzer der Galerie je Freigabe) |
+| GET | `/api/share/token/{shareToken}` | [`GalleryShareShareController.resolveSharedGallery`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryShareShareController.java) | `SharedGalleryForClient` |
+| POST | `/api/share/token/{shareToken}/resolve` | [`GalleryShareShareController.resolveSharedGalleryPage`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryShareShareController.java) | `SharedGalleryForClient`, `SharedGalleryPageRequest` |
 
 ## Verwendung im Backend
 
 - [`code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java): `createOwnGallery`, `changeOwnGallery`, `changeOwnGalleryListingPositions`
 - [`code/backend/src/main/java/de/gebiter/gallery/repository/GalleryRepository.java`](../../code/backend/src/main/java/de/gebiter/gallery/repository/GalleryRepository.java): (Import, Felder)
-- [`code/backend/src/main/java/de/gebiter/gallery/service/GalleryService.java`](../../code/backend/src/main/java/de/gebiter/gallery/service/GalleryService.java): `createOwnGallery`, `getGalleryForClient`, `resolveGalleries`, `resolveGalleryFiles`, `resolveGalleryTags`, `createFilterTags`, `changeOwnGallery`, `changeOwnGalleryListingPositions`, `changeOwnGalleryFileListingPositions`, `prepareOwnGalleryUpload`, `checkOwnGalleryExists`, `getGalleryForGalleryShare`, `deleteOwnGallery` (schickt zuerst `GalleryDeletedEvent`, der `GalleryShareService` löscht daraufhin die Freigaben der Galerie), `createVisibilityFieldValues`, `doChangeAllGalleryFiles`, `createGalleryForClient`, `doGetVisibleGallery`, `doGetOwnGallery`, `isOwnGallery`, `doGetGallery`, `isGalleryVisibleWithinVisibleProfile`
+- [`code/backend/src/main/java/de/gebiter/gallery/service/GalleryService.java`](../../code/backend/src/main/java/de/gebiter/gallery/service/GalleryService.java): `createOwnGallery`, `getGalleryForClient`, `resolveGalleries`, `resolveGalleryFiles`, `resolveGalleryTags`, `createFilterTags`, `changeOwnGallery`, `changeOwnGalleryListingPositions`, `changeOwnGalleryFileListingPositions`, `prepareOwnGalleryUpload`, `checkOwnGalleryExists`, `resolveOwnGalleryIds` (für alle Freigaben der eigenen Galerien), `getGalleryForGalleryShare`, `resolveGalleriesForGalleryShares` (für die Übersicht des Admins über alle Freigaben), `deleteOwnGallery` (schickt zuerst `GalleryDeletedEvent`, der `GalleryShareService` löscht daraufhin die Freigaben der Galerie), `createVisibilityFieldValues`, `doChangeAllGalleryFiles`, `createGalleryForClient`, `doGetVisibleGallery`, `doGetOwnGallery`, `isOwnGallery`, `doGetGallery`, `isGalleryVisibleWithinVisibleProfile`
+- [`code/backend/src/main/java/de/gebiter/gallery/service/GalleryShareService.java`](../../code/backend/src/main/java/de/gebiter/gallery/service/GalleryShareService.java): `getAllGalleryShare` (Titel und Besitzer der Galerie je Freigabe), `getAllOwnGalleryShare`
+- [`code/backend/src/main/java/de/gebiter/file/service/FileDocumentResolveService.java`](../../code/backend/src/main/java/de/gebiter/file/service/FileDocumentResolveService.java): `resolveLastUploadedAtOfGallery` (für `GalleryForClient.lastUploadedAt`, seit 2026-11-20)
+- [`code/backend/src/main/java/de/gebiter/gallery/service/GalleryShareVisitorService.java`](../../code/backend/src/main/java/de/gebiter/gallery/service/GalleryShareVisitorService.java): `resolveSharedGallery`, `streamSharedFilesAsZip`
 
 ## Verwendung im Frontend
 
@@ -75,4 +85,8 @@ Von Hand ergänzt am 2026-11-20 (Upload hinter dem Knopf, Reiter „Freigabe“,
 - [`code/frontend/src/gallery/GalleryEditPopup.tsx`](../../code/frontend/src/gallery/GalleryEditPopup.tsx): (Typ)
 - [`code/frontend/src/gallery/GalleryListTab.tsx`](../../code/frontend/src/gallery/GalleryListTab.tsx): `getGalleryKey`, `GalleryListTab`, `loadGalleries`, `createGallery`, `changeGallery`, `confirmDeleteGallery`, `reorderGalleries`
 - [`code/frontend/src/gallery/GalleryTile.tsx`](../../code/frontend/src/gallery/GalleryTile.tsx): (Typ)
-- [`code/frontend/src/gallery/useGallery.ts`](../../code/frontend/src/gallery/useGallery.ts): `useGallery`, `createOwnGallery`, `uploadFileIntoGallery`, `getGalleryForClient`, `resolveGalleries`, `resolveGalleryFiles`, `changeOwnGallery`, `changeOwnGalleryListingPositions`
+- [`code/frontend/src/gallery/useGallery.ts`](../../code/frontend/src/gallery/useGallery.ts): `useGallery`, `createOwnGallery`, `uploadFileIntoGallery`, `getGalleryForClient`, `resolveGalleries`, `resolveGalleryFiles`, `changeOwnGallery`, `changeOwnGalleryListingPositions`, `resolveGalleryTags`
+- [`code/frontend/src/gallery/galleryColumns.tsx`](../../code/frontend/src/gallery/galleryColumns.tsx): `createGalleryColumns`; die Spalten einer Galerie für die zentrale `Table` (seit 2026-11-20 steht die Liste der Galerien auf dem Handy als Tabelle da: Titel mit Beschreibung hinter dem „i“, Bilder, letztes Bild, sichtbar für, Freigaben, erstellt)
+- [`code/frontend/src/gallery/GalleryListTab.tsx`](../../code/frontend/src/gallery/GalleryListTab.tsx): `groupGallerySharesByGalleryId`, `loadOwnGalleryShares`; am Desktop Kacheln (`GalleryTile`), auf dem Handy die Tabelle; im Fuß die Zahl der Galerien
+
+`GalleryForClient` trägt seit 2026-11-20 `lastUploadedAt` (wann zuletzt ein Bild hochgeladen wurde, `null` ohne Bild), mit dem Lesefilter des Betrachters aus Solr.

@@ -53,7 +53,7 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 - [`code/frontend/src/admin/accessrole/AccessRoleTab.tsx`](../../code/frontend/src/admin/accessrole/AccessRoleTab.tsx): `getAccessRoleKey`, `AccessRoleTab`, `saveAccessRoleOrder`, `handleCreateAccessRole`, `handleSaveDisplayName`, `renderDisplayNameCell`
 - [`code/frontend/src/admin/arcar/AccessRoleCollectionAccessRoleMatrixTab.tsx`](../../code/frontend/src/admin/arcar/AccessRoleCollectionAccessRoleMatrixTab.tsx): `isGrantedInBackend`, `reloadServerAccessRoleCollectionRoles`, `saveAccessRoleCollectionRoleChanges`, `handleCellClick`, `handleCellPaint`, `isShownGranted`, `getCellClassName`, `getCellLabel`
 - [`code/frontend/src/admin/fileclass/FileClassAccessRoleMatrixTab.tsx`](../../code/frontend/src/admin/fileclass/FileClassAccessRoleMatrixTab.tsx): `getServerCellValue`, `reloadServerFileClassAccessRoles`, `saveFileClassAccessCell`, `saveFileClassAccessRoleChanges`, `handleCellClick`, `handleCellPaint`, `getShownCellValue`, `isShownMarked`, `getShownMarkText`, `getCellClassName`, `getCellLabel`
-- [`code/frontend/src/admin/fileclass/FileClassTab.tsx`](../../code/frontend/src/admin/fileclass/FileClassTab.tsx): `getAccessRolesWithAccessLevel`
+- [`code/frontend/src/admin/fileclass/FileClassTab.tsx`](../../code/frontend/src/admin/fileclass/FileClassTab.tsx): `getAccessRolesWithFileClassGrant`
 - [`code/frontend/src/admin/users/EditUsersForm.tsx`](../../code/frontend/src/admin/users/EditUsersForm.tsx): (Typ)
 - [`code/frontend/src/admin/users/UsersTab.tsx`](../../code/frontend/src/admin/users/UsersTab.tsx): `UsersTab`, `getAssignedAccessRoles`
 - [`code/frontend/src/admin/users/UsersTableRow.tsx`](../../code/frontend/src/admin/users/UsersTableRow.tsx): (Typ)

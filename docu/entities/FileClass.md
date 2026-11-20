@@ -65,11 +65,12 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 - [`code/backend/src/main/java/de/gebiter/file/controller/FileClassAdminController.java`](../../code/backend/src/main/java/de/gebiter/file/controller/FileClassAdminController.java): `createFileClass`, `getFileClass`, `changeFileClass`
 - [`code/backend/src/main/java/de/gebiter/file/controller/FileClassController.java`](../../code/backend/src/main/java/de/gebiter/file/controller/FileClassController.java): `getAllFileClass`
 - [`code/backend/src/main/java/de/gebiter/file/repository/FileClassRepository.java`](../../code/backend/src/main/java/de/gebiter/file/repository/FileClassRepository.java): (Import, Felder)
-- [`code/backend/src/main/java/de/gebiter/file/service/FileClassAccessRoleService.java`](../../code/backend/src/main/java/de/gebiter/file/service/FileClassAccessRoleService.java): `createFileClassAccessRole`
+- [`code/backend/src/main/java/de/gebiter/file/service/FileClassAccessRoleService.java`](../../code/backend/src/main/java/de/gebiter/file/service/FileClassAccessRoleService.java): `createFileClassAccessRole`, `requireAnythingGranted`
 - [`code/backend/src/main/java/de/gebiter/file/service/FileClassDestinationAssignmentService.java`](../../code/backend/src/main/java/de/gebiter/file/service/FileClassDestinationAssignmentService.java): `createFileClassDestinationAssignment`
 - [`code/backend/src/main/java/de/gebiter/file/service/FileClassFileExtensionService.java`](../../code/backend/src/main/java/de/gebiter/file/service/FileClassFileExtensionService.java): `createFileClassFileExtension`
 - [`code/backend/src/main/java/de/gebiter/file/service/FileClassService.java`](../../code/backend/src/main/java/de/gebiter/file/service/FileClassService.java): `createFileClass`, `getFileClass`, `getAllFileClass`, `changeFileClass`, `doCreateFileClass`, `doGetFileClass`
 - [`code/backend/src/main/java/de/gebiter/file/service/FileUploadService.java`](../../code/backend/src/main/java/de/gebiter/file/service/FileUploadService.java): `doUploadFromMultipart`, `doCheckInFile`, `getRequiredFileClassKey`, `requireCurrentUsersHasOneOf`
+- [`code/backend/src/main/java/de/gebiter/shop/service/ShopCategoryService.java`](../../code/backend/src/main/java/de/gebiter/shop/service/ShopCategoryService.java): `requireExistingFileClass`
 
 ## Verwendung im Frontend
 
@@ -94,7 +95,7 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 - [`code/frontend/src/file/document/FileDocumentDetailPage.tsx`](../../code/frontend/src/file/document/FileDocumentDetailPage.tsx): `FileDocumentDetailPage`, `labelOf`, `findSolrField`, `isFieldEditable`, `handleConfirmDelete`, `handleVisibilityChange`, `renderEditors`, `renderAccessRoles`
 - [`code/frontend/src/file/document/FileDocumentFieldValue.tsx`](../../code/frontend/src/file/document/FileDocumentFieldValue.tsx): (Typ)
 - [`code/frontend/src/file/isFileDocumentChangeableByCurrentUsers.ts`](../../code/frontend/src/file/isFileDocumentChangeableByCurrentUsers.ts): (Typ)
-- [`code/frontend/src/file/upload/FileUploadForm.tsx`](../../code/frontend/src/file/upload/FileUploadForm.tsx): `FileUploadForm`, `handleUpload`
+- [`code/frontend/src/file/upload/FileUploadForm.tsx`](../../code/frontend/src/file/upload/FileUploadForm.tsx): `FileUploadForm`, `handleUpload`, `createRowInputValues`, `isFileExtensionAllowed`, `handleSelectedFilesChange`, `removeRow`, `handleUploaded`
 - [`code/frontend/src/file/upload/FileUploadRowStatus.tsx`](../../code/frontend/src/file/upload/FileUploadRowStatus.tsx): (Typ)
 - [`code/frontend/src/file/useFileClass.ts`](../../code/frontend/src/file/useFileClass.ts): `useFileClass`, `createFileClass`, `getFileClass`, `getAllFileClass`, `changeFileClass`
 - [`code/frontend/src/file/useFileClassAccessRole.ts`](../../code/frontend/src/file/useFileClassAccessRole.ts): `useFileClassAccessRole`, `createFileClassAccessRole`, `getAllFileClassAccessRole`, `changeFileClassAccessRole`
@@ -109,3 +110,16 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 - [`code/frontend/src/masterdata/MasterDataStore.ts`](../../code/frontend/src/masterdata/MasterDataStore.ts): (Typ)
 - [`code/frontend/src/masterdata/useMasterData.ts`](../../code/frontend/src/masterdata/useMasterData.ts): `useMasterData`, `reload`
 - [`code/frontend/src/solrmanager/solrFieldColumnHints.tsx`](../../code/frontend/src/solrmanager/solrFieldColumnHints.tsx): (Typ)
+- [`code/frontend/src/achievementmanager/shopcategory/EditShopCategoryFileClassPopup.tsx`](../../code/frontend/src/achievementmanager/shopcategory/EditShopCategoryFileClassPopup.tsx): (Typ)
+- [`code/frontend/src/achievementmanager/shopcategory/ShopCategoryTab.tsx`](../../code/frontend/src/achievementmanager/shopcategory/ShopCategoryTab.tsx): `ShopCategoryTab`, `saveShopCategoryOrder`, `openNewShopCategory`, `handleCreateShopCategory`, `handleSaveDisplayName`, `handleSaveFileClass`, `renderDisplayNameCell`, `renderFileClassCell`
+- [`code/frontend/src/achievementmanager/shopcategory/shopCategoryTexts.ts`](../../code/frontend/src/achievementmanager/shopcategory/shopCategoryTexts.ts): (Typ)
+- [`code/frontend/src/admin/fileclass/fileClassAccessTexts.ts`](../../code/frontend/src/admin/fileclass/fileClassAccessTexts.ts): (Typ)
+- [`code/frontend/src/components/NewKeyDisplayNamePopup.tsx`](../../code/frontend/src/components/NewKeyDisplayNamePopup.tsx): (Typ)
+- [`code/frontend/src/market/Market.tsx`](../../code/frontend/src/market/Market.tsx): (Typ)
+- [`code/frontend/src/market/MarketCategoryTab.tsx`](../../code/frontend/src/market/MarketCategoryTab.tsx): `MarketCategoryTab`, `loadShopItems`, `openFileDocument`, `handleShopItemsChanged`, `openNewShopOffer`, `closeNewShopOffer`
+- [`code/frontend/src/market/MarketUploadBox.tsx`](../../code/frontend/src/market/MarketUploadBox.tsx): (Typ)
+- [`code/frontend/src/market/NewShopOfferPopup.tsx`](../../code/frontend/src/market/NewShopOfferPopup.tsx): (Typ)
+- [`code/frontend/src/market/marketTexts.ts`](../../code/frontend/src/market/marketTexts.ts): (Typ)
+- [`code/frontend/src/shop/ShopCategory.ts`](../../code/frontend/src/shop/ShopCategory.ts): (Typ)
+- [`code/frontend/src/shop/useShopCategory.ts`](../../code/frontend/src/shop/useShopCategory.ts): `useShopCategory`, `createShopCategory`, `getShopCategory`, `getAllShopCategory`
+- [`code/frontend/src/shop/useShopItem.ts`](../../code/frontend/src/shop/useShopItem.ts): `useShopItem`

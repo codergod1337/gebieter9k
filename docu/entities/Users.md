@@ -50,6 +50,7 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 | GET | `/api/session` | [`SessionController.getSession`](../../code/backend/src/main/java/de/gebiter/security/controller/SessionController.java) | `SessionInfo` |
 | POST | `/api/share/session` | [`SessionShareController.createSession`](../../code/backend/src/main/java/de/gebiter/security/controller/SessionShareController.java) | `SessionInfo` |
 | POST | `/api/share/session/refresh` | [`SessionShareController.refreshSession`](../../code/backend/src/main/java/de/gebiter/security/controller/SessionShareController.java) | `SessionInfo` |
+| DELETE | `/api/share/session` | [`SessionShareController.deleteSession`](../../code/backend/src/main/java/de/gebiter/security/controller/SessionShareController.java) | (Logout: beendet die Sitzung dieses Geräts und löscht beide Cookies, immer 204; überträgt nichts) |
 | POST | `/api/admin/users` | [`UsersAdminController.createUsers`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersAdminController.java) | `NewUsers`, `Users` |
 | GET | `/api/admin/users/{usersGuid}` | [`UsersAdminController.getUsers`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersAdminController.java) | `Users` |
 | GET | `/api/admin/users` | [`UsersAdminController.getAllUsers`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersAdminController.java) | `Users` |
@@ -58,6 +59,7 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 | DELETE | `/api/admin/users` | [`UsersAdminController.deleteUsers`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersAdminController.java) | `Users` |
 | GET | `/api/users/{usersGuid}` | [`UsersController.getUsersForClient`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersController.java) | `UsersForClient` |
 | GET | `/api/users/avatar/{usersGuid}` | [`UsersController.getUsersAvatarForClient`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersController.java) | `UsersAvatarForClient` |
+| GET, POST, DELETE | `/api/file-comment…`, `/api/share/token/{shareToken}/comment/{fileDocumentId}` | [`FileCommentController`](../../code/backend/src/main/java/de/gebiter/file/controller/FileCommentController.java), [`GalleryShareShareController`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryShareShareController.java) | `FileCommentThread` mit `UsersAvatarForClient` je Autor (`docu/entities/FileComment.md`) |
 | POST | `/api/users/avatar/resolve` | [`UsersController.resolveUsersAvatarsForClient`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersController.java) | `UsersAvatarResolveRequest`, `UsersAvatarForClient` (Liste); mehrere User in einer Anfrage, höchstens `gebiter.users.avatar-resolve-max-guids` (100) |
 | PUT | `/api/users/visibility` | [`UsersController.changeOwnUsersVisibility`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersController.java) | `Users`, `OwnUsersVisibilityRequest` |
 
@@ -76,7 +78,7 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 - [`code/backend/src/main/java/de/gebiter/users/controller/UsersController.java`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersController.java): `changeOwnUsersVisibility`
 - [`code/backend/src/main/java/de/gebiter/users/repository/UsersRepository.java`](../../code/backend/src/main/java/de/gebiter/users/repository/UsersRepository.java): (Import, Felder)
 - [`code/backend/src/main/java/de/gebiter/users/service/UsersContactService.java`](../../code/backend/src/main/java/de/gebiter/users/service/UsersContactService.java): `getVisibleUsersContact`
-- [`code/backend/src/main/java/de/gebiter/users/service/UsersService.java`](../../code/backend/src/main/java/de/gebiter/users/service/UsersService.java): `createUsers`, `createUsersWithPassword`, `getUsers`, `isProfileVisibleToCurrentUsers`, `getUsersForClient`, `getUsersAvatarForClient`, `resolveUsersAvatarsForClient`, `doGetUsersAvatarForClient`, `getVisibleUsersDetail`, `findUsersByEmail`, `getAllUsers`, `getDeletedUsers`, `changeUsers`, `getUsersPoints`, `changeOwnUsersVisibility`, `deleteUsers`, `doCreateUsers`, `doIsProfileVisibleToCurrentUsers`, `doGetNotDeletedUsers`, `doFindNotDeletedUsersByEmail`, `doGetAllNotDeletedUsers`, `doGetDeletedUsers`, `doChangeUsers`, `doDeleteUsers`
+- [`code/backend/src/main/java/de/gebiter/users/service/UsersService.java`](../../code/backend/src/main/java/de/gebiter/users/service/UsersService.java): `createUsers`, `createUsersWithPassword`, `getUsers`, `isProfileVisibleToCurrentUsers`, `getUsersForClient`, `getUsersAvatarForClient`, `resolveUsersAvatarsForClient`, `doGetUsersAvatarForClient`, `getVisibleUsersDetail`, `findUsersByEmail`, `getAllUsers`, `getDeletedUsers`, `changeUsers`, `getUsersPoints`, `changeOwnUsersVisibility`, `deleteUsers`, `doCreateUsers`, `doIsProfileVisibleToCurrentUsers`, `doGetNotDeletedUsers`, `doFindNotDeletedUsersByEmail`, `doGetAllNotDeletedUsers`, `doGetDeletedUsers`, `doChangeUsers`, `doDeleteUsers`, `restoreUsers`
 
 ## Verwendung im Frontend
 
@@ -86,7 +88,7 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 - [`code/frontend/src/admin/userarc/UsersArcMatrixTab.tsx`](../../code/frontend/src/admin/userarc/UsersArcMatrixTab.tsx): `UsersArcMatrixTab`, `getShownUsers`, `handleCellClick`, `isMarked`, `getCellLabel`, `renderRowHeader`
 - [`code/frontend/src/admin/users/EditUsersForm.tsx`](../../code/frontend/src/admin/users/EditUsersForm.tsx): `EditUsersForm`, `handleUsernameChange`, `handleEmailChange`, `handleToggleAccessRole`, `handleSave`
 - [`code/frontend/src/admin/users/EditUsersTab.tsx`](../../code/frontend/src/admin/users/EditUsersTab.tsx): (Typ)
-- [`code/frontend/src/admin/users/NewUsersPopup.tsx`](../../code/frontend/src/admin/users/NewUsersPopup.tsx): `NewUsersPopup`, `handleCreate` (Popup „Neuer User“ der Administration; Texte in `newUsersTexts.ts`)
+- [`code/frontend/src/admin/users/NewUsersPopup.tsx`](../../code/frontend/src/admin/users/NewUsersPopup.tsx): `NewUsersPopup`, `handleCreate`, `handleUsernameChange`, `handleEmailChange`, `handlePasswordChange`, `handleRepeatedPasswordChange`, `handleGuidChange` (Popup „Neuer User“ der Administration; Texte in `newUsersTexts.ts`)
 - [`code/frontend/src/admin/users/UsersTab.tsx`](../../code/frontend/src/admin/users/UsersTab.tsx): `UsersTab`, `getAssignedAccessRoles`, `getAccessRoleCollection`, `handleEdit`, `handleUsersCreated`
 - [`code/frontend/src/admin/users/UsersTableRow.tsx`](../../code/frontend/src/admin/users/UsersTableRow.tsx): (Typ)
 - [`code/frontend/src/admin/users/UsersTotpBox.tsx`](../../code/frontend/src/admin/users/UsersTotpBox.tsx): (Typ)
@@ -132,7 +134,7 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 - [`code/frontend/src/users/UsersOnline.ts`](../../code/frontend/src/users/UsersOnline.ts): (Typ)
 - [`code/frontend/src/users/useOwnFriends.ts`](../../code/frontend/src/users/useOwnFriends.ts): (Typ)
 - [`code/frontend/src/users/useUsers.ts`](../../code/frontend/src/users/useUsers.ts): `useUsers`, `createUsers`, `getUsersForClient`, `getUsers`, `getAllUsers`, `getDeletedUsers`, `changeUsers`, `changeOwnUsersVisibility`
-- [`code/frontend/src/users/useUsersAvatarForClient.ts`](../../code/frontend/src/users/useUsersAvatarForClient.ts): `useUsersAvatarForClient`, `useUsersAvatarsForClient` (mehrere in einer Sammel-Anfrage), `useUsersAvatarsPreload`
+- [`code/frontend/src/users/useUsersAvatarForClient.ts`](../../code/frontend/src/users/useUsersAvatarForClient.ts): `useUsersAvatarForClient`, `useUsersAvatarsForClient`, `rememberUsersAvatarRequest`, `requestUsersAvatarForClient`, `requestUsersAvatarsForClient` (mehrere in einer Sammel-Anfrage), `useUsersAvatarsPreload`
 - [`code/frontend/src/users/getUsersShownName.ts`](../../code/frontend/src/users/getUsersShownName.ts): `getUsersShownName` (der Name, unter dem ein User überall steht: Username, „Anonym“, „Gelöschter User“)
 - [`code/frontend/src/components/UsersGuidList.tsx`](../../code/frontend/src/components/UsersGuidList.tsx): `UsersGuidList` (Liste von Usern mit Suchfeld, z. B. im Hoverlay)
 - [`code/frontend/src/users/useUsersContact.ts`](../../code/frontend/src/users/useUsersContact.ts): `useUsersContact`
@@ -143,3 +145,8 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 - [`code/frontend/src/users/visibilityLabels.ts`](../../code/frontend/src/users/visibilityLabels.ts): (Typ)
 - [`code/frontend/src/userssetting/UsersSetting.ts`](../../code/frontend/src/userssetting/UsersSetting.ts): (Typ)
 - [`code/frontend/src/userssetting/UsersSettingProvider.tsx`](../../code/frontend/src/userssetting/UsersSettingProvider.tsx): `UsersSettingProvider`, `loadOwnUsersSetting`, `settingValue`
+- [`code/frontend/src/achievementmanager/shopcategory/ShopCategoryTab.tsx`](../../code/frontend/src/achievementmanager/shopcategory/ShopCategoryTab.tsx): (Typ)
+- [`code/frontend/src/admin/users/newUsersTexts.ts`](../../code/frontend/src/admin/users/newUsersTexts.ts): (Typ)
+- [`code/frontend/src/file/cheer/fileCheerLooks.ts`](../../code/frontend/src/file/cheer/fileCheerLooks.ts): (Typ)
+- [`code/frontend/src/gallery/GalleryImageTile.tsx`](../../code/frontend/src/gallery/GalleryImageTile.tsx): `GalleryImageTile`, `openEdit`
+- [`code/frontend/src/gallery/GalleryImageViewerPopup.tsx`](../../code/frontend/src/gallery/GalleryImageViewerPopup.tsx): (Typ)

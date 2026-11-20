@@ -18,12 +18,12 @@ export const GALLERY_SHARE_TEXTS = {
   /** Fuß der Box ohne das Recht zum Anlegen. */
   noCreateRight: { de: 'Neue Freigaben anlegen darf nur, wer das Recht FREIGABE hat oder Admin ist.' },
 
-  // --- Spalten der Liste ---
+  // --- Spalten der Liste (beim Besitzer und in der Übersicht des Admins, `galleryShareColumns.tsx`) ---
   columnLabel: { de: 'Bezeichnung' },
-  columnLabelHint: { de: 'Wofür die Freigabe ist. Nur du siehst sie.' },
+  columnLabelHint: { de: 'Wofür die Freigabe ist. Besucher sehen die Bezeichnung nicht.' },
   columnLink: { de: 'Link' },
   columnLinkHint: {
-    de: 'Der Link zum Weitergeben. Wer ihn hat, sieht die Bilder dieser Galerie ohne Anmeldung, solange die Freigabe gilt.',
+    de: 'Der Link zum Weitergeben. Wer ihn hat, sieht die Bilder der Galerie ohne Anmeldung, solange die Freigabe gilt.',
   },
   /** Der Kopierknopf in einer Zeile der Liste, für Screenreader. */
   copyLinkOfShareLabel: { de: 'Link von „{label}“ kopieren' },
@@ -45,6 +45,24 @@ export const GALLERY_SHARE_TEXTS = {
   durationAccessLimited: { de: 'für {maxAccessCount} Aufrufe' },
   durationAccessesUsedUp: { de: 'alle {maxAccessCount} Aufrufe verbraucht' },
   fileCountMismatch: { de: '{sharedFileCount} von {fileCount}' },
+
+  // --- Übersicht des Admins über alle Freigaben (Reiter „Freigaben“ der Administration) ---
+  adminBoxTitle: { de: 'Alle Freigaben über einen Link' },
+  adminBoxHint: {
+    de: 'Jede Freigabe jeder Galerie, die neueste zuerst. Angelegt und gelöscht wird eine Freigabe in ihrer Galerie, im Reiter „Freigabe“.',
+  },
+  adminNoShares: { de: 'Es gibt keine Freigabe.' },
+  adminShareCountOne: { de: '1 Freigabe' },
+  adminShareCountMany: { de: '{shareCount} Freigaben' },
+  adminColumnOwner: { de: 'Besitzer' },
+  adminColumnOwnerHint: { de: 'Wem die freigegebene Galerie gehört.' },
+  adminColumnGallery: { de: 'Galerie' },
+  adminColumnGalleryHint: {
+    de: 'Die freigegebene Galerie. Der Klick öffnet sie; eine fremde private Galerie siehst du nur über den Link der Freigabe.',
+  },
+  adminGalleryMissing: { de: 'Galerie gibt es nicht mehr' },
+  /** Der Name des Reiters für „Zurück zu …“, wenn man von hier ein Profil oder eine Galerie öffnet. */
+  adminOriginLabel: { de: 'Freigaben' },
 
   // --- Löschen ---
   deleteLabel: { de: 'Freigabe „{label}“ löschen' },
@@ -110,6 +128,8 @@ export const GALLERY_SHARE_TEXTS = {
   visitorCheerUpLabel: { de: '{count} begeistert' },
   visitorCheerDownLabel: { de: '{count} angewidert' },
   visitorPagerLabel: { de: 'Seiten der Galerie' },
+  /** Der Knopf unter den Kommentaren eines Bildes, für Besucher ohne Anmeldung. */
+  visitorCommentSignUp: { de: 'Zum Kommentieren anmelden' },
   signUpTitle: { de: 'Bewerten und kommentieren' },
   signUpText: { de: 'Melde dich doch kostenlos an, dann kannst du die Bilder bewerten und kommentieren.' },
   signUpButton: { de: 'Anmelden oder registrieren' },

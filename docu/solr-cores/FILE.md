@@ -103,3 +103,4 @@ Alle Endpunkte, deren Pfad oder Signatur zum Kern gehört (Muster `file-document
 | PUT | `/api/file-manager/file-document/visibility` | [`FileDocumentFileManagerController.changeFileDocumentVisibility`](../../code/backend/src/main/java/de/gebiter/file/controller/FileDocumentFileManagerController.java) |
 | POST | `/api/gallery/upload` | [`GalleryController.uploadFileIntoGallery`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) |
 | POST | `/api/gallery/file/resolve` | [`GalleryController.resolveGalleryFiles`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) |
+| POST | `/api/gallery/tag/resolve` | [`GalleryController.resolveGalleryTags`](../../code/backend/src/main/java/de/gebiter/gallery/controller/GalleryController.java) |

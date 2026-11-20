@@ -1,12 +1,12 @@
 import { type FormEvent, useState } from 'react'
 import Form from 'react-bootstrap/Form'
-import { ErrorAlert } from '../components/ErrorAlert.tsx'
-import { MultilingualRichTextEditor } from '../components/MultilingualRichTextEditor.tsx'
-import { sanitizeMultilingualRichText } from '../components/richTextHtml.ts'
-import { SubmitButton } from '../components/SubmitButton.tsx'
+import { ErrorAlert } from './ErrorAlert.tsx'
+import { MultilingualRichTextEditor } from './MultilingualRichTextEditor.tsx'
+import { sanitizeMultilingualRichText } from './richTextHtml.ts'
+import { SubmitButton } from './SubmitButton.tsx'
 import type { MultilingualText } from '../language/MultilingualText.ts'
 
-type GuestbookTextFormProps = {
+type RichTextFormProps = {
   /** Was im leeren Feld steht, z. B. „Etwas ins Gästebuch schreiben …“. */
   placeholder: string
   /** Für Screenreader, z. B. „Neuer Gästebucheintrag“. */
@@ -23,11 +23,11 @@ type GuestbookTextFormProps = {
 }
 
 /**
- * Ein Rich-Text-Feld mit Knopf zum Absenden, für einen neuen Eintrag und für eine Antwort im Verlauf (Nutzer
- * 2026-11-09: fett, kursiv, Überschriften, Trennlinie, mehrsprachig gespeichert, vorerst nur Deutsch). Ohne Inhalt ist
- * der Knopf gesperrt. Die Länge prüft das Backend.
+ * Ein Rich-Text-Feld mit Knopf zum Absenden, überall gleich: ein neuer Eintrag und eine Antwort im Gästebuch, ein
+ * Kommentar zu einem Bild (Nutzer 2026-11-09: fett, kursiv, Überschriften, Trennlinie, mehrsprachig gespeichert, vorerst
+ * nur Deutsch). Ohne Inhalt ist der Knopf gesperrt. Die Länge prüft das Backend. Lage in base.css (`.rich-text-form`).
  */
-export function GuestbookTextForm({
+export function RichTextForm({
   placeholder,
   ariaLabel,
   submitLabel,
@@ -35,7 +35,7 @@ export function GuestbookTextForm({
   isSubmitting,
   errorMessage,
   onSubmit,
-}: GuestbookTextFormProps) {
+}: RichTextFormProps) {
   const [text, setText] = useState<MultilingualText>({})
   const sanitizedText = sanitizeMultilingualRichText(text)
   const textMissing = sanitizedText === null
@@ -54,7 +54,7 @@ export function GuestbookTextForm({
   return (
     <Form onSubmit={handleSubmit}>
       <ErrorAlert message={errorMessage} />
-      <div className="guestbook-text-form">
+      <div className="rich-text-form">
         <MultilingualRichTextEditor
           value={text}
           onChange={setText}

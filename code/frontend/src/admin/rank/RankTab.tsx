@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import Spinner from 'react-bootstrap/Spinner'
 import Table from 'react-bootstrap/Table'
 import { useNavigate } from 'react-router'
 import { useLoadedData } from '../../api/useLoadedData.ts'
@@ -17,6 +16,8 @@ import { RankBadge } from '../../rank/RankBadge.tsx'
 import { useRank } from '../../rank/useRank.ts'
 import { getEditRankPath, NEW_RANK_PATH } from './rankPaths.ts'
 import { useOrigin } from '../../navigation/useOrigin.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
+import { getFirstErrorDetail } from '../../api/getFirstErrorDetail.ts'
 
 function getRankKey(rank: Rank): string {
   return rank.key
@@ -75,17 +76,16 @@ export function RankTab() {
     await reloadRanks()
   }
 
-  let footer
-  if (rankHook.error !== null) {
-    footer = <span className="text-danger">{rankHook.error.detail}</span>
-  } else if (orderRankHook.error !== null) {
-    footer = <span className="text-danger">{orderRankHook.error.detail}</span>
-  } else if (ranks === null) {
-    footer = <Spinner animation="border" size="sm" />
-  } else {
-    const ranksCountText = ranks.length + ' Ränge, am Griff links verschieben'
-    footer = <span>{ranksCountText}</span>
+  const footerErrorMessage = getFirstErrorDetail([rankHook.error, orderRankHook.error])
+  let ranksCountText = ''
+  if (ranks !== null) {
+    ranksCountText = ranks.length + ' Ränge, am Griff links verschieben'
   }
+  const footer = (
+    <LoadStatus errorMessage={footerErrorMessage} isLoading={ranks === null}>
+      {ranksCountText}
+    </LoadStatus>
+  )
   const newRankButton = <NewEntityButton label="neuer Rang" onClick={handleNewRank} />
 
   let deleteErrorMessage: string | null = null

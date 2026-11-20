@@ -1,6 +1,7 @@
 package de.gebiter.gallery.repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,12 @@ public interface GalleryShareRepository extends JpaRepository<GalleryShare, Long
 
 	/** Die Freigaben einer Galerie, die älteste zuerst. */
 	List<GalleryShare> findByGalleryIdOrderByIdAsc(Long galleryId);
+
+	/** Die Freigaben mehrerer Galerien, die älteste zuerst: alle Freigaben der eigenen Galerien eines Users. */
+	List<GalleryShare> findByGalleryIdInOrderByIdAsc(Collection<Long> galleryIds);
+
+	/** Alle Freigaben aller Galerien, die neueste zuerst: für die Übersicht des Admins. */
+	List<GalleryShare> findAllByOrderByIdDesc();
 
 	/** Die Freigabe zum SHA-256 eines Tokens: So findet das Backend sie für einen Besucher. */
 	Optional<GalleryShare> findByShareTokenHash(String shareTokenHash);

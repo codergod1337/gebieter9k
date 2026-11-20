@@ -22,6 +22,8 @@ import { GalleryImageTile } from './GalleryImageTile.tsx'
 import { GalleryImageViewerPopup, type GalleryViewerImage } from './GalleryImageViewerPopup.tsx'
 import { GALLERY_SHARE_SELECTION_MAX_FILE_COUNT } from './GalleryShare.ts'
 import { GalleryShareCheerCounts } from './GalleryShareCheerCounts.tsx'
+import { FileCommentBubble } from '../file/comment/FileCommentBubble.tsx'
+import { FileCommentSection } from '../file/comment/FileCommentSection.tsx'
 import { GALLERY_SHARE_TEXTS } from './galleryShareTexts.ts'
 import {
   getSharedAllFilesDownloadUrl,
@@ -56,6 +58,8 @@ export function GalleryShareVisitorPage() {
   const { session } = useCurrentSession()
   const galleryShareHook = useGalleryShare()
   const resolveSharedGallery = galleryShareHook.resolveSharedGallery
+  const commentHook = useGalleryShare()
+  const getSharedFileCommentThread = commentHook.getSharedFileCommentThread
   const pageUrlParam = useUrlParam(PAGE_URL_PARAM)
   const imageUrlParam = useUrlParam(IMAGE_URL_PARAM)
   const changeUrlParams = useUrlParamsChanger()
@@ -152,6 +156,12 @@ export function GalleryShareVisitorPage() {
     })
   }
 
+  /** So lädt der Kommentar-Bereich des großen Bildes seinen Verlauf: über die Adresse unter dem Token, nur zum Lesen. */
+  const loadSharedFileCommentThread = useCallback(
+    (fileDocumentId: string) => getSharedFileCommentThread(visitorShareToken, fileDocumentId),
+    [getSharedFileCommentThread, visitorShareToken],
+  )
+
   /** Abstimmen wollen: Ohne Anmeldung kommt der Hinweis, angemeldet geschieht hier nichts. */
   function requestCheer() {
     if (session === null) {
@@ -227,7 +237,25 @@ export function GalleryShareVisitorPage() {
   let viewerViewUrl = ''
   let viewerDownloadUrl = ''
   let viewerCheers = null
+  let viewerComments = null
   if (openViewerImage !== null && openFileDocument !== null) {
+    // Kommentare nur zum Lesen; wer nicht angemeldet ist, bekommt darunter den Knopf zur Anmeldung
+    let commentSignUpHint = null
+    if (session === null) {
+      commentSignUpHint = (
+        <Button size="sm" variant="outline-secondary" onClick={() => setSignUpHintOpen(true)}>
+          {getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.visitorCommentSignUp)}
+        </Button>
+      )
+    }
+    viewerComments = (
+      <FileCommentSection
+        fileDocumentId={openViewerImage.fileDocumentId}
+        originLabel={sharedGallery.title}
+        loadReadOnlyThread={loadSharedFileCommentThread}
+        readOnlyHint={commentSignUpHint}
+      />
+    )
     viewerViewUrl = getSharedFileViewUrl(visitorShareToken, openViewerImage.fileDocumentId)
     viewerDownloadUrl = getSharedFileDownloadUrl(visitorShareToken, openViewerImage.fileDocumentId)
     viewerCheers = (
@@ -278,6 +306,12 @@ export function GalleryShareVisitorPage() {
                   const selectLabel = getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.visitorSelectLabel, { heading })
                   const downloadLabel = getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.visitorDownloadLabel, { heading })
                   const downloadUrl = getSharedFileDownloadUrl(visitorShareToken, fileDocumentId)
+                  // Die Zahl der Kommentare kommt mit der Seite; ein Bild ohne Kommentar fehlt dort
+                  let commentCount = 0
+                  const knownCommentCount = sharedGallery.commentCountsByFileDocumentId[fileDocumentId]
+                  if (knownCommentCount !== undefined) {
+                    commentCount = knownCommentCount
+                  }
                   return (
                     <GalleryImageTile
                       key={fileDocumentId}
@@ -300,11 +334,18 @@ export function GalleryShareVisitorPage() {
                         />
                       }
                       cheers={
-                        <GalleryShareCheerCounts
-                          cheerUpCount={fileDocument[nameSet.cheerUpCount]}
-                          cheerDownCount={fileDocument[nameSet.cheerDownCount]}
-                          onCheerRequested={requestCheer}
-                        />
+                        <>
+                          <GalleryShareCheerCounts
+                            cheerUpCount={fileDocument[nameSet.cheerUpCount]}
+                            cheerDownCount={fileDocument[nameSet.cheerDownCount]}
+                            onCheerRequested={requestCheer}
+                          />
+                          <FileCommentBubble
+                            fileDocumentId={fileDocumentId}
+                            commentCount={commentCount}
+                            onOpen={() => openImage(fileDocumentId)}
+                          />
+                        </>
                       }
                       actions={
                         <Button as="a" href={downloadUrl} size="sm" variant="outline-secondary" aria-label={downloadLabel}>
@@ -341,6 +382,7 @@ export function GalleryShareVisitorPage() {
           viewUrl={viewerViewUrl}
           downloadUrl={viewerDownloadUrl}
           cheers={viewerCheers}
+          comments={viewerComments}
         />
       )}
       {signUpHintOpen && (

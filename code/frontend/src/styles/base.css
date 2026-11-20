@@ -172,6 +172,27 @@
     outline-offset: 2px;
   }
 
+  /*
+   * Auf dem Handy steht die Position als Medaillon im Header (OwnAccessRoleCollection): hier so klein, dass es in die
+   * Zeile passt; das große Medaillon der Achievements bleibt, wie es ist. Dazu rücken die Teile rechts enger zusammen.
+   */
+  .header-position .badge-look-medal {
+    width: 2rem;
+    height: 2rem;
+    border-width: 1px;
+    font-size: 1rem;
+  }
+
+  .header-position .badge-look-medal .badge-look-text {
+    font-size: 0.7rem;
+  }
+
+  @media (max-width: 767.98px) {
+    .header-session {
+      gap: 0.6rem;
+    }
+  }
+
   /* Die Klappe des Benutzermenüs, ein Bootstrap-Dropdown: Lage und Breite hier, das Aussehen im Theme */
   .users-menu-panel.dropdown-menu {
     width: 18rem;
@@ -1235,19 +1256,20 @@
     border-radius: 0.75rem;
   }
 
-  .guestbook-head {
+  /* Der Kopf von etwas Geschriebenem (AuthorHead): Avatar, Name und Zeit, rechts die Knöpfe; überall gleich */
+  .author-head {
     display: flex;
     align-items: center;
     gap: 0.6rem;
   }
 
-  .guestbook-head-text {
+  .author-head-text {
     flex: 1;
     min-width: 0;
     overflow-wrap: anywhere;
   }
 
-  .guestbook-time {
+  .author-head-time {
     display: block;
     font-size: 0.8rem;
     opacity: 0.7;
@@ -1258,7 +1280,10 @@
     margin: 0.5rem 0;
   }
 
-  /* Pillen mit Zahl: die Smileys des Gästebuchs und die Stimmen einer Datei (FileCheerBar) sehen gleich aus */
+  /*
+   * Pillen mit Zahl: die Smileys des Gästebuchs, die Stimmen einer Datei (FileCheerBar) und die Sprechblase ihrer
+   * Kommentare (FileCommentBubble) sehen gleich aus
+   */
   .guestbook-reactions,
   .file-cheer {
     display: flex;
@@ -1268,7 +1293,8 @@
   }
 
   .guestbook-reaction,
-  .file-cheer-button {
+  .file-cheer-button,
+  .file-comment-button {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
@@ -1287,12 +1313,35 @@
   }
 
   .guestbook-reaction-count,
-  .file-cheer-count {
+  .file-cheer-count,
+  .file-comment-count {
     font-size: 0.8rem;
     font-weight: 600;
   }
 
-  .guestbook-comments {
+  /*
+   * Die Kommentare einer Datei (FileCommentSection): die Überschrift mit der Zahl, darunter der Verlauf (comment-thread)
+   * mit dem Feld zum Schreiben. Nimmt die ganze Breite ihres Platzes, der Text steht links.
+   */
+  .file-comments {
+    align-self: stretch;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .file-comments-title {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /*
+   * Ein Verlauf von Kommentaren, überall gleich (Gästebuch, Kommentare an einem Bild): die Kommentare untereinander,
+   * links eine Linie (Farbe im Theme), darunter das Feld zum Schreiben.
+   */
+  .comment-thread {
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
@@ -1301,35 +1350,36 @@
     border-left: 2px solid transparent;
   }
 
-  .guestbook-comment {
+  /* Ein Kommentar (CommentItem) */
+  .comment-item {
     min-width: 0;
   }
 
-  /* Text und Smileys eines Kommentars stehen unter dem Namen, eingerückt um den kleinen Avatar samt Abstand */
-  .guestbook-comment .guestbook-text,
-  .guestbook-comment .guestbook-reactions {
+  /* Text und Zusatzzeile eines Kommentars stehen unter dem Namen, eingerückt um den kleinen Avatar samt Abstand */
+  .comment-item-text,
+  .comment-item-extra {
     margin-left: 2.6rem;
   }
 
-  .guestbook-comment .guestbook-text {
+  .comment-item-text {
     margin-top: 0.15rem;
     margin-bottom: 0.35rem;
   }
 
-  /* Schreibfeld und Antwortfeld: der Rich-Text-Editor nimmt die Breite, der Knopf steht rechts unten daneben */
-  .guestbook-text-form {
+  /* Schreibfeld (RichTextForm): der Rich-Text-Editor nimmt die Breite, der Knopf steht rechts unten daneben */
+  .rich-text-form {
     display: flex;
     align-items: flex-end;
     gap: 0.5rem;
   }
 
-  .guestbook-text-form > .multilingual-rich-text {
+  .rich-text-form > .multilingual-rich-text {
     flex: 1 1 auto;
     min-width: 0;
   }
 
   @media (max-width: 575.98px) {
-    .guestbook-text-form {
+    .rich-text-form {
       flex-direction: column;
       align-items: stretch;
     }
@@ -3157,16 +3207,25 @@
     right: 0.55rem;
   }
 
-  /* das i: dezent, deutlich beim Zeigen auf die Kachel, Fragezeichen-Cursor wie bei einer Erklärung */
-  .tile-corner-hint {
+  /*
+   * Das „i“ mit einer Erklärung (InfoHint), überall gleich: ein Knopf ohne Rahmen, dezent, deutlich beim Zeigen (auch
+   * beim Zeigen auf die Kachel der Startseite, an der es sitzt), Fragezeichen-Cursor wie bei einer Erklärung.
+   */
+  .info-hint {
     display: inline-flex;
+    flex: none;
+    padding: 0;
+    border: 0;
+    background: none;
     font-size: 0.95rem;
+    line-height: 1;
     opacity: 0.5;
     cursor: help;
   }
 
-  .tile-frame:hover .tile-corner-hint,
-  .tile-corner-hint:focus-visible {
+  .info-hint:hover,
+  .info-hint:focus-visible,
+  .tile-frame:hover .info-hint {
     opacity: 1;
   }
 
@@ -3883,6 +3942,8 @@
     --gallery-image-tile-min-width: 13.5rem;
     --gallery-tile-gap: 1rem;
     --gallery-viewer-image-max-height: 75vh;
+    /* so breit ist die Spalte der Kommentare neben dem großen Bild */
+    --gallery-viewer-comments-width: 22rem;
   }
 
   .gallery-tiles {
@@ -3895,6 +3956,28 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
+  }
+
+  /*
+   * Die Galerie in der Tabelle (Liste der Galerien auf dem Handy, galleryColumns): kleine Vorschau, Titel als Link,
+   * dahinter das „i“ mit der Beschreibung. Der Titel bricht um, statt die Spalte zu sprengen.
+   */
+  .gallery-table-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .gallery-table-title > img,
+  .gallery-table-title > i {
+    flex: none;
+  }
+
+  .gallery-table-title-link {
+    min-width: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
   }
 
   .gallery-tile-link {
@@ -4026,6 +4109,8 @@
     z-index: 1;
     display: flex;
     justify-content: center;
+    align-items: center;
+    gap: 0.35rem;
     pointer-events: none;
   }
 
@@ -4069,10 +4154,41 @@
   }
 
   /* der Viewer: das Bild eingepasst, unten Voriges, Herunterladen, Nächstes */
+  /*
+   * Das große Bild: links das Bild, rechts daneben seine Kommentare in einer eigenen Spalte, die in sich rollt. Auf
+   * einem schmalen Bildschirm stehen die Kommentare unter dem Bild.
+   */
   .gallery-viewer-body {
     display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .gallery-viewer-picture {
+    display: flex;
+    flex: 1 1 auto;
     justify-content: center;
     align-items: center;
+    min-width: 0;
+  }
+
+  .gallery-viewer-comments {
+    flex: 0 0 var(--gallery-viewer-comments-width);
+    max-height: var(--gallery-viewer-image-max-height);
+    min-width: 0;
+    overflow-y: auto;
+  }
+
+  @media (max-width: 991.98px) {
+    .gallery-viewer-body {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .gallery-viewer-comments {
+      flex-basis: auto;
+      max-height: none;
+    }
   }
 
   .gallery-viewer-image {

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import Spinner from 'react-bootstrap/Spinner'
 import type { AccessRole } from '../../auth/access/AccessRole.ts'
 import { AccessRoleBadge } from '../../auth/access/AccessRoleBadge.tsx'
 import { useAccessRole } from '../../auth/access/useAccessRole.ts'
@@ -14,6 +13,8 @@ import { useListingOrder } from '../../components/useListingOrder.ts'
 import type { MultilingualText } from '../../language/MultilingualText.ts'
 import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguage.ts'
 import { useMasterData } from '../../masterdata/useMasterData.ts'
+import { LoadStatus } from '../../components/LoadStatus.tsx'
+import { getFirstErrorDetail } from '../../api/getFirstErrorDetail.ts'
 
 /** Die Kennung der Tabelle für die Spalteneinstellungen des Users (`TABLE_ACCESS_ROLE`). */
 const ACCESS_ROLE_TABLE_SETTING_KEY = 'ACCESS_ROLE'
@@ -111,17 +112,16 @@ export function AccessRoleTab() {
   if (changeAccessRoleHook.error !== null) {
     changeErrorMessage = changeAccessRoleHook.error.detail
   }
-  let footer
-  if (masterDataHook.error !== null) {
-    footer = <span className="text-danger">{masterDataHook.error.detail}</span>
-  } else if (orderAccessRoleHook.error !== null) {
-    footer = <span className="text-danger">{orderAccessRoleHook.error.detail}</span>
-  } else if (accessRoles === null) {
-    footer = <Spinner animation="border" size="sm" />
-  } else {
-    const accessRolesCountText = accessRoles.length + ' Rechte'
-    footer = <span>{accessRolesCountText}</span>
+  const footerErrorMessage = getFirstErrorDetail([masterDataHook.error, orderAccessRoleHook.error])
+  let accessRolesCountText = ''
+  if (accessRoles !== null) {
+    accessRolesCountText = accessRoles.length + ' Rechte'
   }
+  const footer = (
+    <LoadStatus errorMessage={footerErrorMessage} isLoading={accessRoles === null}>
+      {accessRolesCountText}
+    </LoadStatus>
+  )
   const newAccessRoleButton = <NewEntityButton label="neues Recht" onClick={() => setNewAccessRoleOpen(true)} />
   let renamePopupTitle = ''
   if (accessRoleToRename !== null) {
