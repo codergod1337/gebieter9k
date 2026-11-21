@@ -627,7 +627,8 @@ body {
   }
 }
 
-.control-button-copy:hover > .bi {
+.control-button-copy:hover > .bi,
+.control-button-qr:hover > .bi {
   animation: control-hop 0.45s ease-out;
 }
 

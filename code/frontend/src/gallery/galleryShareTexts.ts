@@ -27,6 +27,12 @@ export const GALLERY_SHARE_TEXTS = {
   },
   /** Der Kopierknopf in einer Zeile der Liste, für Screenreader. */
   copyLinkOfShareLabel: { de: 'Link von „{label}“ kopieren' },
+  /** Der QR-Knopf neben dem Kopierknopf (für Screenreader), der Titel seines Popups und der Hinweis unter dem Code. */
+  qrCodeOfShareLabel: { de: 'QR-Code des Links von „{label}“ zeigen' },
+  qrCodeOfShareTitle: { de: 'QR-Code von „{label}“' },
+  qrCodeHint: {
+    de: 'Mit der Kamera des Handys scannen: Der Link öffnet die Galerie ohne Anmeldung und lässt sich dort als Lesezeichen speichern oder weiterschicken.',
+  },
   columnDuration: { de: 'Gilt' },
   columnDurationHint: { de: 'Dauerhaft, bis zu einem Zeitpunkt oder für eine Zahl von Aufrufen.' },
   columnAccessCount: { de: 'Aufrufe' },
@@ -49,7 +55,7 @@ export const GALLERY_SHARE_TEXTS = {
   // --- Übersicht des Admins über alle Freigaben (Reiter „Freigaben“ der Administration) ---
   adminBoxTitle: { de: 'Alle Freigaben über einen Link' },
   adminBoxHint: {
-    de: 'Jede Freigabe jeder Galerie, die neueste zuerst. Angelegt und gelöscht wird eine Freigabe in ihrer Galerie, im Reiter „Freigabe“.',
+    de: 'Jede Freigabe jeder Galerie, die neueste zuerst. Ein Klick auf die Bezeichnung oder auf „Gilt“ ändert sie, der Mülleimer löscht sie. Angelegt wird eine Freigabe in ihrer Galerie, im Reiter „Freigabe“.',
   },
   adminNoShares: { de: 'Es gibt keine Freigabe.' },
   adminShareCountOne: { de: '1 Freigabe' },
@@ -63,6 +69,20 @@ export const GALLERY_SHARE_TEXTS = {
   adminGalleryMissing: { de: 'Galerie gibt es nicht mehr' },
   /** Der Name des Reiters für „Zurück zu …“, wenn man von hier ein Profil oder eine Galerie öffnet. */
   adminOriginLabel: { de: 'Freigaben' },
+
+  // --- Ändern in der Zeile (Übersicht des Admins) ---
+  /** Die Bezeichnung in der Zeile, für Screenreader, und der Titel ihres Popups. */
+  editLabelLabel: { de: 'Bezeichnung von „{label}“ ändern' },
+  editLabelTitle: { de: 'Bezeichnung von „{label}“' },
+  /** Die Laufzeit in der Zeile, für Screenreader, und der Titel ihres Popups. */
+  editDurationLabel: { de: 'Laufzeit von „{label}“ ändern' },
+  editDurationTitle: { de: 'Wie lange gilt „{label}“?' },
+  /** Unter den Eingaben im Popup der Laufzeit. */
+  editDurationAccessCount: {
+    de: 'Bisher gezählt: {accessCount} Aufrufe. Eine Zahl darunter verbraucht den Link sofort. Der Link selbst bleibt derselbe.',
+  },
+  changedToastTitle: { de: 'Freigabe geändert' },
+  changedToastText: { de: '„{label}“ ist gespeichert. Der Link ist derselbe geblieben.' },
 
   // --- Löschen ---
   deleteLabel: { de: 'Freigabe „{label}“ löschen' },
@@ -79,6 +99,8 @@ export const GALLERY_SHARE_TEXTS = {
   labelInputLabel: { de: 'Bezeichnung' },
   labelPlaceholder: { de: 'z. B. für Oma' },
   labelHint: { de: 'Daran erkennst du die Freigabe in deiner Liste wieder. Besucher sehen die Bezeichnung nicht.' },
+  /** Dasselbe für das Ändern in der Übersicht des Admins: Dort ist es nicht „deine“ Liste. */
+  labelHintForEdit: { de: 'Daran erkennt man die Freigabe in der Liste wieder. Besucher sehen die Bezeichnung nicht.' },
   labelMissing: { de: 'Bitte gib eine Bezeichnung ein.' },
   stepDurationTitle: { de: 'Wie lange soll der Link gelten?' },
   durationChoicePermanent: { de: 'Dauerhaft, bis ich die Freigabe lösche' },
@@ -99,6 +121,7 @@ export const GALLERY_SHARE_TEXTS = {
   },
   linkInputLabel: { de: 'Link zum Weitergeben' },
   copyLinkLabel: { de: 'Link kopieren' },
+  qrCodeLabel: { de: 'QR-Code des Links zeigen' },
   backButton: { de: 'Zurück' },
   nextButton: { de: 'Weiter' },
   cancelButton: { de: 'Abbrechen' },

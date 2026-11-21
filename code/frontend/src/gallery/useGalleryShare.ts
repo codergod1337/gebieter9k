@@ -2,21 +2,29 @@ import { useCallback } from 'react'
 import type { ApiHookState } from '../api/ApiHookState.ts'
 import { useApiRequest } from '../api/useApiRequest.ts'
 import type { FileCommentThread } from '../file/FileComment.ts'
-import type { GalleryShare, GalleryShareForAdmin, NewGalleryShare, SharedGallery } from './GalleryShare.ts'
+import type {
+  GalleryShare,
+  GalleryShareChange,
+  GalleryShareForAdmin,
+  NewGalleryShare,
+  SharedGallery,
+} from './GalleryShare.ts'
 import { getSharedGalleryApiPath } from './galleryShareUrls.ts'
 
 /**
  * Was {@link useGalleryShare} anbietet: die Endpunkte des Besitzers unter `/api/gallery-share`, die Übersicht des
- * Admins unter `/api/admin/gallery-share` und die Standardansicht des Besuchers unter `/api/share/token/<token>`,
- * benannt wie die Methoden im Backend. Lesen und Anlegen liefern Daten oder `null`, Löschen `true` oder `false`; der
- * Fehler steht dann in `error`.
+ * Admins samt Ändern und Löschen unter `/api/admin/gallery-share` und die Standardansicht des Besuchers unter
+ * `/api/share/token/<token>`, benannt wie die Methoden im Backend. Lesen, Anlegen und Ändern liefern Daten oder `null`,
+ * Löschen `true` oder `false`; der Fehler steht dann in `error`.
  */
 export type GalleryShareHook = ApiHookState & {
   createOwnGalleryShare: (newGalleryShare: NewGalleryShare) => Promise<GalleryShare | null>
   resolveOwnGalleryShares: (galleryId: number) => Promise<GalleryShare[] | null>
   getAllOwnGalleryShare: () => Promise<GalleryShare[] | null>
   getAllGalleryShare: () => Promise<GalleryShareForAdmin[] | null>
+  changeGalleryShare: (galleryShareChange: GalleryShareChange) => Promise<GalleryShare | null>
   deleteOwnGalleryShare: (galleryShareId: number) => Promise<boolean>
+  deleteGalleryShare: (galleryShareId: number) => Promise<boolean>
   resolveSharedGallery: (shareToken: string, page: number) => Promise<SharedGallery | null>
   getSharedFileCommentThread: (shareToken: string, fileDocumentId: string) => Promise<FileCommentThread | null>
 }
@@ -48,10 +56,21 @@ export function useGalleryShare(): GalleryShareHook {
     return sendForData<GalleryShareForAdmin[]>({ method: 'GET', path: '/api/admin/gallery-share' })
   }, [sendForData])
 
-  /** DELETE: Eine Freigabe löschen; ihr Link öffnet danach nichts mehr. */
+  /** UPDATE (nur Admin): Bezeichnung und Laufzeit einer beliebigen Freigabe ändern; der Link bleibt derselbe. */
+  const changeGalleryShare = useCallback((galleryShareChange: GalleryShareChange) => {
+    return sendForData<GalleryShare>({ method: 'PUT', path: '/api/admin/gallery-share', body: galleryShareChange })
+  }, [sendForData])
+
+  /** DELETE: Eine Freigabe einer eigenen Galerie löschen; ihr Link öffnet danach nichts mehr. */
   const deleteOwnGalleryShare = useCallback((galleryShareId: number) => {
     const deleteRequest = { id: galleryShareId }
     return sendForSuccess({ method: 'DELETE', path: '/api/gallery-share', body: deleteRequest })
+  }, [sendForSuccess])
+
+  /** DELETE (nur Admin): Eine beliebige Freigabe löschen; ihr Link öffnet danach nichts mehr. */
+  const deleteGalleryShare = useCallback((galleryShareId: number) => {
+    const deleteRequest = { id: galleryShareId }
+    return sendForSuccess({ method: 'DELETE', path: '/api/admin/gallery-share', body: deleteRequest })
   }, [sendForSuccess])
 
   /**
@@ -84,7 +103,9 @@ export function useGalleryShare(): GalleryShareHook {
     resolveOwnGalleryShares,
     getAllOwnGalleryShare,
     getAllGalleryShare,
+    changeGalleryShare,
     deleteOwnGalleryShare,
+    deleteGalleryShare,
     resolveSharedGallery,
     getSharedFileCommentThread,
   }

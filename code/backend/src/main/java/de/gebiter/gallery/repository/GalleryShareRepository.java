@@ -32,6 +32,22 @@ public interface GalleryShareRepository extends JpaRepository<GalleryShare, Long
 	Optional<GalleryShare> findByShareTokenHash(String shareTokenHash);
 
 	/**
+	 * Ändert an einer Freigabe die Bezeichnung und wie lange sie gilt, als EINE gezielte Anweisung in der Datenbank: Die
+	 * Zähler ({@code accessCount}, {@code fileCount}) fasst sie nicht an. Ein Speichern der ganzen Zeile würde einen
+	 * Aufruf oder einen Upload überschreiben, der im selben Moment gezählt wird.
+	 *
+	 * @param expiresAt bis wann sie gilt, {@code null} ohne zeitliche Grenze
+	 * @param maxAccessCount wie viele Aufrufe sie höchstens erlaubt, {@code null} ohne Grenze
+	 * @return 1, wenn geändert wurde; 0, wenn es die Freigabe nicht gibt
+	 */
+	@Transactional
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query("update GalleryShare galleryShare set galleryShare.label = :label, galleryShare.expiresAt = :expiresAt, "
+			+ "galleryShare.maxAccessCount = :maxAccessCount where galleryShare.id = :id")
+	int changeLabelAndLimits(@Param("id") Long id, @Param("label") String label, @Param("expiresAt") Instant expiresAt,
+			@Param("maxAccessCount") Long maxAccessCount);
+
+	/**
 	 * Zählt an einer Freigabe {@code accessCountIncrease} Aufrufe dazu, aber nur, wenn sie in diesem Moment noch gilt:
 	 * nicht abgelaufen, und die Grenze der Aufrufe reicht noch für alle. Prüfen und Zählen sind EINE Anweisung in der
 	 * Datenbank: Zwei gleichzeitige Abrufe können die Grenze so nie gemeinsam überschreiten. Mit eigener Transaktion, der

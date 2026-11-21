@@ -1,6 +1,6 @@
 import Alert from 'react-bootstrap/Alert'
+import { QrCode } from '../../components/QrCode.tsx'
 import { AuthenticatorAppLinks } from './AuthenticatorAppLinks.tsx'
-import { TotpQrCode } from './TotpQrCode.tsx'
 import type { UsersTotpSetup } from './UsersTotp.ts'
 
 type TotpSetupInstructionsProps = {
@@ -30,8 +30,8 @@ export function TotpSetupInstructions({ usersTotpSetup }: TotpSetupInstructionsP
         <li>Diesen QR-Code scannen.</li>
         <li>Den Code eingeben, den die App jetzt für „{usersTotpSetup.issuer}“ zeigt, und bestätigen.</li>
       </ol>
-      <div className="totp-qr-code-area">
-        <TotpQrCode otpauthUri={usersTotpSetup.otpauthUri} />
+      <div className="qr-code-area">
+        <QrCode value={usersTotpSetup.otpauthUri} altText="QR-Code zum Einrichten der Authenticator-App" />
       </div>
       <p className="small text-body-secondary mb-1">Dein Schlüssel (scannen geht nicht? Dann diesen in der App abtippen):</p>
       <p className="totp-secret">{groupedSecret}</p>

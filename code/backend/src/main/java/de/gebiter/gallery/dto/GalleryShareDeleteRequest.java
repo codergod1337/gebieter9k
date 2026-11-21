@@ -1,5 +1,5 @@
 package de.gebiter.gallery.dto;
 
-/** Eine Freigabe einer eigenen Galerie löschen. */
+/** Eine Freigabe löschen: der Besitzer eine seiner eigenen Galerie, der Admin eine beliebige. */
 public record GalleryShareDeleteRequest(Long id) {
 }

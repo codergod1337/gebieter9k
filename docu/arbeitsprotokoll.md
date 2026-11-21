@@ -13,6 +13,110 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-21 16:54 – Meldung: trotz Login erscheint wieder das Login-Modul
+
+- Ansage: „hast du jetzt den login verkackt? also dass es nun trotz login, das login modul anzeigt?“
+- Lage: Auf dem Pi habe ich seit gestern nichts gebaut und nichts gestartet. Was ich heute am Pi getan habe: zweimal
+  `psql` nur lesend, und um 16:47 von hier über den Tunnel ein Kontextstart des Backends gegen die Pi-DB (zwei Tests).
+- Plan: 1. Im Code nachsehen, was ein Start des Backends an den Sitzungen in der Datenbank ändert. 2. Log des Backends
+  auf dem Pi und die Sitzungen in der Pi-DB ansehen. 3. Die Anmeldung von außen nachstellen, soweit es ohne 2FA geht.
+
+## 2026-11-21 16:28 – Weiße Seite beim Freigabelink; Admin-Reiter „Freigaben“: bearbeiten, löschen, QR-Code
+
+- Ansage (gekürzt, wörtlich): „ich will im admin freigabemodul auch die freigabe bearbeiten können […] also löschen
+  oder eben bearbeiten, limits ändern oder sonstiges! zusätzlich will ich dann einen qr code als popup bekommen können,
+  dass freunde sich den freigabelink speichern können […] gerade habe ich aber auch dea problem, dass ich, wenn ich auf
+  den einzigen freigabelink in der datenbank klicke, es zunächst was läd und dann aber nur eine weisse sweite kommt,
+  bitte prüfe das und sieh es dir genau an“.
+- Plan: 1. Zuerst der Fehler (weiße Seite): Besucherseite `/share/galerie/<token>` mit dem einen echten Link im
+  Firefox (headless, Marionette) öffnen, Konsole und Antworten der API ansehen, Ursache im Code suchen, beheben.
+  2. Admin-Reiter „Freigaben“: Bearbeiten in der Zeile (Mini-Popup wie jede Tabelle) und Löschen; dazu die
+  Admin-Endpunkte. 3. QR-Code des Links als Popup (global, auch in der Box der eigenen Galerie). 4. Doku
+  (`entities/GalleryShare.md`, Konzept) nachziehen.
+- Stand 16:33, Schritt 1 (weiße Seite) **Ursache belegt und behoben, noch nicht auf dem Pi**:
+  - Nachgestellt mit der einen echten Freigabe (id 15, „Für alle“, Galerie 5 „test 1“, 10 Bilder) im Firefox ohne
+    Fenster gegen die Seite zu Hause: 4 s Ladeanzeige, ab Sekunde 5 ist `#root` leer. Fehler des Browsers: React 310
+    („Rendered more hooks than during the previous render“) aus `index-Be0ndiTE.js`.
+  - Ursache: `gallery/GalleryShareVisitorPage.tsx`, der `useCallback` für `loadSharedFileCommentThread` (gestern mit
+    den Kommentaren eingebaut) stand HINTER dem vorzeitigen `return` der Ladeanzeige. Erster Durchlauf ohne ihn, der
+    zweite (Galerie da) mit ihm: React bricht die ganze Seite ab. Die API war in Ordnung (200).
+  - Behoben: Der Hook steht jetzt vor dem `return`. Alle `.ts`/`.tsx` nach demselben Muster durchsucht: sonst kein
+    Treffer. `npm run build` ohne Fehler; den gebauten Stand lokal ausgeliefert (API von zu Hause) und angesehen:
+    Titel „test 1“, 10 Kacheln, am Desktop (1300 px) und am Handy (400 px).
+- Stand 16:36, Schritt 2 Backend gebaut (`./mvnw -q -DskipTests clean compile` rc=0, noch nicht gegen die Pi-DB):
+  - `GalleryShareRepository.changeLabelAndLimits` (gezielte Anweisung, fasst die Zähler nicht an),
+    `GalleryShareService.changeGalleryShare` und `deleteGalleryShare` (beide `@PreAuthorize ADMIN`; privater Kern
+    `doGetGalleryShare`; `requireValidLimits` mit `expiresAtNewlySet`: ein unveränderter, vergangener Ablauf darf
+    bleiben), neu `dto/GalleryShareChangeRequest`, `GalleryShareAdminController`: `PUT` und `DELETE
+    /api/admin/gallery-share`.
+- Nachricht 16:38 dazwischen: „Bau den QR-Code auch gefälligst so, dass ich ihn für alle anderen Links auch benutzen
+  kann. Du tendierst ja zu Einzelscheiße.“ So gebaut: nichts am QR-Code hängt an der Galerie.
+- Stand 16:41, Schritt 3 Frontend gebaut (`npm run build` ohne Fehler):
+  - Global neu: `components/QrCode` (zeichnet jeden Wert; der QR-Code der Authenticator-App nutzt ihn jetzt,
+    `auth/totp/TotpQrCode.tsx` gelöscht, Klassen `.qr-code`/`.qr-code-area` in `base.css`), `components/QrCodeButton`
+    (Knopf samt Popup, Klasse `control-button-qr` im Theme), `components/EditTextPopup`. `CopyableLink` hat die Angabe
+    `qrCode`: Damit steht der QR-Knopf neben „kopieren“, an jedem Link nutzbar.
+  - Galerie-Paket neu: `galleryShareDurationInput.ts`, `GalleryShareDurationFields.tsx` (Eingaben der Laufzeit, beim
+    Anlegen und Ändern dieselben), `EditGalleryShareDurationPopup.tsx`. Geändert: `galleryShareColumns.tsx` (Angabe
+    `editing`: Bezeichnung und „Gilt“ anklickbar; QR-Code am Link in beiden Listen), `NewGallerySharePopup.tsx`
+    (Schritt 2 über den gemeinsamen Baustein, am Ende der Link mit QR-Code), `useGalleryShare.ts`
+    (`changeGalleryShare`, `deleteGalleryShare`), `GalleryShare.ts` (`GalleryShareChange`), `galleryShareTexts.ts`,
+    `admin/galleryshare/GalleryShareTab.tsx` (Popups für Bezeichnung und Laufzeit, Mülleimer mit Sicherheitsabfrage).
+- Geprüft (16:42 bis 16:48; Uhrzeiten dieses Eintrags nach den Zeitstempeln der Dateien):
+  - Oberfläche im Firefox ohne Fenster mit einem nachgestellten Backend (Skript im Scratchpad: liefert `dist` aus,
+    beantwortet `/api` aus dem Speicher, drei Beispiel-Freigaben; keine echten Daten): Admin-Reiter lädt; QR-Popup
+    („QR-Code von „für Oma““, Hinweis, Adresse); Bezeichnung „für Oma“ → „für Oma und Opa“; Laufzeit „dauerhaft“ →
+    ohne Zahl die Meldung „Bitte gib eine ganze Zahl ab 1 ein“, mit 500 → „für 500 Aufrufe“; ein Zeitpunkt ist
+    vorbelegt und geht unverändert genau so zurück (`2026-12-31T22:59:00Z`); Löschen nach der Sicherheitsabfrage, die
+    Zeile ist weg; am Handy (400 px) dasselbe Popup. Reiter „Freigabe“ der eigenen Galerie: drei QR-Knöpfe, nichts
+    anklickbar zum Ändern; „neue Freigabe“ bis zum Link durchgeklickt (Fehlermeldungen ohne Zeitpunkt und in der
+    Vergangenheit, dann 30.06.2027 18:00), QR-Code im letzten Schritt. Kein Fehler in der Seite.
+  - QR-Bild gegengelesen: Die 41 × 41 Module des Bilds aus dem Popup sind genau der QR-Code des Links der Zeile
+    (0 Abweichungen; Gegenprobe mit einem anderen Link: 244).
+  - Backend über den Tunnel (direkt, Port 6969): `Gebiter9kApplicationTests` grün (Start 24,6 s, kein ERROR, kein
+    WARN) und ein Wegwerf-Test `GalleryShareChangeThrowawayTest` (gelöscht) an der echten Freigabe 15 in einer
+    Transaktion, die zurückrollt: ohne ADMIN abgelehnt (Ändern und Löschen); auf 500 Aufrufe, auf einen Zeitpunkt,
+    wieder dauerhaft; derselbe Zeitpunkt noch einmal geht, ein neuer in der Vergangenheit nicht, beide Grenzen nicht,
+    leere Bezeichnung nicht, 0 Aufrufe nicht; unbekannte id → „gibt es nicht“; Token und beide Zähler unverändert.
+    Danach in der Pi-DB gegengelesen: `15 | Galerie 5 | Für alle | dauerhaft | 2 Aufrufe | 10 Bilder`, wie vorher.
+    Tunnel geschlossen.
+  - NICHT geprüft: das Löschen durch den Admin gegen den echten Solr (derselbe Kern wie das Löschen des Besitzers, am
+    2026-11-20 getestet; die eine echte Freigabe lösche ich nicht zur Probe). Der QR-Code der Authenticator-App
+    (derselbe Baustein, im Profil nur mit Anmeldung zu sehen).
+- Doku nachgezogen: `entities/GalleryShare.md` (DTO, zwei Endpunkte, Methoden, neue Dateien), `entities/Gallery.md`
+  (zwei Endpunkte), `konzept-galerie-freigabe.md` (Entscheidungen 18 und 19, 4.5, 4.7, Abschnitt 9). Regeln:
+  `Vollidiot/gallery-share-key-link.md`, `frontend-structure.md`, `rechner-debian-laptop.md`, `MEMORY.md`.
+- **Stand 16:51: fertig, lokal, NICHT committet, NICHT auf dem Pi.** Die weiße Seite beim Freigabelink besteht auf dem
+  Pi, bis der Stand dort ist. Als Nächstes: Commit und Push durch den Nutzer, dann `git pull` und Bau auf dem Pi
+  (erst `backend`, dann `frontend`; keine Änderung an der Datenbank nötig), danach den echten Link ansehen.
+- Aufgefallen, dem Nutzer als EINE Frage vorgelegt: In der Spalte „Link“ bricht die Adresse mit ihren 64 Zeichen Token
+  über etwa 15 Zeilen um (jede Zeile der Tabelle rund 330 px hoch, am Handy rutschen die Knöpfe aus dem Bild).
+
+## 2026-11-20 21:50 – Push des Nutzers auf den Pi bringen (pull, bauen, prüfen)
+
+- Ansage: „ja ist gepusht mach weiter“.
+- Geprüft: lokal = `origin/main` = `d8c4e69` („pray beacoup3“, 109 Dateien: alles von heute Abend), Arbeitsverzeichnis
+  sauber.
+- Plan (Regel: Code nur über Git, niemand kommt an den Pi): 1. Geänderte Dateien auf Zugangsdaten prüfen. 2. Weil eine
+  neue Entity (`FileComment`) und ein neuer YAML-Wert dabei sind: vor dem Bau den Kontextstart testen
+  (`Gebiter9kApplicationTests` über den Tunnel; legt dabei die Tabelle `file_comment` in der Pi-DB an). 3. Auf dem Pi:
+  Zustand ansehen, laufende Images als `:vorher` sichern, `git pull --ff-only`, erst `backend`, dann `frontend` bauen,
+  erst danach starten. 4. Prüfen: Log, neue Endpunkte, Bundle, Tabelle.
+- Zugangsdaten: 21 Werte aus `code/.env` gegen den Commit geprüft, kein Kennwort und kein Schlüssel darin (ein Treffer
+  ist nur `POSTGRES_USER`, der wie das Projekt heißt).
+- Kontextstart-Test über den Tunnel (direkt über Port 6969 geöffnet): grün, 26,5 s, kein ERROR, kein WARN.
+- Stand 21:56, **fertig und auf dem Pi** (Einzelheiten in `setup.md` 5.16):
+  - Pi vorher: Last 0,0, 12 GiB RAM frei, 44 °C. Pull von `179c751` auf `d8c4e69`, Klon sauber.
+  - Bau `backend` 23 s, `frontend` 7 s; Backend gestartet in 17,0 s, kein ERROR, kein WARN. Alle 5 Container laufen.
+  - Tabelle `file_comment` steht in der Pi-DB (5 Spalten, 0 Zeilen).
+  - Besucherweg mit der einen echten Freigabe geprüft (zählt nicht als Aufruf): Standardansicht 200 mit 10 Bildern und
+    dem Feld `commentCountsByFileDocumentId`, Kommentare des ersten Bildes 200 (leer), unbekannter Token 404.
+  - Von außen: Startseite 200, im Bundle `index-Be0ndiTE.js` und im CSS stehen die neuen Texte, Pfade und Klassen.
+  - Die Tags `:vorher` zeigen jetzt auf die Images von 18:02. Hilfsdateien auf dem Pi gelöscht, Tunnel geschlossen.
+- NICHT gesehen: alles mit Anmeldung (2FA). Der Nutzer testet: Header und Galerien-Liste auf dem Handy, Sprechblase
+  und Kommentieren (großes Bild, Seite einer Datei), Besucherseite, Admin-Reiter „Freigaben“, Gästebuch, Füße der Tabs.
+- Lokal nicht committet: dieses Protokoll, `setup.md` (privat), `entities/FileComment.md` (Abschnitt „Getestet“).
+
 ## 2026-11-20 21:24 – Bauen: Header mobil, Galerien mobil als Tabelle, Kommentare an Bildern, Fuß-Baustein
 
 - Ansage: „ja baue alle punkte so“ (Antwort auf die vier Fragen von 21:20).

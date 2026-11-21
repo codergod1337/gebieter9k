@@ -79,6 +79,16 @@ export function GalleryShareVisitorPage() {
   const loadedSharedGallery = useLoadedData(loadSharedGallery)
   const sharedGallery = loadedSharedGallery.data
 
+  /**
+   * So lädt der Kommentar-Bereich des großen Bildes seinen Verlauf: über die Adresse unter dem Token, nur zum Lesen.
+   * Steht VOR dem vorzeitigen `return` der Ladeanzeige: Ein Hook dahinter läuft erst, wenn die Galerie da ist, und
+   * React bricht dann die ganze Seite ab (weiße Seite, Fehler 310 am 2026-11-21).
+   */
+  const loadSharedFileCommentThread = useCallback(
+    (fileDocumentId: string) => getSharedFileCommentThread(visitorShareToken, fileDocumentId),
+    [getSharedFileCommentThread, visitorShareToken],
+  )
+
   if (sharedGallery === null) {
     if (galleryShareHook.error !== null) {
       return (
@@ -155,12 +165,6 @@ export function GalleryShareVisitorPage() {
       return [...knownSelectedFileIds, ...addedFileIds]
     })
   }
-
-  /** So lädt der Kommentar-Bereich des großen Bildes seinen Verlauf: über die Adresse unter dem Token, nur zum Lesen. */
-  const loadSharedFileCommentThread = useCallback(
-    (fileDocumentId: string) => getSharedFileCommentThread(visitorShareToken, fileDocumentId),
-    [getSharedFileCommentThread, visitorShareToken],
-  )
 
   /** Abstimmen wollen: Ohne Anmeldung kommt der Hinweis, angemeldet geschieht hier nichts. */
   function requestCheer() {

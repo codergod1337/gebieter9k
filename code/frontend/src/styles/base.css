@@ -3241,18 +3241,24 @@
     margin-top: 1rem;
   }
 
-  /* ===== Authenticator-App einrichten: QR-Code immer schwarz auf weiß (sonst lesen ihn manche Kameras nicht) ===== */
+  /* ===== Authenticator-App einrichten ===== */
   .totp-steps {
     padding-left: 1.25rem;
   }
 
-  .totp-qr-code-area {
+  /*
+   * ===== QR-Code (components/QrCode): immer schwarz auf weiß, sonst lesen ihn manche Kameras nicht; passt sich einem
+   * schmalen Popup an (Handy) und bleibt dabei quadratisch =====
+   */
+  .qr-code-area {
     display: flex;
     justify-content: center;
     margin-bottom: 1rem;
   }
 
-  .totp-qr-code {
+  .qr-code {
+    max-width: 100%;
+    height: auto;
     padding: 0.5rem;
     border-radius: 0.5rem;
     background-color: #fff;

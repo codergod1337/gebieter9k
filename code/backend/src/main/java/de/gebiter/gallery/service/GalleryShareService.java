@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -47,7 +48,9 @@ import jakarta.persistence.EntityNotFoundException;
  * <p>
  * Anlegen darf, wer ADMIN ist oder das Recht FREIGABE hat (Nutzer 2026-11-19), und nur für eine eigene Galerie; die GUID
  * kommt aus dem Token. Der Admin sieht dazu alle Freigaben aller Galerien in einer Übersicht
- * ({@link #getAllGalleryShare()}, Nutzer 2026-11-20).
+ * ({@link #getAllGalleryShare()}, Nutzer 2026-11-20) und kann dort jede ändern (Bezeichnung, Laufzeit:
+ * {@link #changeGalleryShare(Long, String, Instant, Long)}) und löschen ({@link #deleteGalleryShare(Long)}, Nutzer
+ * 2026-11-21).
  * <p>
  * Gelöscht wird immer in dieser Reihenfolge (Nutzer 2026-11-19): zuerst der Hash aus den Solr-Dokumenten, erst danach die
  * Zeile in Postgres. Solange die Zeile steht, weiß das Backend, welcher Hash aus den Dokumenten muss, und ein
@@ -118,7 +121,8 @@ public class GalleryShareService {
 			Long maxAccessCount) {
 		Helper.requireNotNull(galleryId, "galleryId");
 		String checkedLabel = requireLabel(label);
-		requireValidLimits(expiresAt, maxAccessCount);
+		boolean expiresAtNewlySet = true;
+		requireValidLimits(expiresAt, maxAccessCount, expiresAtNewlySet);
 		galleryService.checkOwnGalleryExists(galleryId);
 
 		String shareToken = Helper.createRandomHexToken(tokenBytes);
@@ -325,6 +329,44 @@ public class GalleryShareService {
 	}
 
 	/**
+	 * UPDATE (nur Admin, Nutzer 2026-11-21): Eine beliebige Freigabe ändern, aus der Übersicht über alle Freigaben: ihre
+	 * Bezeichnung und wie lange sie gilt (dauerhaft, bis zu einem Zeitpunkt oder für eine Zahl von Aufrufen). Geändert
+	 * wird nur die Zeile in Postgres, mit einer gezielten Anweisung ({@link GalleryShareRepository#changeLabelAndLimits});
+	 * Token, Galerie, die Bilder in Solr und die Zahl der bisherigen Aufrufe bleiben, der Link ist derselbe wie vorher.
+	 * <ul>
+	 * <li>Ein NEUER Ablauf muss in der Zukunft liegen. Ein unveränderter, schon vergangener Ablauf darf stehen bleiben:
+	 * So lässt sich auch an einer abgelaufenen Freigabe noch die Bezeichnung ändern.</li>
+	 * <li>Eine Zahl von Aufrufen unter den schon gezählten ist erlaubt: Der Link ist dann sofort aufgebraucht.</li>
+	 * </ul>
+	 *
+	 * @param label die Bezeichnung der Freigabe, z. B. „für Oma“
+	 * @param expiresAt bis wann die Freigabe gilt, {@code null} ohne zeitliche Grenze
+	 * @param maxAccessCount wie viele Aufrufe sie höchstens erlaubt, {@code null} ohne Grenze
+	 * @return die geänderte Freigabe
+	 * @throws EntityNotFoundException wenn es die Freigabe nicht gibt
+	 * @throws IllegalArgumentException wenn die Bezeichnung fehlt oder zu lang ist, beide Grenzen gesetzt sind, ein neuer
+	 *         Ablauf nicht in der Zukunft liegt oder die Zahl der Aufrufe kleiner als 1 ist
+	 */
+	@PreAuthorize("hasRole('ADMIN')")
+	@Transactional
+	public GalleryShareForClient changeGalleryShare(Long id, String label, Instant expiresAt, Long maxAccessCount) {
+		Helper.requireNotNull(id, "id");
+		String checkedLabel = requireLabel(label);
+		GalleryShare existingGalleryShare = doGetGalleryShare(id);
+		Instant knownExpiresAt = existingGalleryShare.getExpiresAt();
+		boolean expiresAtNewlySet = !Objects.equals(expiresAt, knownExpiresAt);
+		requireValidLimits(expiresAt, maxAccessCount, expiresAtNewlySet);
+
+		galleryShareRepository.changeLabelAndLimits(id, checkedLabel, expiresAt, maxAccessCount);
+		// neu lesen: Die Anweisung oben hat an der geladenen Zeile vorbei geändert
+		GalleryShare changedGalleryShare = doGetGalleryShare(id);
+		Long galleryId = changedGalleryShare.getGalleryId();
+		LOGGER.info("Galerie {}: Freigabe {} vom Admin geändert", galleryId, id);
+		GalleryShareForClient galleryShareForClient = createGalleryShareForClient(changedGalleryShare);
+		return galleryShareForClient;
+	}
+
+	/**
 	 * UPDATE (Besucher): Zählt Aufrufe an einer Freigabe, bevor das Backend die Bilder ausliefert. Ein Aufruf ist ein Bild,
 	 * das der Viewer lädt oder das heruntergeladen wird (Nutzer 2026-11-19); ein ZIP mit 40 Bildern sind 40 Aufrufe.
 	 * Prüfen und Zählen geschehen in einer Anweisung in der Datenbank
@@ -370,6 +412,23 @@ public class GalleryShareService {
 	}
 
 	/**
+	 * DELETE (nur Admin, Nutzer 2026-11-21): Eine beliebige Freigabe löschen, aus der Übersicht über alle Freigaben; ihr
+	 * Link öffnet danach nichts mehr. Dieselbe Reihenfolge wie bei {@link #deleteOwnGalleryShare(Long)}: zuerst der Hash
+	 * aus den Solr-Dokumenten, dann die Zeile in Postgres; ein gescheitertes Löschen lässt sich wiederholen. Geht auch
+	 * für eine Freigabe, deren Galerie es nicht mehr gibt (ein Rest): Gesucht wird nach dem Hash, nicht nach der Galerie.
+	 *
+	 * @throws EntityNotFoundException wenn es die Freigabe nicht gibt
+	 * @throws IllegalStateException wenn der Hash danach noch in einem Dokument steht
+	 */
+	@PreAuthorize("hasRole('ADMIN')")
+	@Transactional
+	public void deleteGalleryShare(Long id) {
+		Helper.requireNotNull(id, "id");
+		GalleryShare existingGalleryShare = doGetGalleryShare(id);
+		doDeleteGalleryShare(existingGalleryShare);
+	}
+
+	/**
 	 * Eine Galerie wird gelöscht ({@link GalleryDeletedEvent}): Ihre Freigaben gehen mit, jede in derselben Reihenfolge
 	 * wie beim einzelnen Löschen (erst Solr, dann die Zeile). Läuft in der Transaktion des Löschens, die Rechte hat
 	 * {@link GalleryService#deleteOwnGallery(Long)} schon geprüft. Ein Fehler wird weitergereicht: Die Galerie bleibt dann
@@ -412,13 +471,19 @@ public class GalleryShareService {
 				clearedFileCount);
 	}
 
-	/** Die Freigabe, nur wenn ihre Galerie dem angemeldeten User gehört; sonst sieht es aus wie „gibt es nicht“. */
-	private GalleryShare doGetOwnGalleryShare(Long id) {
+	/** Die Freigabe zu einer id, ohne Rechteprüfung. */
+	private GalleryShare doGetGalleryShare(Long id) {
 		Optional<GalleryShare> foundGalleryShare = galleryShareRepository.findById(id);
 		if (foundGalleryShare.isEmpty()) {
 			throw new EntityNotFoundException("Die Freigabe gibt es nicht.");
 		}
 		GalleryShare existingGalleryShare = foundGalleryShare.get();
+		return existingGalleryShare;
+	}
+
+	/** Die Freigabe, nur wenn ihre Galerie dem angemeldeten User gehört; sonst sieht es aus wie „gibt es nicht“. */
+	private GalleryShare doGetOwnGalleryShare(Long id) {
+		GalleryShare existingGalleryShare = doGetGalleryShare(id);
 		Long galleryId = existingGalleryShare.getGalleryId();
 		try {
 			galleryService.checkOwnGalleryExists(galleryId);
@@ -446,16 +511,19 @@ public class GalleryShareService {
 
 	/**
 	 * Eine Freigabe ist dauerhaft, zeitlich begrenzt oder auf Aufrufe begrenzt: Höchstens eine der beiden Grenzen darf
-	 * gesetzt sein, ein Ablauf muss in der Zukunft liegen, eine Zahl von Aufrufen mindestens 1 sein.
+	 * gesetzt sein, ein neu gesetzter Ablauf muss in der Zukunft liegen, eine Zahl von Aufrufen mindestens 1 sein.
+	 *
+	 * @param expiresAtNewlySet ob der Ablauf neu gesetzt wird (Anlegen, oder beim Ändern ein anderer Wert als bisher);
+	 *        ein unveränderter Ablauf darf auch in der Vergangenheit liegen
 	 */
-	private void requireValidLimits(Instant expiresAt, Long maxAccessCount) {
+	private void requireValidLimits(Instant expiresAt, Long maxAccessCount, boolean expiresAtNewlySet) {
 		boolean timeLimited = expiresAt != null;
 		boolean accessLimited = maxAccessCount != null;
 		if (timeLimited && accessLimited) {
 			throw new IllegalArgumentException(
 					"Eine Freigabe ist entweder zeitlich begrenzt oder auf Aufrufe begrenzt, nicht beides.");
 		}
-		if (timeLimited) {
+		if (timeLimited && expiresAtNewlySet) {
 			Instant now = Instant.now();
 			boolean expiresInFuture = expiresAt.isAfter(now);
 			if (!expiresInFuture) {

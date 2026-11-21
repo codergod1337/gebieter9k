@@ -103,4 +103,7 @@ Die ersten vier für jeden angemeldeten User (Pfad `/api/**`); Schreiben und Lö
 
 ## Getestet (2026-11-20)
 
-Nur lokal: Backend kompiliert, Frontend baut mit Typprüfung, und ein Wegwerf-Test (wieder gelöscht) hat die JPA-Schicht ohne Datenbankverbindung aufgebaut (Entities und alle Abfragen der Repositories). Nicht getestet: gegen die Pi-DB und den Solr und in der Oberfläche.
+- Lokal: Backend kompiliert, Frontend baut mit Typprüfung; ein Wegwerf-Test (wieder gelöscht) hat die JPA-Schicht ohne Datenbankverbindung aufgebaut (Entities und alle Abfragen der Repositories).
+- Kontextstart gegen die Pi-DB und den Solr (`Gebiter9kApplicationTests` über den Tunnel): grün; dabei hat Hibernate die Tabelle `file_comment` angelegt.
+- Auf dem Pi nach dem Bau, über nginx, mit einer echten Freigabe: `GET /api/share/token/<token>` liefert 200 mit `commentCountsByFileDocumentId` (leer), `…/comment/<fileId>` 200 mit leerem Verlauf, ein unbekannter Token 404; `/api/file-comment/count/…` ohne Anmeldung 401.
+- Nicht getestet: Schreiben und Löschen eines Kommentars und alles in der Oberfläche (die Anmeldung braucht 2FA).

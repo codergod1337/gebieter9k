@@ -3,7 +3,9 @@
 Stand 2026-11-19: **Stück 1 bis 3 gebaut (Freigabe anlegen, auflisten, löschen; Besucherseite; ZIP), Backend über den
 Tunnel gegen den Pi getestet.** Seit 2026-11-20 wird der Link gespeichert und steht in der Liste der Freigaben
 (Entscheidung 14), der Admin hat eine Übersicht über alle Freigaben (Abschnitt 9), und Kommentare an Bildern gibt es
-seit 2026-11-20 (Abschnitt 7, Entity `docu/entities/FileComment.md`). Entity: `docu/entities/GalleryShare.md`.
+seit 2026-11-20 (Abschnitt 7, Entity `docu/entities/FileComment.md`). Seit 2026-11-21 ändert und löscht der Admin in
+seiner Übersicht jede Freigabe (Entscheidung 18), und jeder Link hat einen QR-Code (Entscheidung 19). Entity:
+`docu/entities/GalleryShare.md`.
 
 **Nicht verwechseln:** Dieses Konzept ist die Freigabe einer ganzen Galerie über einen Link mit Token (Freunde sehen
 die Bilder ohne Anmeldung und ohne Passwort). Die ältere Freigabe mit Abholtoken ist ein anderer Anwendungsfall und
@@ -57,6 +59,11 @@ einen Link weiter. Wer den Link hat, sieht die Galerie **ohne Anmeldung**.
     hochgeladen wird, trägt alle ihre Freigaben (Abschnitt 4.4).
 17. **Übersicht für den Admin (2026-11-20):** „eine allgemeine Freigabenübersicht […] um alle Freigaben anzuzeigen für
     einen Admin“ (Abschnitt 9).
+18. **Der Admin ändert und löscht (2026-11-21):** „ich will im admin freigabemodul auch die freigabe bearbeiten
+    können […] also löschen oder eben bearbeiten, limits ändern oder sonstiges“ (Abschnitt 9).
+19. **QR-Code zum Link (2026-11-21):** „einen qr code als popup […], dass freunde sich den freigabelink speichern
+    können“, und: „Bau den QR-Code auch gefälligst so, dass ich ihn für alle anderen Links auch benutzen kann.“ Der
+    QR-Code ist deshalb ein globaler Baustein und hängt am globalen Link-Baustein (Abschnitt 4.7).
 
 ## 3. Sicherheit: zwei Schlösser
 
@@ -153,6 +160,8 @@ Liste steht „41 von 42“. Betroffen sind nur Dateien, die genau beim Anlegen 
 | POST | `/api/gallery-share/resolve` | die Freigaben einer eigenen Galerie, je mit ihrem Token für den Link: `{galleryId}` |
 | DELETE | `/api/gallery-share` | eine Freigabe einer eigenen Galerie löschen: `{id}` |
 | GET | `/api/admin/gallery-share` | nur ADMIN: alle Freigaben aller Galerien (Abschnitt 9) |
+| PUT | `/api/admin/gallery-share` | nur ADMIN: Bezeichnung und Laufzeit einer beliebigen Freigabe ändern: `{id, label, expiresAt, maxAccessCount}` |
+| DELETE | `/api/admin/gallery-share` | nur ADMIN: eine beliebige Freigabe löschen: `{id}` |
 
 ### 4.6 Löschen (gebaut)
 
@@ -189,11 +198,16 @@ steht die Box „Freigaben von „<Galerie>“ über einen Link“ (`GalleryShar
 
 - die Liste der Freigaben als Tabelle (Bezeichnung, Link, gilt, Aufrufe, Bilder, angelegt), je Zeile Löschen nach der
   Sicherheitsabfrage. Weicht die Zahl der Bilder in Solr von der in Postgres ab, stehen beide da („8 von 9“);
-- in der Spalte „Link“ steht der Link zum Weitergeben, zum Anklicken (die Besucherseite geht in einem neuen Tab auf)
-  und mit dem Knopf zum Kopieren;
+- in der Spalte „Link“ steht der Link zum Weitergeben, zum Anklicken (die Besucherseite geht in einem neuen Tab auf),
+  mit dem Knopf zum Kopieren und daneben dem Knopf für den QR-Code (seit 2026-11-21): Ein Klick zeigt den Link groß
+  als QR-Code in einem Popup, darunter die Adresse als Text. Beispiel: Der Besitzer öffnet am Laptop den QR-Code von
+  „für Oma“, ein Freund scannt ihn mit der Kamera seines Handys, die Galerie geht dort ohne Anmeldung auf, und er
+  speichert die Seite als Lesezeichen. Der Code wird im Browser gezeichnet (`components/QrCode`, npm `qrcode`), der
+  Link geht dafür an keinen fremden Dienst. Knopf samt Popup sind der globale Baustein `components/QrCodeButton`; der
+  globale `CopyableLink` bietet ihn über die Angabe `qrCode` an, also an jedem Link der Plattform;
 - rechts im Kopf „neue Freigabe“ als geführter Ablauf (`NewGallerySharePopup`): 1. Bezeichnung, 2. Laufzeit (dauerhaft,
   bis zu einem Zeitpunkt, für eine Zahl von Aufrufen; die Eingabe erscheint erst mit der Wahl), 3. der Link zum
-  Kopieren.
+  Kopieren, ebenfalls mit QR-Code.
 - Den Knopf sieht nur, wer `ADMIN` ist oder das Recht `FREIGABE` hat (`VITE_GALLERY_SHARE_ACCESS_ROLE_KEY`). Ohne das
   Recht steht im Fuß der Box, wer anlegen darf; vorhandene Freigaben sieht und löscht der Besitzer weiter.
 
@@ -322,7 +336,7 @@ Dazu:
 3. ~~Das Recht `FREIGABE` gibt es in `access_role` noch nicht~~: seit 2026-11-20 angelegt.
 4. ~~Die Lücke beim Upload während des Anlegens einer Freigabe~~: entschieden, bleibt so (Abschnitt 4.4).
 
-## 9. Übersicht des Admins über alle Freigaben (gebaut 2026-11-20)
+## 9. Übersicht des Admins über alle Freigaben (gebaut 2026-11-20, Ändern und Löschen 2026-11-21)
 
 Der Admin sieht alle Freigaben aller Galerien an einer Stelle (Entscheidung 17): in der Administration der Reiter
 „Freigaben“ (`/admin/gallery-share`, `admin/galleryshare/GalleryShareTab`).
@@ -335,7 +349,27 @@ Der Admin sieht alle Freigaben aller Galerien an einer Stelle (Entscheidung 17):
   Spalten wie in der Liste des Besitzers (`galleryShareColumns.tsx`): Bezeichnung, Link mit „kopieren“ (globaler
   Baustein `components/CopyableLink`), gilt, Aufrufe, Bilder, angelegt. Im Fuß die Zahl der Freigaben. Eigene
   Komponenten hat der Reiter nicht: `Table`, `UsersGuidName`, `StatusMark` und `ContentBox` sind global.
-- **Nur Ansicht.** Angelegt und gelöscht wird eine Freigabe weiter in ihrer Galerie, im Reiter „Freigabe“.
+- **Ändern in der Zeile (Entscheidung 18, gebaut 2026-11-21),** wie in jeder Tabelle über ein kleines Popup:
+  - Klick auf die **Bezeichnung** öffnet das Popup für den Text (`components/EditTextPopup`).
+  - Klick auf **„Gilt“** öffnet das Popup für die Laufzeit (`gallery/EditGalleryShareDurationPopup`): dieselben
+    Eingaben wie beim Anlegen (`GalleryShareDurationFields`: dauerhaft, bis zu einem Zeitpunkt, für eine Zahl von
+    Aufrufen), vorbelegt mit dem Stand der Freigabe; darunter steht, wie viele Aufrufe schon gezählt sind.
+    Beispiel: „Für alle“ gilt dauerhaft und hat 2 Aufrufe; der Admin wählt „Für eine Zahl von Aufrufen“, trägt 500
+    ein, in der Zeile steht danach „für 500 Aufrufe“. Der Link ist derselbe geblieben.
+  - Endpunkt `PUT /api/admin/gallery-share`, Service `GalleryShareService.changeGalleryShare`. Geändert wird nur die
+    Zeile in Postgres, mit einer gezielten Anweisung (`GalleryShareRepository.changeLabelAndLimits`): Die Zähler
+    (`accessCount`, `fileCount`) fasst sie nicht an, damit ein Aufruf, der im selben Moment gezählt wird, nicht
+    überschrieben wird. Token, Galerie und die Bilder in Solr bleiben, wie sie sind.
+  - Regeln: höchstens eine Grenze; ein NEUER Ablauf muss in der Zukunft liegen, ein unveränderter darf vergangen
+    sein (so lässt sich an einer abgelaufenen Freigabe noch die Bezeichnung ändern); eine Zahl von Aufrufen unter
+    den schon gezählten ist erlaubt und verbraucht den Link sofort. Die Zahl der bisherigen Aufrufe setzt niemand
+    zurück.
+- **Löschen (Entscheidung 18, gebaut 2026-11-21):** der Mülleimer am Ende der Zeile, nach der Sicherheitsabfrage.
+  Endpunkt `DELETE /api/admin/gallery-share`, Service `GalleryShareService.deleteGalleryShare`, derselbe Kern wie
+  beim Besitzer (Abschnitt 4.6: erst Solr, dann Postgres). Geht auch für einen Rest, dessen Galerie es nicht mehr
+  gibt: Gesucht wird nach dem Hash, nicht nach der Galerie.
+- Angelegt wird eine Freigabe weiter in ihrer Galerie, im Reiter „Freigabe“. Der Besitzer ändert dort nichts (nur
+  anlegen und löschen); das Ändern gibt es bisher nur für den Admin.
 - **Der Admin sieht den Link jeder Freigabe.** Er liest ohnehin jede Datei; der Link ist kein Geheimnis vor ihm.
 - **Reste fallen auf:** Steht eine Freigabe an einer Galerie, die es nicht mehr gibt, bleibt sie in der Liste, mit der
   Warnung „Galerie gibt es nicht mehr“ und ohne Besitzer. Beispiel: „8 von 9“ in der Spalte „Bilder“ zeigt hier für

@@ -1,5 +1,6 @@
-import { CopyableLink } from '../components/CopyableLink.tsx'
+import { CopyableLink, type CopyableLinkQrCode } from '../components/CopyableLink.tsx'
 import { DateTimeText } from '../components/DateTimeText.tsx'
+import { EditableCellButton } from '../components/EditableCellButton.tsx'
 import { formatDateTime } from '../components/formatDateTime.ts'
 import type { TableColumn } from '../components/TableColumn.ts'
 import { getTextInCurrentLanguage } from '../language/getTextInCurrentLanguage.ts'
@@ -41,14 +42,28 @@ function getGalleryShareFileCountText(galleryShare: GalleryShare): string {
 }
 
 /**
+ * Wer eine Freigabe direkt in der Zeile ändern darf, gibt das mit: Dann sind Bezeichnung und Laufzeit anklickbar
+ * (`EditableCellButton`) und öffnen das kleine Popup des Aufrufers.
+ */
+export type GalleryShareColumnsEditing = {
+  onEditLabel: (galleryShare: GalleryShare) => void
+  onEditDuration: (galleryShare: GalleryShare) => void
+}
+
+/**
  * Die Spalten einer Freigabe für die zentrale `Table` (`components/Table.tsx`), überall dieselben: Bezeichnung, Link
- * zum Weitergeben mit „kopieren“ (`components/CopyableLink.tsx`), Laufzeit, Aufrufe, Bilder, angelegt. Die Liste des
- * Besitzers (`GalleryShareBox`) zeigt genau sie, die Übersicht des Admins (`admin/galleryshare/GalleryShareTab`) stellt
- * Besitzer und Galerie davor.
+ * zum Weitergeben mit „kopieren“ und QR-Code (`components/CopyableLink.tsx`), Laufzeit, Aufrufe, Bilder, angelegt. Die
+ * Liste des Besitzers (`GalleryShareBox`) zeigt genau sie, die Übersicht des Admins
+ * (`admin/galleryshare/GalleryShareTab`) stellt Besitzer und Galerie davor und ändert Bezeichnung und Laufzeit in der
+ * Zeile.
  *
  * @param getGalleryShare holt die Freigabe aus einer Zeile der Tabelle (beim Besitzer ist die Zeile die Freigabe selbst)
+ * @param editing mit dieser Angabe sind Bezeichnung und Laufzeit anklickbar; ohne sie nur Text
  */
-export function createGalleryShareColumns<T>(getGalleryShare: (row: T) => GalleryShare): TableColumn<T>[] {
+export function createGalleryShareColumns<T>(
+  getGalleryShare: (row: T) => GalleryShare,
+  editing?: GalleryShareColumnsEditing,
+): TableColumn<T>[] {
   return [
     {
       key: 'LABEL',
@@ -56,7 +71,18 @@ export function createGalleryShareColumns<T>(getGalleryShare: (row: T) => Galler
       headerHint: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnLabelHint),
       cell: (row) => {
         const galleryShare = getGalleryShare(row)
-        return <span className="text-break">{galleryShare.label}</span>
+        const labelText = <span className="text-break">{galleryShare.label}</span>
+        if (editing === undefined) {
+          return labelText
+        }
+        const editLabelLabel = getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.editLabelLabel, {
+          label: galleryShare.label,
+        })
+        return (
+          <EditableCellButton label={editLabelLabel} onClick={() => editing.onEditLabel(galleryShare)}>
+            {labelText}
+          </EditableCellButton>
+        )
       },
     },
     {
@@ -69,7 +95,12 @@ export function createGalleryShareColumns<T>(getGalleryShare: (row: T) => Galler
         const copyLabel = getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.copyLinkOfShareLabel, {
           label: galleryShare.label,
         })
-        return <CopyableLink href={galleryShareLink} copyLabel={copyLabel} />
+        const qrCode: CopyableLinkQrCode = {
+          label: getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.qrCodeOfShareLabel, { label: galleryShare.label }),
+          title: getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.qrCodeOfShareTitle, { label: galleryShare.label }),
+          hint: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.qrCodeHint),
+        }
+        return <CopyableLink href={galleryShareLink} copyLabel={copyLabel} qrCode={qrCode} />
       },
     },
     {
@@ -78,7 +109,18 @@ export function createGalleryShareColumns<T>(getGalleryShare: (row: T) => Galler
       headerHint: getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.columnDurationHint),
       cell: (row) => {
         const galleryShare = getGalleryShare(row)
-        return getGalleryShareDurationText(galleryShare)
+        const durationText = getGalleryShareDurationText(galleryShare)
+        if (editing === undefined) {
+          return durationText
+        }
+        const editDurationLabel = getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.editDurationLabel, {
+          label: galleryShare.label,
+        })
+        return (
+          <EditableCellButton label={editDurationLabel} onClick={() => editing.onEditDuration(galleryShare)}>
+            {durationText}
+          </EditableCellButton>
+        )
       },
     },
     {

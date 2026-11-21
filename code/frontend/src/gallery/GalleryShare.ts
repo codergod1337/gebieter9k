@@ -52,6 +52,18 @@ export type NewGalleryShare = {
 }
 
 /**
+ * Eine Freigabe ändern (nur der Admin, `PUT /api/admin/gallery-share`): Bezeichnung und Laufzeit; höchstens eine der
+ * beiden Grenzen. Der Link bleibt derselbe.
+ * Doku: `docu/entities/GalleryShare.md`
+ */
+export type GalleryShareChange = {
+  id: number
+  label: string
+  expiresAt: string | null
+  maxAccessCount: number | null
+}
+
+/**
  * Die Standardansicht einer Freigabe für einen Besucher: die Galerie und eine Seite ihrer Bilder. Die Feldnamen kommen
  * mit, weil ein Besucher ohne Anmeldung die Stammdaten nicht hat.
  */
