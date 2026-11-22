@@ -26,6 +26,7 @@ export type UsersDetailHook = ApiHookState & {
     avatarTextColor: string | null,
     avatarBackgroundColor: string | null,
   ) => Promise<UsersDetail | null>
+  changeOwnUsersDetailUploadFrameColor: (uploadFrameColor: string | null) => Promise<UsersDetail | null>
 }
 
 /** Alle Endpunkte von `/api/users-detail` und `/api/admin/users-detail`, die Requests gehen über das API-Modul. */
@@ -74,6 +75,19 @@ export function useUsersDetail(): UsersDetailHook {
     return sendForData<UsersDetail>({ method: 'PUT', path: '/api/users-detail/avatar-colors', body: avatarColorsRequest })
   }, [sendForData])
 
+  /**
+   * UPDATE: Die Rahmenfarbe der eigenen Uploads an den Bildkacheln einer gemeinsamen Galerie (`#rrggbb`); `null` setzt
+   * sie auf den Standard (eine Farbe aus der GUID).
+   */
+  const changeOwnUsersDetailUploadFrameColor = useCallback((uploadFrameColor: string | null) => {
+    const uploadFrameColorRequest = { uploadFrameColor }
+    return sendForData<UsersDetail>({
+      method: 'PUT',
+      path: '/api/users-detail/upload-frame-color',
+      body: uploadFrameColorRequest,
+    })
+  }, [sendForData])
+
   return {
     isLoading: apiRequestHook.isLoading,
     error: apiRequestHook.error,
@@ -84,5 +98,6 @@ export function useUsersDetail(): UsersDetailHook {
     changeOwnUsersDetailAboutText,
     changeOwnUsersDetailBannerDriftSpeed,
     changeOwnUsersDetailAvatarColors,
+    changeOwnUsersDetailUploadFrameColor,
   }
 }

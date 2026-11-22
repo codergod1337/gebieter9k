@@ -27,6 +27,13 @@ type TableProps<T> = {
   onReorder?: (reorderedRows: T[]) => void
   /** Sperrt den Griff, z. B. solange eine neue Reihenfolge gespeichert wird */
   reorderDisabled?: boolean
+  /**
+   * Nur mit `onReorder`: Zeilen, die fest stehen. Ihr Griff ist gesperrt, und keine andere Zeile lässt sich auf ihren
+   * Platz ziehen. Z. B. die Galerien anderer hinter den eigenen, die sich allein sortieren lassen.
+   */
+  isRowFixed?: (row: T) => boolean
+  /** Eine Klasse für die ganze Zeile, z. B. um bestimmte Zeilen abzuheben; `undefined`: keine. */
+  rowClassName?: (row: T) => string | undefined
   /** Breite der Aktionsspalte beim festen Layout. Standard: Platz für zwei Knöpfe. */
   actionsWidth?: string
   /**
@@ -46,6 +53,8 @@ type RowProps<T> = {
   actions?: (row: T) => ReactNode
   /** sobald eine Spalte fehlt: Tipp auf die Zeile öffnet die Details */
   onOpenDetails?: () => void
+  /** Die Klasse des Aufrufers für diese Zeile (`rowClassName` der Tabelle). */
+  extraClassName?: string
 }
 
 /** Die Zellen einer Zeile. Mit dragHandle sitzt der Griff in der ersten Spalte, links vom Inhalt. */
@@ -100,9 +109,16 @@ function createRowClickHandler(onOpenDetails: (() => void) | undefined) {
 }
 
 function StaticRow<T>(props: RowProps<T>) {
-  let rowClassName: string | undefined = undefined
+  const rowClassNames: string[] = []
   if (props.onOpenDetails !== undefined) {
-    rowClassName = 'details-trigger'
+    rowClassNames.push('details-trigger')
+  }
+  if (props.extraClassName !== undefined) {
+    rowClassNames.push(props.extraClassName)
+  }
+  let rowClassName: string | undefined = undefined
+  if (rowClassNames.length > 0) {
+    rowClassName = rowClassNames.join(' ')
   }
   const rowClickHandler = createRowClickHandler(props.onOpenDetails)
   return (
@@ -122,6 +138,9 @@ function SortableRow<T>({ id, disabled, ...props }: RowProps<T> & { id: string; 
   if (props.onOpenDetails !== undefined) {
     rowClassNames.push('details-trigger')
   }
+  if (props.extraClassName !== undefined) {
+    rowClassNames.push(props.extraClassName)
+  }
   const rowClassName = rowClassNames.join(' ')
   const rowClickHandler = createRowClickHandler(props.onOpenDetails)
   return (
@@ -139,7 +158,8 @@ function SortableRow<T>({ id, disabled, ...props }: RowProps<T> & { id: string; 
  * Spalten), gezogen wird am rechten Rand eines Kopfs ({@link ColumnResizeHandle}), das Zahnrad im ersten Kopf öffnet die
  * Spalteneinstellungen. Ein Stern am Kopf zeigt jede gezogene Spalte. Eine Erklärung je Spalte (`headerHint`) zeigt das
  * Hoverlay am Kopf, beim Zeigen oder Anklicken. Fehlt eine Spalte, zeigt ein Tipp auf die Zeile alle Spalten im Popup.
- * Mit `onReorder` lassen sich die Zeilen per Drag and Drop verschieben.
+ * Mit `onReorder` lassen sich die Zeilen per Drag and Drop verschieben; `isRowFixed` nimmt einzelne Zeilen davon aus,
+ * `rowClassName` hebt einzelne Zeilen ab.
  */
 export function Table<T>({
   columns,
@@ -150,6 +170,8 @@ export function Table<T>({
   emptyText,
   onReorder,
   reorderDisabled = false,
+  isRowFixed,
+  rowClassName,
   actionsWidth = '6rem',
   settingKey,
 }: TableProps<T>) {
@@ -323,20 +345,37 @@ export function Table<T>({
     if (columnsHidden) {
       onOpenDetails = () => setDetailRow(row)
     }
+    let extraClassName: string | undefined = undefined
+    if (rowClassName !== undefined) {
+      extraClassName = rowClassName(row)
+    }
     if (onReorder !== undefined) {
+      // eine feste Zeile: Griff gesperrt, und sie ist kein Ziel für eine gezogene Zeile
+      const rowFixed = isRowFixed !== undefined && isRowFixed(row)
+      const rowReorderDisabled = reorderDisabled || rowFixed
       return (
         <SortableRow
           key={key}
           id={key}
-          disabled={reorderDisabled}
+          disabled={rowReorderDisabled}
           row={row}
           columns={visibleColumns}
           actions={actions}
           onOpenDetails={onOpenDetails}
+          extraClassName={extraClassName}
         />
       )
     }
-    return <StaticRow key={key} row={row} columns={visibleColumns} actions={actions} onOpenDetails={onOpenDetails} />
+    return (
+      <StaticRow
+        key={key}
+        row={row}
+        columns={visibleColumns}
+        actions={actions}
+        onOpenDetails={onOpenDetails}
+        extraClassName={extraClassName}
+      />
+    )
   }
 
   let tableClassName = 'table table-striped table-hover align-middle mb-0 data-table'

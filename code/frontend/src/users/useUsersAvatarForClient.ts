@@ -24,6 +24,15 @@ function rememberUsersAvatarRequest(usersGuid: string, usersAvatarRequest: Promi
   })
 }
 
+/**
+ * Vergisst die gemerkte Antwort zu einer GUID: Die nächste Stelle, die diesen User zeigt, fragt das Backend neu. Nach
+ * einer Änderung an dem, was die Antwort trägt (Profilbild, Avatar-Farben, Rahmenfarbe der Uploads), damit z. B. die
+ * Rahmen in einer Galerie gleich die neue Farbe zeigen und nicht erst nach dem Neuladen der Seite.
+ */
+export function forgetUsersAvatarForClient(usersGuid: string) {
+  usersAvatarRequestsByGuid.delete(usersGuid)
+}
+
 /** Die Anfrage zu einer GUID (`GET /api/users/avatar/<guid>`): die schon laufende oder fertige, sonst eine neue. */
 function requestUsersAvatarForClient(
   usersGuid: string,

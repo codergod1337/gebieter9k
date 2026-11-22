@@ -2820,9 +2820,10 @@
     color: inherit;
   }
 
-  /* Die Vorschläge beim Tippen: direkt unter dem Feld im Fluss (nicht schwebend, damit keine Tabelle oder Box sie
-     abschneidet), je Vorschlag der Wert als Badge mit markierter Fundstelle und ein Hinweis daneben */
-  .values-input-suggestions {
+  /* Die Vorschläge beim Tippen, überall gleich (ValuesInput: vorhandene Werte; UsersSearchInput: User): direkt unter
+     dem Feld im Fluss (nicht schwebend, damit keine Tabelle oder Box sie abschneidet), je Vorschlag ein Knopf über die
+     ganze Breite. Beim ValuesInput steht darin der Wert als Badge mit markierter Fundstelle und ein Hinweis daneben. */
+  .suggestion-list {
     display: flex;
     flex-direction: column;
     margin: 0.25rem 0 0;
@@ -2830,7 +2831,7 @@
     list-style: none;
   }
 
-  .values-input-suggestion {
+  .suggestion-list-entry {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2850,6 +2851,65 @@
   .values-input-suggestion-hint {
     font-size: 0.75rem;
     white-space: nowrap;
+  }
+
+  /* ===== UsersSearchInput: die Vervollständigung von Usern. Das Feld ist ein .form-control, die Treffer stehen in der
+     Vorschlagsliste (.suggestion-list); je Treffer links der Avatar, daneben der Name. ===== */
+  .users-search-input-note {
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+  }
+
+  .users-search-input .suggestion-list-entry {
+    justify-content: flex-start;
+  }
+
+  .users-search-input-match {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .users-search-input-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .users-search-input-name mark {
+    padding: 0;
+  }
+
+  /* ===== Rahmenfarbe der Uploads eines Users (gemeinsame Galerie): die Breite des Rahmens an der Bildkachel, das kleine
+     Farbfeld (UsersUploadFrameSwatch) und die Legende über den Kacheln (UsersUploadFrameLegend). Die Farbe selbst kommt
+     je Element als --upload-frame-color aus dem Profil des Users; wie Rahmen und Farbfeld aussehen, bestimmt das Theme. */
+  :root {
+    --upload-frame-width: 3px;
+    --upload-frame-swatch-size: 1.25rem;
+  }
+
+  .upload-frame-swatch {
+    display: inline-block;
+    flex: none;
+    width: var(--upload-frame-swatch-size);
+    height: var(--upload-frame-swatch-size);
+    vertical-align: middle;
+  }
+
+  .upload-frame-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.25rem;
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .upload-frame-legend-entry {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
   }
 
   /* ===== File-Manager: Upload-Liste ===== */
@@ -3975,6 +4035,16 @@
     min-width: 0;
   }
 
+  /* Titel und, bei der gemeinsamen Galerie eines anderen Users, darunter die Zeile mit Marke und Besitzer */
+  .gallery-table-title-block {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .gallery-table-title > img,
   .gallery-table-title > i {
     flex: none;
@@ -4020,6 +4090,58 @@
     align-items: center;
     gap: 0.25rem;
     padding: 0 0.5rem 0.6rem;
+  }
+
+  /*
+   * Die gemeinsame Galerie eines anderen Users in der Liste der eigenen Galerien (Nutzer 2026-11-22): kursiv, als
+   * Kachel und als Zeile der Tabelle, mit der Marke „gemeinsam“ und ihrem Besitzer. Kursiv steht hier, weil es immer
+   * gilt; die Farben macht das Theme.
+   */
+  .gallery-tile-shared .gallery-tile-title,
+  .gallery-tile-shared .gallery-tile-meta,
+  .gallery-table-row-shared > td {
+    font-style: italic;
+  }
+
+  .gallery-tile-shared-owner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0 0.5rem 0.6rem;
+    font-size: 0.8rem;
+    font-style: italic;
+  }
+
+  .gallery-table-shared-owner {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+  }
+
+  .gallery-shared-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.75rem;
+    font-style: normal;
+    white-space: nowrap;
+  }
+
+  /* „Neuer Uploadberechtigter“: der gewählte User mit Avatar und Name, daneben „anderen wählen“ */
+  .gallery-uploader-picked {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .gallery-uploader-picked-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .gallery-description {

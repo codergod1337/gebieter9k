@@ -24,9 +24,13 @@ import { GALLERY_TEXTS } from './galleryTexts.ts'
 import { GalleryTile } from './GalleryTile.tsx'
 import { useGallery } from './useGallery.ts'
 import { useGalleryShare } from './useGalleryShare.ts'
+import { useGalleryUploader } from './useGalleryUploader.ts'
 
 /** Woher man kommt, wenn man aus diesem Tab eine Galerie öffnet. */
 const GALLERY_LIST_ORIGIN_LABEL = 'Galerien'
+
+/** Die Klasse einer Tabellenzeile mit der gemeinsamen Galerie eines anderen Users (kursiv, farblich abgehoben). */
+const SHARED_GALLERY_ROW_CLASS_NAME = 'gallery-table-row-shared'
 
 function getGalleryKey(gallery: GalleryForClient): string {
   return String(gallery.id)
@@ -56,17 +60,27 @@ function groupGallerySharesByGalleryId(galleryShares: GalleryShare[]): Map<numbe
  * die zentrale `Table` mit den Spalten aus {@link createGalleryColumns}): Titel mit Beschreibung hinter dem „i“,
  * Bilder, letztes Bild, sichtbar für, im eigenen Profil die Freigaben über einen Link, erstellt. Die Freigaben lädt
  * der Tab nur dann (eigenes Profil, Handy).
+ *
+ * Im eigenen Profil stehen HINTER den eigenen Galerien die gemeinsamen (Nutzer 2026-11-22): Galerien anderer User, in
+ * die man als Uploadberechtigter hochladen darf, kursiv und farblich abgehoben, mit der Marke „gemeinsam“ und ihrem
+ * Besitzer. Zwei Endpunkte liefern das: die eigenen Galerien (`POST /api/gallery/resolve`) und die eigenen Einträge als
+ * Uploadberechtigter (`GET /api/gallery-uploader`); jede dieser Galerien holt der Tab dann einzeln
+ * (`GET /api/gallery/<id>`). Sortieren, Bearbeiten und Löschen gibt es nur an den eigenen.
  */
 export function GalleryListTab() {
   const { usersGuid } = useParams()
   const { session } = useCurrentSession()
   const loadHook = useGallery()
   const saveHook = useGallery()
+  const sharedGalleryHook = useGallery()
   const galleryShareHook = useGalleryShare()
+  const galleryUploaderHook = useGalleryUploader()
   const originNavigation = useOrigin()
   const isMobile = useIsMobile()
   const resolveGalleries = loadHook.resolveGalleries
   const getAllOwnGalleryShare = galleryShareHook.getAllOwnGalleryShare
+  const getAllOwnGalleryUploader = galleryUploaderHook.getAllOwnGalleryUploader
+  const getGalleryForClient = sharedGalleryHook.getGalleryForClient
   const profileUsersGuid = usersGuid ?? ''
   const ownProfile = session !== null && session.users.guid === profileUsersGuid
   /** Die Spalte „Freigaben“ gibt es nur in der Tabelle des eigenen Profils. */
@@ -82,6 +96,36 @@ export function GalleryListTab() {
   let galleries = loadedGalleries.data
   if (reorderedGalleries !== null) {
     galleries = reorderedGalleries
+  }
+
+  // Im eigenen Profil: die Galerien anderer, in die man hochladen darf. Erst die eigenen Einträge als
+  // Uploadberechtigter, dann jede Galerie einzeln; eine, die es nicht mehr gibt, fehlt einfach.
+  const loadSharedGalleries = useCallback(async () => {
+    const sharedGalleries: GalleryForClient[] = []
+    if (!ownProfile) {
+      return sharedGalleries
+    }
+    const ownGalleryUploaders = await getAllOwnGalleryUploader()
+    if (ownGalleryUploaders === null) {
+      return sharedGalleries
+    }
+    const sharedGalleryRequests = ownGalleryUploaders.map((ownGalleryUploader) => {
+      return getGalleryForClient(ownGalleryUploader.galleryId)
+    })
+    const loadedSharedGalleries = await Promise.all(sharedGalleryRequests)
+    for (const loadedSharedGallery of loadedSharedGalleries) {
+      if (loadedSharedGallery !== null) {
+        sharedGalleries.push(loadedSharedGallery)
+      }
+    }
+    return sharedGalleries
+  }, [ownProfile, getAllOwnGalleryUploader, getGalleryForClient])
+  const loadedSharedGalleries = useLoadedData(loadSharedGalleries)
+  const sharedGalleries = loadedSharedGalleries.data ?? []
+
+  /** Ist das die gemeinsame Galerie eines anderen Users (nicht die eigene)? */
+  function isSharedGallery(gallery: GalleryForClient): boolean {
+    return gallery.ownerUsersGuid !== profileUsersGuid
   }
   let saveErrorMessage: string | null = null
   if (saveHook.error !== null) {
@@ -135,8 +179,12 @@ export function GalleryListTab() {
     await loadedGalleries.reload()
   }
 
-  /** Nach dem Ziehen: gleich so zeigen, speichern, dann neu laden. */
-  async function reorderGalleries(changedGalleries: GalleryForClient[]) {
+  /**
+   * Nach dem Ziehen: gleich so zeigen, speichern, dann neu laden. Sortiert werden nur die eigenen Galerien; die
+   * gemeinsamen stehen fest dahinter und gehen nicht mit ans Backend.
+   */
+  async function reorderGalleries(changedGalleriesWithShared: GalleryForClient[]) {
+    const changedGalleries = changedGalleriesWithShared.filter((gallery) => !isSharedGallery(gallery))
     setReorderedGalleries(changedGalleries)
     const galleryIdsInOrder = changedGalleries.map((gallery) => gallery.id)
     await saveHook.changeOwnGalleryListingPositions(galleryIdsInOrder)
@@ -162,16 +210,34 @@ export function GalleryListTab() {
   // Der Fuß: wie viele Galerien, im eigenen Profil mit dem Hinweis auf das Verschieben
   const profilePrivate = loadHook.error !== null && galleries === null
   const isLoadingGalleries = galleries === null && !profilePrivate
-  let galleryCountText = ''
+  const galleryCountTextParts: string[] = []
   if (galleries !== null && galleries.length > 0) {
     const galleryCount = galleries.length.toLocaleString('de-DE')
-    galleryCountText = getTextInCurrentLanguageWithValues(GALLERY_TEXTS.listCountMany, { galleryCount })
+    let ownGalleryCountText = getTextInCurrentLanguageWithValues(GALLERY_TEXTS.listCountMany, { galleryCount })
     if (galleries.length === 1) {
-      galleryCountText = getTextInCurrentLanguage(GALLERY_TEXTS.listCountOne)
+      ownGalleryCountText = getTextInCurrentLanguage(GALLERY_TEXTS.listCountOne)
     }
     if (ownProfile) {
-      galleryCountText = galleryCountText + getTextInCurrentLanguage(GALLERY_TEXTS.listCountOwnHint)
+      ownGalleryCountText = ownGalleryCountText + getTextInCurrentLanguage(GALLERY_TEXTS.listCountOwnHint)
     }
+    galleryCountTextParts.push(ownGalleryCountText)
+  }
+  if (sharedGalleries.length === 1) {
+    const sharedGalleryCountText = getTextInCurrentLanguage(GALLERY_TEXTS.listCountSharedOne)
+    galleryCountTextParts.push(sharedGalleryCountText)
+  } else if (sharedGalleries.length > 1) {
+    const sharedGalleryCount = sharedGalleries.length.toLocaleString('de-DE')
+    const sharedGalleryCountText = getTextInCurrentLanguageWithValues(GALLERY_TEXTS.listCountSharedMany, {
+      galleryCount: sharedGalleryCount,
+    })
+    galleryCountTextParts.push(sharedGalleryCountText)
+  }
+  const galleryCountSeparator = getTextInCurrentLanguage(GALLERY_TEXTS.listCountSeparator)
+  const galleryCountText = galleryCountTextParts.join(galleryCountSeparator)
+  // Was dasteht: erst die eigenen Galerien, dahinter die gemeinsamen
+  let shownGalleries: GalleryForClient[] = []
+  if (galleries !== null) {
+    shownGalleries = [...galleries, ...sharedGalleries]
   }
   const footer = (
     <LoadStatus errorMessage={null} isLoading={isLoadingGalleries}>
@@ -184,15 +250,24 @@ export function GalleryListTab() {
     content = <p className="text-body-secondary mb-0">{getTextInCurrentLanguage(GALLERY_TEXTS.listPrivate)}</p>
   } else if (galleries === null) {
     content = <Spinner animation="border" />
-  } else if (galleries.length === 0) {
+  } else if (shownGalleries.length === 0) {
     content = <p className="text-body-secondary mb-0">{getTextInCurrentLanguage(GALLERY_TEXTS.listEmpty)}</p>
   } else if (isMobile) {
     // Auf dem Handy die Tabelle: mehr Angaben je Galerie, was nicht passt, zeigt ein Tipp auf die Zeile
-    const columns = createGalleryColumns({ originState, showShares, gallerySharesByGalleryId })
+    const columns = createGalleryColumns({
+      originState,
+      showShares,
+      gallerySharesByGalleryId,
+      listUsersGuid: profileUsersGuid,
+    })
     let rowActions: ((gallery: GalleryForClient) => ReactNode) | undefined = undefined
     let reorderRows: ((changedGalleries: GalleryForClient[]) => void) | undefined = undefined
     if (ownProfile) {
       rowActions = (gallery) => {
+        // Bearbeiten und Löschen nur an den eigenen Galerien
+        if (isSharedGallery(gallery)) {
+          return null
+        }
         const editLabel = getTextInCurrentLanguageWithValues(GALLERY_TEXTS.editLabel, { title: gallery.title })
         const deleteLabel = getTextInCurrentLanguageWithValues(GALLERY_TEXTS.deleteLabel, { title: gallery.title })
         return (
@@ -207,7 +282,7 @@ export function GalleryListTab() {
     content = (
       <Table
         columns={columns}
-        rows={galleries}
+        rows={shownGalleries}
         rowKey={getGalleryKey}
         detailTitle={(gallery) => gallery.title}
         emptyText={getTextInCurrentLanguage(GALLERY_TEXTS.listEmpty)}
@@ -215,18 +290,26 @@ export function GalleryListTab() {
         actions={rowActions}
         onReorder={reorderRows}
         reorderDisabled={saveHook.isLoading}
+        isRowFixed={isSharedGallery}
+        rowClassName={(gallery) => {
+          if (isSharedGallery(gallery)) {
+            return SHARED_GALLERY_ROW_CLASS_NAME
+          }
+          return undefined
+        }}
       />
     )
   } else {
     content = (
-      <SortableArea items={galleries} itemKey={getGalleryKey} onReorder={(changed) => void reorderGalleries(changed)} layout="grid">
+      <SortableArea items={shownGalleries} itemKey={getGalleryKey} onReorder={(changed) => void reorderGalleries(changed)} layout="grid">
         <div className="gallery-tiles">
-          {galleries.map((gallery) => (
+          {shownGalleries.map((gallery) => (
             <GalleryTile
               key={gallery.id}
               gallery={gallery}
               originState={originState}
               editable={ownProfile}
+              shared={isSharedGallery(gallery)}
               sortingDisabled={saveHook.isLoading}
               onEdit={setEditedGallery}
               onDelete={setDeletedGallery}

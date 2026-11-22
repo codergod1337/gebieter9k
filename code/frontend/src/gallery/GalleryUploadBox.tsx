@@ -22,7 +22,8 @@ type GalleryUploadBoxProps = {
 const RECENT_FILE_UPLOADS_STATE_KEY_PREFIX = 'RECENT_FILE_UPLOADS_GALLERY_'
 
 /**
- * Hochladen in eine eigene Galerie, gezeigt im Popup hinter dem Knopf „neue Bilder“ ({@link GalleryUploadPopup}):
+ * Hochladen in eine Galerie (die eigene, oder eine fremde als Uploadberechtigter), gezeigt im Popup hinter dem Knopf
+ * „neue Bilder“ ({@link GalleryUploadPopup}):
  * derselbe Ablauf wie überall ({@link FileUploadForm}), eine Liste je Bild von der
  * Prüfung bis „ausgewertet“. Anders sind nur die FileClasses (die der Admin am Ziel „Galerie“ anbietet und in die der
  * User schreiben darf), die Felder je Bild (Beschreibung und Tags mit Vervollständigung, kein Titel, kein Dateiname) und

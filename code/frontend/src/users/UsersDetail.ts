@@ -2,7 +2,7 @@ import type { MultilingualText } from '../language/MultilingualText.ts'
 
 /**
  * Die Details eines Users (1:1 zu `Users`), so wie das Backend sie als JSON liefert: Profilbild, Status, Über mich, Banner-Drift,
- * Avatar-Farben und Zähler (die setzt nur das Backend). Kontaktangaben stehen in `UsersContact`, je Feld mit eigener
+ * Avatar-Farben, Rahmenfarbe der Uploads und Zähler (die setzt nur das Backend). Kontaktangaben stehen in `UsersContact`, je Feld mit eigener
  * Sichtbarkeit.
  * Doku: `docu/entities/UsersDetail.md`
  */
@@ -31,6 +31,11 @@ export type UsersDetail = {
   avatarTextColor: string | null
   /** Die Hintergrundfarbe des Avatars ohne Profilbild (`#rrggbb`), `null`: Standard (Verlauf aus der GUID). */
   avatarBackgroundColor: string | null
+  /**
+   * Die Rahmenfarbe der eigenen Uploads an den Bildkacheln einer gemeinsamen Galerie (`#rrggbb`, Nutzer 2026-11-22),
+   * `null`: Standard (eine Farbe aus der GUID, `getDefaultUploadFrameColor`).
+   */
+  uploadFrameColor: string | null
 }
 
 /** Höchstlänge des Status-Texts, wie `gebiter.profile-status-text.max-length` im Backend. */

@@ -16,6 +16,7 @@ import de.gebiter.users.dto.OwnUsersDetailBannerDriftSpeedRequest;
 import de.gebiter.users.dto.OwnUsersDetailProfileImageRequest;
 import de.gebiter.users.dto.OwnUsersDetailAboutTextRequest;
 import de.gebiter.users.dto.OwnUsersDetailStatusTextRequest;
+import de.gebiter.users.dto.OwnUsersDetailUploadFrameColorRequest;
 import de.gebiter.users.model.UsersDetail;
 import de.gebiter.users.service.UsersDetailService;
 import de.gebiter.users.service.UsersService;
@@ -114,6 +115,19 @@ public class UsersDetailController {
 		String avatarBackgroundColor = avatarColorsRequest.avatarBackgroundColor();
 		UsersDetail savedUsersDetail = usersDetailService.changeOwnUsersDetailAvatarColors(avatarTextColor,
 				avatarBackgroundColor);
+		return ResponseEntity.ok(savedUsersDetail);
+	}
+
+	/**
+	 * UPDATE: Die Rahmenfarbe der eigenen Uploads an den Bildkacheln einer Galerie. Body:
+	 * {@code {"uploadFrameColor": "#e9ff3b"}}; leer setzt sie auf den Standard zurück (Farbe aus der GUID). 400 bei
+	 * falscher Form.
+	 */
+	@PutMapping("/upload-frame-color")
+	public ResponseEntity<UsersDetail> changeOwnUsersDetailUploadFrameColor(
+			@RequestBody OwnUsersDetailUploadFrameColorRequest uploadFrameColorRequest) {
+		String uploadFrameColor = uploadFrameColorRequest.uploadFrameColor();
+		UsersDetail savedUsersDetail = usersDetailService.changeOwnUsersDetailUploadFrameColor(uploadFrameColor);
 		return ResponseEntity.ok(savedUsersDetail);
 	}
 }

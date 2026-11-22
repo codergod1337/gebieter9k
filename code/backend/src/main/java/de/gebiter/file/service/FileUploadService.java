@@ -190,17 +190,18 @@ public class FileUploadService {
 	}
 
 	/**
-	 * CREATE: Lädt eine Datei in eine eigene Galerie hoch (Konzept {@code docu/konzept-galerie.md}), sonst wie
+	 * CREATE: Lädt eine Datei in eine Galerie hoch (Konzept {@code docu/konzept-galerie.md}), sonst wie
 	 * {@link #uploadFile}. Der Teil {@code data} ist ein {@link FileUploadIntoGalleryData}: die Galerie und die Felder des
 	 * Clients. Zusätzlich gilt:
-	 * - Die Galerie gehört dem User ({@code GalleryService}).
+	 * - Die Galerie gehört dem User, oder er ist dort als Uploadberechtigter eingetragen ({@code GalleryService}, Nutzer
+	 *   2026-11-22). Autor der Datei ist, wer hochlädt; an seiner Grenze zählt sie, und er bekommt die Punkte.
 	 * - Die FileClass wird am Ziel {@link FileClassDestination#GALLERY} angeboten.
 	 * - Das Dokument bekommt die Galerie, ihre Sichtbarkeit und den Platz am Ende der Galerie.
 	 * - Ist die Galerie über einen Token freigegeben ({@code GalleryShareService}, Konzept
 	 *   {@code docu/konzept-galerie-freigabe.md}), bekommt das Dokument die Hashes ihrer Freigaben, und nach dem Anlegen
 	 *   zählt jede Freigabe ein Bild mehr.
 	 *
-	 * @throws jakarta.persistence.EntityNotFoundException (404) wenn die Galerie nicht dem User gehört
+	 * @throws jakarta.persistence.EntityNotFoundException (404) wenn der User nicht in die Galerie hochladen darf
 	 * @throws IllegalArgumentException (400) wie beim normalen Upload, dazu ohne Galerie oder mit einer FileClass, die
 	 *             nicht für Galerien angeboten wird
 	 */
@@ -210,7 +211,7 @@ public class FileUploadService {
 		FileUploadIntoGalleryData galleryData = objectMapper.convertValue(rawData, FileUploadIntoGalleryData.class);
 		Long galleryId = galleryData.galleryId();
 		Helper.requireNotNull(galleryId, "galleryId");
-		Map<String, Object> galleryFieldValues = galleryService.prepareOwnGalleryUpload(galleryId);
+		Map<String, Object> galleryFieldValues = galleryService.prepareGalleryUpload(galleryId);
 		// Ist die Galerie über einen Token freigegeben, trägt das neue Bild ihre Freigaben von Anfang an
 		Map<String, Object> galleryShareFieldValues = galleryShareService.prepareGalleryShareUpload(galleryId);
 		galleryFieldValues.putAll(galleryShareFieldValues);

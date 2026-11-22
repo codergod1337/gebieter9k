@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -58,4 +59,20 @@ public interface UsersRepository extends JpaRepository<Users, UUID> {
 
 	/** Alle User mit genau dem Status {@code status}. */
 	List<Users> findByStatus(UsersStatus status);
+
+	/**
+	 * Für die Vervollständigung: die User mit einem anderen Status als {@code status}, deren Username
+	 * {@code usernamePart} enthält, ohne Groß- und Kleinschreibung, nach Username sortiert, höchstens die Seite
+	 * {@code pageable}. Die Zeichen {@code %} und {@code _} im gesuchten Text zählen wörtlich.
+	 */
+	List<Users> findByStatusNotAndUsernameContainingIgnoreCaseOrderByUsernameAsc(UsersStatus status,
+			String usernamePart, Pageable pageable);
+
+	/**
+	 * Für die Vervollständigung: die User mit einem anderen Status als {@code status}, deren E-Mail-Adresse mit
+	 * {@code emailStart} beginnt, ohne Groß- und Kleinschreibung, nach Username sortiert, höchstens die Seite
+	 * {@code pageable}. Die Zeichen {@code %} und {@code _} im gesuchten Text zählen wörtlich.
+	 */
+	List<Users> findByStatusNotAndEmailStartingWithIgnoreCaseOrderByUsernameAsc(UsersStatus status, String emailStart,
+			Pageable pageable);
 }

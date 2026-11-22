@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { useSortableItem } from '../components/useSortableItem.tsx'
 import { FileCheerBar } from '../file/cheer/FileCheerBar.tsx'
@@ -17,8 +17,16 @@ type GalleryImageTileProps = {
   /** Nur in der eigenen Galerie: der Griff zum Verschieben (Drag and Drop). */
   sortable: boolean
   sortingDisabled: boolean
-  /** Darf der User die Metadaten ändern (Autor, freigegebene Bearbeiter, FILE_MANAGER, ADMIN)? Dann gibt es den Stift. */
+  /**
+   * Darf der User die Metadaten ändern (Autor, freigegebene Bearbeiter, Besitzer der Galerie, FILE_MANAGER, ADMIN)? Dann
+   * gibt es den Stift.
+   */
   changeable: boolean
+  /**
+   * Optional: die Rahmenfarbe dessen, der das Bild hochgeladen hat (`#rrggbb`, `getUsersUploadFrameColor`). In einer
+   * gemeinsamen Galerie trägt jede Kachel so die Farbe ihres Uploaders (Nutzer 2026-11-22). Ohne: der Rahmen des Themes.
+   */
+  frameColor?: string
   /**
    * Der Origin für die Seite der Datei („Zurück zu <Galerie>“). Fehlt nur dort, wo es die Seite der Datei nicht gibt
    * (Besucherseite einer Freigabe): Dann bringt der Aufrufer `cheers` und `actions` selbst mit.
@@ -64,6 +72,8 @@ const GALLERY_IMAGE_PREVIEW_PIXELS = 200
  * man jedes Feld per Klick im Popup (eine eigene Bearbeiten-Seite gibt es nicht mehr). Die Knöpfe stehen neben
  * der Bildfläche, nie darin;
  * - optional ein Fuß des Aufrufers (`footer`), z. B. im Gebietermarkt das Angebot des Artikels.
+ * Mit `frameColor` ist die Kachel in dieser Farbe umrandet (gemeinsame Galerie: die Farbe des Uploaders); wie der
+ * Rahmen aussieht, bestimmt das Theme (`.gallery-image-tile-framed`), die Farbe kommt als `--upload-frame-color`.
  * Dieselbe Kachel überall, wo ein Bild als Kachel steht: Galerie und Gebietermarkt.
  */
 export function GalleryImageTile({
@@ -74,6 +84,7 @@ export function GalleryImageTile({
   sortable,
   sortingDisabled,
   changeable,
+  frameColor,
   originState,
   onOpen,
   footer,
@@ -85,8 +96,14 @@ export function GalleryImageTile({
   const navigate = useNavigate()
   const sortableItem = useSortableItem(fileDocumentId, sortingDisabled || !sortable)
   let tileClassName = 'gallery-image-tile'
+  let tileStyle: CSSProperties = sortableItem.style
+  if (frameColor !== undefined) {
+    tileClassName = 'gallery-image-tile gallery-image-tile-framed'
+    const frameStyle = { '--upload-frame-color': frameColor } as CSSProperties
+    tileStyle = { ...sortableItem.style, ...frameStyle }
+  }
   if (sortableItem.isDragging) {
-    tileClassName = 'gallery-image-tile gallery-tile-dragging'
+    tileClassName = tileClassName + ' gallery-tile-dragging'
   }
   const openLabel = heading + ' groß ansehen'
   const fileDocumentPath = getFileDocumentPath(fileDocumentId)
@@ -125,7 +142,7 @@ export function GalleryImageTile({
   }
 
   return (
-    <div ref={sortableItem.ref} style={sortableItem.style} className={tileClassName}>
+    <div ref={sortableItem.ref} style={tileStyle} className={tileClassName}>
       <div className="gallery-image-tile-head">
         {sortable && <div className="gallery-image-tile-handle">{sortableItem.dragHandle}</div>}
         {headStart}

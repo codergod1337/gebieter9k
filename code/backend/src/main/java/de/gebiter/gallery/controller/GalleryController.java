@@ -38,7 +38,8 @@ import jakarta.servlet.http.HttpServletRequest;
 /**
  * Die Galerien im Profil für jeden angemeldeten User (Konzept {@code docu/konzept-galerie.md}). Wer was sehen und ändern
  * darf, prüft der {@link GalleryService}; geändert wird nur Eigenes, die GUID kommt aus dem Token. Hochladen in eine
- * Galerie läuft über den {@link FileUploadService}, wie jeder Upload: JSON plus Bytes, je Request eine Datei.
+ * Galerie läuft über den {@link FileUploadService}, wie jeder Upload: JSON plus Bytes, je Request eine Datei; hochladen
+ * dürfen der Besitzer und die Uploadberechtigten der Galerie.
  * <p>
  * Doku: {@code docu/entities/Gallery.md}, {@code docu/solr-cores/FILE.md}.
  */
@@ -66,7 +67,8 @@ public class GalleryController {
 	}
 
 	/**
-	 * CREATE: Eine Datei in eine eigene Galerie hochladen. Multipart: erst {@code data} als JSON
+	 * CREATE: Eine Datei in eine Galerie hochladen: in eine eigene oder in eine fremde, in der man als
+	 * Uploadberechtigter eingetragen ist ({@code docu/entities/GalleryUploader.md}). Multipart: erst {@code data} als JSON
 	 * {@code {"galleryId": 7, "fieldValuesByFieldName": {"fileClassKey": "…"}}}, dann {@code file}.
 	 */
 	@PostMapping(path = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

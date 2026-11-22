@@ -9,7 +9,9 @@ import { NewEntityButton } from '../components/NewEntityButton.tsx'
 import { PageNavigation } from '../components/PageNavigation.tsx'
 import { SortableArea } from '../components/SortableArea.tsx'
 import { RichTextView } from '../components/RichTextView.tsx'
-import { type FileDocument, getFileDocumentText } from '../file/FileDocument.ts'
+import { UsersUploadFrameLegend } from '../components/UsersUploadFrameLegend.tsx'
+import { type FileDocument, type FileDocumentPage, getFileDocumentText } from '../file/FileDocument.ts'
+import type { FileSolrFieldNameSet } from '../file/FileSolrFieldNameSet.ts'
 import { getFileDocumentHeading } from '../file/getFileDocumentHeading.ts'
 import { FILE_DOCUMENT_VIEW_CACHE_SCOPE } from '../file/fileDocumentViewCacheScope.ts'
 import { getTextInCurrentLanguage } from '../language/getTextInCurrentLanguage.ts'
@@ -19,14 +21,20 @@ import { formatUrlPage, parseUrlPage, useUrlParam, useUrlParamsChanger } from '.
 import { useOrigin } from '../navigation/useOrigin.ts'
 import { isFileDocumentChangeableByCurrentUsers } from '../file/isFileDocumentChangeableByCurrentUsers.ts'
 import { useFileManagerOrAdmin } from '../file/useFileManagerOrAdmin.ts'
+import { getUsersUploadFrameColor } from '../users/getUsersUploadFrameColor.ts'
+import { useUsersAvatarsForClient } from '../users/useUsersAvatarForClient.ts'
 import { VISIBILITY_LABELS } from '../users/visibilityLabels.ts'
+import type { GalleryForClient } from './Gallery.ts'
 import { GalleryImageTile } from './GalleryImageTile.tsx'
 import { GalleryImageViewerPopup, type GalleryViewerImage } from './GalleryImageViewerPopup.tsx'
 import { GalleryTagFilter } from './GalleryTagFilter.tsx'
 import { formatUrlTags, parseUrlTags } from './galleryTagUrlParam.ts'
 import { GALLERY_TEXTS } from './galleryTexts.ts'
+import type { GalleryUploader } from './GalleryUploader.ts'
+import { GALLERY_UPLOADER_TEXTS } from './galleryUploaderTexts.ts'
 import { GalleryUploadPopup } from './GalleryUploadPopup.tsx'
 import { useGallery } from './useGallery.ts'
+import { useGalleryUploader } from './useGalleryUploader.ts'
 
 /** Die Parameter der Adresse: die Seite der Bilder (ab 1), das groß geöffnete Bild und die gewählten Hashtags. */
 const PAGE_URL_PARAM = 'page'
@@ -35,6 +43,47 @@ const TAGS_URL_PARAM = 'tags'
 
 /** Der Zwischenspeicher der Ansichten hält die Hashtags einer Galerie unter dieser Art von Anfrage. */
 const GALLERY_TAGS_VIEW_CACHE_KIND = 'GALLERY_TAGS'
+
+/** Wer ein Bild hochgeladen hat (GUID), oder `null`, wenn der Betrachter das Feld nicht lesen darf. */
+function getAuthorUsersGuid(fileDocument: FileDocument, fileSolrFieldNameSet: FileSolrFieldNameSet): string | null {
+  const authorUsersGuid = fileDocument[fileSolrFieldNameSet.authorUsersGuid]
+  if (typeof authorUsersGuid !== 'string' || authorUsersGuid === '') {
+    return null
+  }
+  return authorUsersGuid
+}
+
+/**
+ * Wer an einer Galerie beteiligt ist, jeder einmal, in dieser Reihenfolge: ihr Besitzer, ihre Uploadberechtigten, dann
+ * wer sonst ein Bild der gezeigten Seite hochgeladen hat (z. B. ein inzwischen ausgetragener Uploader). Für die Legende
+ * und die Rahmen einer gemeinsamen Galerie. Leer, solange die Galerie noch lädt.
+ */
+function collectInvolvedUsersGuids(
+  gallery: GalleryForClient | null,
+  galleryUploaders: GalleryUploader[],
+  galleryFilePage: FileDocumentPage | null,
+  fileSolrFieldNameSet: FileSolrFieldNameSet | null,
+): string[] {
+  if (gallery === null) {
+    return []
+  }
+  const involvedUsersGuids: string[] = [gallery.ownerUsersGuid]
+  for (const galleryUploader of galleryUploaders) {
+    if (!involvedUsersGuids.includes(galleryUploader.uploaderUsersGuid)) {
+      involvedUsersGuids.push(galleryUploader.uploaderUsersGuid)
+    }
+  }
+  if (galleryFilePage === null || fileSolrFieldNameSet === null) {
+    return involvedUsersGuids
+  }
+  for (const fileDocument of galleryFilePage.documents) {
+    const authorUsersGuid = getAuthorUsersGuid(fileDocument, fileSolrFieldNameSet)
+    if (authorUsersGuid !== null && !involvedUsersGuids.includes(authorUsersGuid)) {
+      involvedUsersGuids.push(authorUsersGuid)
+    }
+  }
+  return involvedUsersGuids
+}
 
 /**
  * Eine Galerie unter `/profile/<guid>/galleries/<id>` (Konzept `docu/konzept-galerie.md`), der Reiter „Bilder“: Titel,
@@ -47,6 +96,12 @@ const GALLERY_TAGS_VIEW_CACHE_KIND = 'GALLERY_TAGS'
  * - Die Freigabe über einen Link ist ein eigener Reiter im Subheader des Profils (`GallerySharePage`).
  * In der eigenen Galerie lassen sich die Bilder per Drag and Drop sortieren, solange kein Hashtag gewählt ist (die
  * Plätze gelten für die ganze Galerie, nicht für eine gefilterte Auswahl).
+ *
+ * Gemeinsame Galerie (Nutzer 2026-11-22, `docu/entities/GalleryUploader.md`): Hat die Galerie Uploadberechtigte, oder
+ * zeigt die Seite ein Bild, das nicht der Besitzer hochgeladen hat, trägt jede Bildkachel den Rahmen in der Farbe
+ * ihres Uploaders, und über den Kacheln steht die Legende, welche Farbe wem gehört (`UsersUploadFrameLegend`). Den
+ * Knopf „neue Bilder“ haben der Besitzer und jeder Uploadberechtigte; den Stift an jedem Bild hat der Besitzer, ein
+ * Uploadberechtigter an seinen eigenen.
  *
  * Nach dem Muster aller Module stehen Seite, gewählte Hashtags und geöffnetes Bild in der Adresse
  * (`?tags=strand,safari&page=2&image=…`): Filtern, Blättern und Öffnen sind Einträge im Verlauf, Zurück schließt das
@@ -63,9 +118,11 @@ export function GalleryPage() {
   const filesHook = useGallery()
   const tagsHook = useGallery()
   const sortHook = useGallery()
+  const galleryUploaderHook = useGalleryUploader()
   const getGalleryForClient = galleryHook.getGalleryForClient
   const resolveGalleryFiles = filesHook.resolveGalleryFiles
   const resolveGalleryTags = tagsHook.resolveGalleryTags
+  const resolveGalleryUploaders = galleryUploaderHook.resolveGalleryUploaders
   const galleryIdNumber = Number(galleryId)
   const pageUrlParam = useUrlParam(PAGE_URL_PARAM)
   const imageUrlParam = useUrlParam(IMAGE_URL_PARAM)
@@ -104,9 +161,20 @@ export function GalleryPage() {
   const reloadGalleryFiles = loadedGalleryFiles.reload
   const reloadGalleryTags = loadedGalleryTags.reload
 
+  // Die Uploadberechtigten der Galerie: wer außer dem Besitzer hochladen darf, und wessen Farben die Legende zeigt
+  const loadGalleryUploaders = useCallback(
+    () => resolveGalleryUploaders(galleryIdNumber),
+    [resolveGalleryUploaders, galleryIdNumber],
+  )
+  const loadedGalleryUploaders = useLoadedData(loadGalleryUploaders)
+
   const gallery = loadedGallery.data
   const galleryFilePage = loadedGalleryFiles.data
   const galleryTagCounts = loadedGalleryTags.data ?? []
+  const galleryUploaders = loadedGalleryUploaders.data ?? []
+  // Wer beteiligt ist und wie er dargestellt wird (Rahmenfarbe): vor dem ersten return, dahinter darf kein Hook stehen
+  const involvedUsersGuids = collectInvolvedUsersGuids(gallery, galleryUploaders, galleryFilePage, fileSolrFieldNameSet)
+  const involvedUsersAvatarsByGuid = useUsersAvatarsForClient(involvedUsersGuids)
 
   /**
    * Nach jedem eingecheckten Bild und noch einmal, wenn seine Auswertung fertig ist: Galerie (Zahl, Titelbild), Bilder
@@ -135,6 +203,11 @@ export function GalleryPage() {
   const fileNameFieldName = fileSolrFieldNameSet.fileName
   const previewFieldName = fileSolrFieldNameSet.previewBase64Png
   const nameSet = fileSolrFieldNameSet
+  // Hochladen dürfen der Besitzer und die Uploadberechtigten
+  const galleryUploader = galleryUploaders.some((uploader) => uploader.uploaderUsersGuid === currentUsersGuid)
+  const uploadAllowed = ownGallery || galleryUploader
+  // Gemeinsame Galerie: Sobald außer dem Besitzer noch jemand beteiligt ist, zeigen Rahmen und Legende, wer hochlud
+  const sharedGallery = involvedUsersGuids.length > 1
 
   let shownFiles: FileDocument[] = []
   if (reorderedFiles !== null) {
@@ -149,6 +222,19 @@ export function GalleryPage() {
 
   function getFileDocumentId(fileDocument: FileDocument): string {
     return getFileDocumentText(fileDocument, idFieldName)
+  }
+
+  /** Die Rahmenfarbe einer Bildkachel: in einer gemeinsamen Galerie die ihres Uploaders, sonst keine. */
+  function getFrameColor(fileDocument: FileDocument): string | undefined {
+    if (!sharedGallery) {
+      return undefined
+    }
+    const authorUsersGuid = getAuthorUsersGuid(fileDocument, nameSet)
+    if (authorUsersGuid === null) {
+      return undefined
+    }
+    const authorUsersAvatar = involvedUsersAvatarsByGuid.get(authorUsersGuid) ?? null
+    return getUsersUploadFrameColor(authorUsersGuid, authorUsersAvatar)
   }
 
   function toViewerImage(fileDocument: FileDocument): GalleryViewerImage {
@@ -254,7 +340,7 @@ export function GalleryPage() {
   // Sortiert wird nur die ganze Galerie: Die Plätze einer gefilterten Auswahl sagen nichts über die Bilder dazwischen
   const sortable = ownGallery && !tagFilterActive
   let newImagesButton = null
-  if (ownGallery) {
+  if (uploadAllowed) {
     newImagesButton = (
       <NewEntityButton label={getTextInCurrentLanguage(GALLERY_TEXTS.newImagesButton)} onClick={() => setUploadOpen(true)} />
     )
@@ -275,6 +361,13 @@ export function GalleryPage() {
           onReset={resetSelectedTags}
           disabled={filesHook.isLoading}
         />
+        {sharedGallery && (
+          <UsersUploadFrameLegend
+            usersGuids={involvedUsersGuids}
+            label={getTextInCurrentLanguage(GALLERY_UPLOADER_TEXTS.legendLabel)}
+            originLabel={gallery.title}
+          />
+        )}
         {ownGallery && tagFilterActive && shownFiles.length > 1 && (
           <p className="small text-body-secondary">{getTextInCurrentLanguage(GALLERY_TEXTS.sortingPausedWhileFiltered)}</p>
         )}
@@ -289,13 +382,16 @@ export function GalleryPage() {
                 const fileName = getFileDocumentText(fileDocument, fileNameFieldName)
                 const heading = getFileDocumentHeading(fileDocument, nameSet)
                 const previewBase64Png = fileDocument[previewFieldName]
-                const changeable = isFileDocumentChangeableByCurrentUsers(
+                // Der Besitzer bearbeitet jedes Bild seiner Galerie, auch das eines anderen Uploaders
+                const changeableAsAuthorOrEditor = isFileDocumentChangeableByCurrentUsers(
                   fileDocument,
                   fileSolrFieldNameSet,
                   currentUsersGuid,
                   fileManagerOrAdmin,
                   hasAccessRole,
                 )
+                const changeable = ownGallery || changeableAsAuthorOrEditor
+                const frameColor = getFrameColor(fileDocument)
                 return (
                   <GalleryImageTile
                     key={fileDocumentId}
@@ -306,6 +402,7 @@ export function GalleryPage() {
                     sortable={sortable}
                     sortingDisabled={sortHook.isLoading}
                     changeable={changeable}
+                    frameColor={frameColor}
                     originState={imageOriginState}
                     onOpen={openImage}
                     commentCount={commentCountsByFileDocumentId[fileDocumentId]}
@@ -327,7 +424,7 @@ export function GalleryPage() {
           </div>
         )}
       </ContentBox>
-      {ownGallery && uploadOpen && (
+      {uploadAllowed && uploadOpen && (
         <GalleryUploadPopup
           galleryId={gallery.id}
           galleryTitle={gallery.title}

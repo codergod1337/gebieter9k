@@ -47,8 +47,9 @@ export function useGallery(): GalleryHook {
   }, [sendForData])
 
   /**
-   * CREATE: Eine Datei in eine eigene Galerie hochladen, wie jeder Upload: zuerst `data` als JSON (Galerie und FileClass),
-   * dann die Datei. `abortSignal` bricht ab, z. B. beim Verlassen der Seite.
+   * CREATE: Eine Datei in eine Galerie hochladen (die eigene, oder eine fremde als Uploadberechtigter), wie jeder
+   * Upload: zuerst `data` als JSON (Galerie und FileClass), dann die Datei. `abortSignal` bricht ab, z. B. beim
+   * Verlassen der Seite.
    */
   const uploadFileIntoGallery = useCallback(
     async (

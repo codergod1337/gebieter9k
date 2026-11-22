@@ -3,6 +3,7 @@ import { DateTimeText } from '../components/DateTimeText.tsx'
 import { InfoHint } from '../components/InfoHint.tsx'
 import { RichTextView } from '../components/RichTextView.tsx'
 import type { TableColumn } from '../components/TableColumn.ts'
+import { UsersGuidName } from '../components/UsersGuidName.tsx'
 import { VisibilityPicker } from '../components/VisibilityPicker.tsx'
 import { FileDocumentPreviewImage } from '../file/document/FileDocumentPreviewImage.tsx'
 import { getTextInCurrentLanguage } from '../language/getTextInCurrentLanguage.ts'
@@ -11,7 +12,9 @@ import type { OriginState } from '../navigation/origin.ts'
 import type { GalleryForClient } from './Gallery.ts'
 import { getGalleryPath, getGalleryShareTabPath } from './galleryPaths.ts'
 import type { GalleryShare } from './GalleryShare.ts'
+import { GallerySharedMark } from './GallerySharedMark.tsx'
 import { GALLERY_TEXTS } from './galleryTexts.ts'
+import { GALLERY_UPLOADER_TEXTS } from './galleryUploaderTexts.ts'
 
 /** Kantenlänge der Vorschau neben dem Titel einer Galerie in der Tabelle. */
 const GALLERY_TABLE_COVER_PIXELS = 32
@@ -23,18 +26,25 @@ type GalleryColumnsOptions = {
   showShares: boolean
   /** Die Freigaben je Galerie-id; `null`, solange sie noch laden. */
   gallerySharesByGalleryId: Map<number, GalleryShare[]> | null
+  /**
+   * Wessen Liste die Tabelle zeigt (die GUID des Profils). Eine Galerie eines anderen Besitzers steht darin nur, weil
+   * man in sie hochladen darf (Nutzer 2026-11-22): Sie trägt die Marke „gemeinsam“ und ihren Besitzer.
+   */
+  listUsersGuid: string
 }
 
 /**
  * Die Spalten einer Galerie für die zentrale `Table` (`components/Table.tsx`), so steht die Liste der Galerien auf dem
  * Handy da (Nutzer 2026-11-20: eine Tabelle mit mehr Angaben statt einer Kachel wie ein Bild): Galerie (kleine
- * Vorschau, Titel als Link, Beschreibung hinter dem „i“), Bilder, letztes Bild, sichtbar für, Freigaben (nur beim
- * Besitzer), erstellt. Alles aus globalen Bausteinen (`InfoHint`, `RichTextView`, `DateTimeText`, `VisibilityPicker`).
+ * Vorschau, Titel als Link, Beschreibung hinter dem „i“; bei der gemeinsamen Galerie eines anderen Users dazu die Marke
+ * „gemeinsam“ und ihr Besitzer), Bilder, letztes Bild, sichtbar für, Freigaben (nur beim Besitzer), erstellt. Alles aus
+ * globalen Bausteinen (`InfoHint`, `RichTextView`, `DateTimeText`, `VisibilityPicker`, `UsersGuidName`).
  * Was auf einem schmalen Bildschirm nicht passt, lässt die Tabelle von rechts weg; ein Tipp auf die Zeile zeigt alles.
  */
 export function createGalleryColumns(options: GalleryColumnsOptions): TableColumn<GalleryForClient>[] {
   const originState = options.originState
   const gallerySharesByGalleryId = options.gallerySharesByGalleryId
+  const listUsersGuid = options.listUsersGuid
   const noValueText = getTextInCurrentLanguage(GALLERY_TEXTS.noValue)
 
   const columns: TableColumn<GalleryForClient>[] = [
@@ -57,17 +67,32 @@ export function createGalleryColumns(options: GalleryColumnsOptions): TableColum
           const descriptionView = <RichTextView richText={gallery.description} />
           descriptionHint = <InfoHint text={descriptionView} label={descriptionLabel} />
         }
+        // die gemeinsame Galerie eines anderen: Marke und Besitzer in einer eigenen Zeile unter dem Titel
+        let sharedOwner = null
+        const foreignGallery = gallery.ownerUsersGuid !== listUsersGuid
+        if (foreignGallery) {
+          sharedOwner = (
+            <span className="gallery-table-shared-owner">
+              <GallerySharedMark />
+              <span>{getTextInCurrentLanguage(GALLERY_UPLOADER_TEXTS.sharedGalleryOwnerLabel)}</span>
+              <UsersGuidName usersGuid={gallery.ownerUsersGuid} originLabel={originState.origin.label} />
+            </span>
+          )
+        }
         return (
-          <span className="gallery-table-title">
-            <FileDocumentPreviewImage
-              previewBase64Png={coverPreviewBase64Png}
-              sizePixels={GALLERY_TABLE_COVER_PIXELS}
-              alternativeText={gallery.title}
-            />
-            <Link to={galleryPath} state={originState} className="gallery-table-title-link">
-              {gallery.title}
-            </Link>
-            {descriptionHint}
+          <span className="gallery-table-title-block">
+            <span className="gallery-table-title">
+              <FileDocumentPreviewImage
+                previewBase64Png={coverPreviewBase64Png}
+                sizePixels={GALLERY_TABLE_COVER_PIXELS}
+                alternativeText={gallery.title}
+              />
+              <Link to={galleryPath} state={originState} className="gallery-table-title-link">
+                {gallery.title}
+              </Link>
+              {descriptionHint}
+            </span>
+            {sharedOwner}
           </span>
         )
       },
@@ -116,6 +141,11 @@ export function createGalleryColumns(options: GalleryColumnsOptions): TableColum
       width: '11rem',
       unimportant: true,
       cell: (gallery) => {
+        // Freigaben über einen Link sieht nur der Besitzer: bei der Galerie eines anderen bleibt die Zelle leer
+        const foreignGallery = gallery.ownerUsersGuid !== listUsersGuid
+        if (foreignGallery) {
+          return noValueText
+        }
         if (gallerySharesByGalleryId === null) {
           return '…'
         }

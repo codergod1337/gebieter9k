@@ -268,6 +268,22 @@ public class UsersDetailService {
 		return usersDetailRepository.save(ownUsersDetail);
 	}
 
+	/**
+	 * UPDATE: Der angemeldete User stellt die Rahmenfarbe seiner Uploads ein, als {@code #rrggbb}: In einer gemeinsamen
+	 * Galerie trägt jede Bildkachel den Rahmen in der Farbe ihres Uploaders (Nutzer 2026-11-22). Leer oder {@code null}
+	 * setzt sie auf den Standard zurück (eine Farbe aus der GUID). Gibt es noch keinen Details-Eintrag, entsteht er. Die
+	 * GUID kommt aus dem Token.
+	 *
+	 * @throws IllegalArgumentException wenn die Farbe nicht die Form {@code #rrggbb} hat
+	 */
+	@Transactional
+	public UsersDetail changeOwnUsersDetailUploadFrameColor(String uploadFrameColor) {
+		String checkedUploadFrameColor = doCheckOptionalHexColor(uploadFrameColor, "uploadFrameColor");
+		UsersDetail ownUsersDetail = doGetOrCreateOwnUsersDetail();
+		ownUsersDetail.setUploadFrameColor(checkedUploadFrameColor);
+		return usersDetailRepository.save(ownUsersDetail);
+	}
+
 	/** Eine Farbe {@code #rrggbb} in Kleinbuchstaben, leer oder {@code null} ergibt {@code null} (Standard). */
 	private String doCheckOptionalHexColor(String color, String fieldName) {
 		if (color == null || color.isBlank()) {

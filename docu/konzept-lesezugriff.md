@@ -72,10 +72,17 @@ Download, Viewer. Werte gehen nur über den term- und terms-Parser hinein.
 | Leser | Filter |
 |---|---|
 | ADMIN oder FILE_MANAGER | `status:ACTIVE` |
-| angemeldeter User | `status:ACTIVE AND readerAccessRoleKeys:(<meine Rollen>) AND ( authorUsersGuid:<ich> OR visibility:(AUTHENTICATED ANY) OR readableForFriendsOfUsersGuid:(<meine Freunde>) )` |
+| angemeldeter User | `status:ACTIVE AND readerAccessRoleKeys:(<meine Rollen>) AND ( authorUsersGuid:<ich> OR visibility:(AUTHENTICATED ANY) OR editorUsersGuids:<ich> OR readableForFriendsOfUsersGuid:(<meine Freunde>) OR galleryIds:(<meine Galerien und die, in die ich hochladen darf>) )` |
 | ohne Anmeldung | später, wenn es öffentliche Profile ohne Login gibt: `visibility:ANY` und eine FileClass, die das erlaubt |
 
 - Die Leserollen der FileClass sind die Obergrenze, die Sichtbarkeit schränkt darunter ein.
+- **Gemeinsame Galerie (2026-11-22):** Der letzte Weg `galleryIds:(…)` lässt den Besitzer jedes Bild seiner Galerien
+  sehen, auch das eines anderen Uploaders, und einen Uploadberechtigten (`GalleryUploader`) die ganze Galerie, egal
+  wie sie eingestellt ist. Beide Listen von Galerien liegen je angemeldetem User im Hauptspeicher, wie die
+  Freundesliste (`CurrentUsersProvider.currentUsersOwnGalleryIds()`, `currentUsersUploaderGalleryIds()`), geladen bei
+  Login und Refresh und nach jeder Änderung nachgezogen; kein Postgres in der Suche, keine GUID-Liste im Dokument.
+  Beispiel: Alice hat die Galerie 7 auf „Nur ich“ und Bob eingetragen; beide bekommen jedes Dokument mit
+  `galleryIds` = 7. Siehe `docu/konzept-galerie.md`, Abschnitt 10.
 - Darunter bleibt „Wer liest“ je Feld (z. B. GPS nur ADMIN).
 - Die Galerie-Kacheln kommen mit diesem Filter und `galleryIds:<id>` direkt aus Solr, mit dem Vorschaubild aus
   `previewBase64Png`. Das große Bild für Viewer und Download kommt einzeln vom SFTP, nach demselben Filter.
@@ -130,7 +137,8 @@ Danach stehen alle 14 Dateien wieder auf NONE, keine trägt etwas im Freunde-Fel
 | `DELETED` gelöscht (Soft Delete) | nein, nur der Admin über seine Endpunkte | nein | nein |
 
 Gebaut: Werte in YAML und Stammdaten, Legende auf der Seite einer Datei, Lesefilter „alles außer gelöscht“, Ändern nur
-bei aktiv. Weich löschen (DELETED) dürfen Autor und Admin (Nutzer 2026-11-09), der File-Manager nicht. Archivieren kommt
+bei aktiv. Weich löschen (DELETED) dürfen Autor und Admin (Nutzer 2026-11-09), seit 2026-11-22 auch der Besitzer der
+Galerie, in der das Bild liegt; der File-Manager nicht. Archivieren kommt
 später (Nutzer 2026-11-09), damit auch die Frage, ob archivierte Dateien in der Suche bleiben.
 
 **Lesen je GUID: nein (Nutzer 2026-11-09).** Keine eigene Leserliste je Datei: Die Referenz ist die Freundesliste.
@@ -143,6 +151,10 @@ fügt man über Anträge hinzu: auf dem Profil eines anderen „Freund hinzufüg
   hochladen.
 - **Exklusivrechte des Autors:** Wer hochgeladen hat, darf seine Datei ändern; andere mit derselben Rolle pauschal
   nicht. Jede Datei bearbeiten dürfen nur ADMIN und FILE_MANAGER.
+- **Besitzer der Galerie (Nutzer 2026-11-22):** Er bearbeitet und löscht weich JEDES Bild seiner Galerie, auch das
+  eines anderen Uploaders, ohne Schreibrolle. Liegt ein Bild in einer fremden Galerie, bearbeitet und löscht sein
+  Autor es weiter, bestimmt aber nicht mehr über Sichtbarkeit und Bearbeiter: Die Sichtbarkeit gibt die Galerie vor
+  (`FileDocumentAccessService`, `docu/entities/GalleryUploader.md`).
 - **Bearbeiten (E) als weiteres Feld**, aber nicht über Rollen, sondern **je GUID**: Der Autor gibt einzelnen Usern
   Bearbeiten frei. Das bricht die bisherige Regel „keine GUID-Listen im Dokument“ bewusst.
   - **Gebaut (2026-11-09):** Solr-Feld `editorUsersGuids` (STRING, mehrwertig, setzt nur das Backend, Anzeigename

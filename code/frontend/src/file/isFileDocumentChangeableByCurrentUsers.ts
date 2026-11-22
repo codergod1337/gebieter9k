@@ -6,6 +6,9 @@ import type { FileSolrFieldNameSet } from './FileSolrFieldNameSet.ts'
  * `FileDocumentAccessService.isChangeableByCurrentUsers` im Backend: FILE_MANAGER oder ADMIN jede Datei, ein vom Autor
  * freigegebener Bearbeiter (`editorUsersGuids`), sonst nur die eigene mit einer Schreibrolle ihrer FileClass. Das ist
  * Anzeige, kein Schutz: Das Backend prüft jeden Schreibweg selbst.
+ *
+ * Nicht hier: Der Besitzer einer Galerie bearbeitet jedes Bild seiner Galerie (Nutzer 2026-11-22). Wem die Galerie
+ * gehört, steht nicht im Dokument; die Seite der Galerie weiß es und rechnet es dazu (`GalleryPage`).
  */
 export function isFileDocumentChangeableByCurrentUsers(
   fileDocument: FileDocument,

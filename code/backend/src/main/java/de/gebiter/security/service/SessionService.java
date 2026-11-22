@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import de.gebiter.access.service.AccessRoleCollectionRoleService;
 import de.gebiter.access.service.AccessRoleUsersAssignmentService;
+import de.gebiter.gallery.service.GalleryService;
+import de.gebiter.gallery.service.GalleryUploaderService;
 import de.gebiter.security.CurrentUsersProvider;
 import de.gebiter.security.JwtConfig;
 import de.gebiter.security.dto.CreatedSession;
@@ -76,6 +78,10 @@ public class SessionService {
 
 	private final UsersFriendshipService usersFriendshipService;
 
+	private final GalleryService galleryService;
+
+	private final GalleryUploaderService galleryUploaderService;
+
 	private final ApplicationEventPublisher applicationEventPublisher;
 
 	public SessionService(UsersService usersService, UsersLogin2faService usersLogin2faService,
@@ -83,6 +89,7 @@ public class SessionService {
 			AccessRoleCollectionRoleService accessRoleCollectionRoleService,
 			UsersRefreshTokenService usersRefreshTokenService, CurrentUsersProvider currentUsersProvider,
 			JwtEncoder jwtEncoder, JwtConfig jwtConfig, UsersFriendshipService usersFriendshipService,
+			GalleryService galleryService, GalleryUploaderService galleryUploaderService,
 			ApplicationEventPublisher applicationEventPublisher) {
 		this.usersService = usersService;
 		this.usersLogin2faService = usersLogin2faService;
@@ -93,6 +100,8 @@ public class SessionService {
 		this.jwtEncoder = jwtEncoder;
 		this.jwtConfig = jwtConfig;
 		this.usersFriendshipService = usersFriendshipService;
+		this.galleryService = galleryService;
+		this.galleryUploaderService = galleryUploaderService;
 		this.applicationEventPublisher = applicationEventPublisher;
 	}
 
@@ -191,6 +200,9 @@ public class SessionService {
 		UUID usersGuid = existingUsers.getGuid();
 		// Bei jedem Login und Refresh die Freundesliste frisch in den Hauptspeicher (CurrentUsersProvider)
 		usersFriendshipService.loadFriendUsersGuidsIntoMemory(usersGuid);
+		// Ebenso seine Galerien: die eigenen und die fremden, in die er hochladen darf (Lesefilter, Rechte an Bildern)
+		galleryService.loadOwnGalleryIdsIntoMemory(usersGuid);
+		galleryUploaderService.loadUploaderGalleryIdsIntoMemory(usersGuid);
 		String accessRoleCollectionKey = existingUsers.getAccessRoleCollectionKey();
 		List<String> accessRoleKeys = doGetEffectiveAccessRoleKeys(usersGuid, accessRoleCollectionKey);
 		Instant issuedAt = Instant.now();

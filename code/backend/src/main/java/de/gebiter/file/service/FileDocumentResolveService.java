@@ -40,7 +40,9 @@ import jakarta.persistence.EntityNotFoundException;
  * Jede Abfrage für einen User trägt fest die Lesegrenze, die kein Aufrufer weglassen kann
  * ({@link #createReadFilterQueriesForCurrentUsers()}, Konzept {@code docu/konzept-lesezugriff.md}): {@code status} ist
  * ACTIVE; ADMIN und FILE_MANAGER sehen damit jede Datei. Alle anderen brauchen dazu eine Leserolle der FileClass in
- * {@code readerAccessRoleKeys} und einen der Wege Autor, Sichtbarkeit für Angemeldete oder alle, Freund des Autors. Zurück kommen nur die Felder, die er lesen darf. „Gibt es
+ * {@code readerAccessRoleKeys} und einen der Wege Autor, Sichtbarkeit für Angemeldete oder alle, Freund des Autors,
+ * Bild in einer eigenen Galerie oder in einer Galerie, in die er hochladen darf. Zurück kommen nur die Felder, die er
+ * lesen darf. „Gibt es
  * nicht“ und „darfst du nicht“ sehen gleich aus. Ohne Leseprüfung laufen nur der Existenzcheck (ja oder nein), das Zählen
  * für die Grenze und die Fakten fürs Backend vor Ändern und Löschen; die prüfen ihre Rechte selbst.
  */
@@ -895,9 +897,18 @@ public class FileDocumentResolveService {
 
 	/**
 	 * Filter „ich bin der Autor ODER die Datei ist für Angemeldete oder alle sichtbar ODER bei FRIENDS steht im Feld
-	 * {@code readableForFriendsOfUsersGuid} einer meiner Freunde“, als ein bool-Filter aus term-Teilen. Die Freundesliste
-	 * kommt aus dem Hauptspeicher ({@link CurrentUsersProvider#currentUsersFriendUsersGuids()}). Die Teile tragen nur
-	 * Feldnamen, GUIDs und Namen aus {@link Visibility}, nie ein Hochkomma: Das Einschließen in Hochkommas ist sicher.
+	 * {@code readableForFriendsOfUsersGuid} einer meiner Freunde ODER die Datei liegt in einer meiner Galerien ODER in
+	 * einer Galerie, in die ich hochladen darf“, als ein bool-Filter aus term-Teilen. Die Freundesliste und die beiden
+	 * Listen der Galerien kommen aus dem Hauptspeicher ({@link CurrentUsersProvider#currentUsersFriendUsersGuids()},
+	 * {@link CurrentUsersProvider#currentUsersOwnGalleryIds()},
+	 * {@link CurrentUsersProvider#currentUsersUploaderGalleryIds()}), ohne Postgres. Die Teile tragen nur Feldnamen,
+	 * GUIDs, ids von Galerien und Namen aus {@link Visibility}, nie ein Hochkomma: Das Einschließen in Hochkommas ist
+	 * sicher.
+	 * <p>
+	 * Die Galerien (Nutzer 2026-11-22, gemeinsame Galerie): Der Besitzer sieht jedes Bild seiner Galerien, auch das eines
+	 * anderen Uploaders; ein Uploadberechtigter sieht die ganze Galerie, egal wie sie eingestellt ist. Beispiel: Alice hat
+	 * die Galerie 7 auf „Nur ich“ und Bob eingetragen. Für Bob steht 7 in der Liste der Galerien, in die er hochladen
+	 * darf, für Alice in der Liste ihrer eigenen: Beide bekommen jedes Dokument mit {@code galleryIds} = 7.
 	 */
 	private String createVisibilityFilterQuery() {
 		UUID currentUsersGuid = currentUsersProvider.currentUsersGuid();
@@ -927,6 +938,23 @@ public class FileDocumentResolveService {
 			String friendsFilterQuery = createTermsFilterQuery(readableForFriendsFieldName, friendUsersGuidTexts);
 			shouldFilterQueries.add(friendsFilterQuery);
 		}
+		// Bilder in eigenen Galerien und in Galerien, in die der User hochladen darf
+		List<Long> ownGalleryIds = currentUsersProvider.currentUsersOwnGalleryIds();
+		List<Long> uploaderGalleryIds = currentUsersProvider.currentUsersUploaderGalleryIds();
+		List<String> wholeReadableGalleryIdTexts = new ArrayList<>();
+		for (Long ownGalleryId : ownGalleryIds) {
+			String ownGalleryIdText = String.valueOf(ownGalleryId);
+			wholeReadableGalleryIdTexts.add(ownGalleryIdText);
+		}
+		for (Long uploaderGalleryId : uploaderGalleryIds) {
+			String uploaderGalleryIdText = String.valueOf(uploaderGalleryId);
+			wholeReadableGalleryIdTexts.add(uploaderGalleryIdText);
+		}
+		if (!wholeReadableGalleryIdTexts.isEmpty()) {
+			String galleryIdsFieldName = fileSolrFieldNames.galleryIds();
+			String galleriesFilterQuery = createTermsFilterQuery(galleryIdsFieldName, wholeReadableGalleryIdTexts);
+			shouldFilterQueries.add(galleriesFilterQuery);
+		}
 		StringBuilder boolFilterQuery = new StringBuilder("{!bool");
 		for (String shouldFilterQuery : shouldFilterQueries) {
 			boolFilterQuery.append(" should='").append(shouldFilterQuery).append("'");
@@ -949,7 +977,9 @@ public class FileDocumentResolveService {
 		return "{!term f=" + fieldName + "}" + value;
 	}
 
-	/** Filter „Feld hat einen dieser Werte“ über den terms-Parser. Nur für Werte ohne Komma: Keys, GUIDs, Enum-Namen. */
+	/**
+	 * Filter „Feld hat einen dieser Werte“ über den terms-Parser. Nur für Werte ohne Komma: Keys, GUIDs, Enum-Namen, ids.
+	 */
 	private static String createTermsFilterQuery(String fieldName, Collection<String> values) {
 		String joinedValues = String.join(",", values);
 		return "{!terms f=" + fieldName + "}" + joinedValues;

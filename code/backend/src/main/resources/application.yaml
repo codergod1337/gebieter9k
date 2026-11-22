@@ -371,6 +371,12 @@ gebiter:
     # Name und Avatar mehrerer User in einer Anfrage auflösen (POST /api/users/avatar/resolve), z. B. für eine Liste von
     # Usern: höchstens so viele GUIDs auf einmal.
     avatar-resolve-max-guids: 100
+    # Vervollständigung von Usern beim Tippen (POST /api/users/search, Nutzer 2026-11-22), z. B. um jemanden als
+    # Uploadberechtigten in eine Galerie einzutragen. Gesucht wird im Username (jeder ist findbar) und, sobald so viele
+    # Zeichen getippt sind, auch am Anfang der E-Mail-Adresse (nur wer sein Profil den Suchenden sehen lässt). Die
+    # Antwort zeigt nie eine E-Mail-Adresse und höchstens so viele Treffer.
+    search-email-min-length: 4
+    search-max-results: 10
   # Der Status-Text im Profilkopf (UsersDetail.statusText), z. B. was man gerade macht; setzt nur der User selbst.
   profile-status-text:
     max-length: 160

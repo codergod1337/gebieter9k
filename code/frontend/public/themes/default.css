@@ -700,20 +700,21 @@ body {
   box-shadow: 0 0 0 0.22rem var(--neon-glow);
 }
 
-/* Die Vorschläge beim Tippen: eine helle Liste mit Bordeaux-Kante; der gewählte (Pfeiltasten, Maus) neongelb hinterlegt */
-.values-input-suggestions {
+/* Die Vorschläge beim Tippen (Werte, User): eine helle Liste mit Bordeaux-Kante; der gewählte (Pfeiltasten, Maus)
+   neongelb hinterlegt */
+.suggestion-list {
   border: 1px solid var(--line-strong);
   border-radius: 0.5rem;
   background: var(--paper);
   box-shadow: 0 8px 18px -12px var(--bordeaux-shadow);
 }
 
-.values-input-suggestion {
+.suggestion-list-entry {
   border-radius: 0.375rem;
 }
 
-.values-input-suggestion:hover,
-.values-input-suggestion.active {
+.suggestion-list-entry:hover,
+.suggestion-list-entry.active {
   background: var(--neon-100);
 }
 
@@ -729,6 +730,16 @@ body {
 
 .values-input-suggestion-hint {
   color: var(--ink-muted);
+}
+
+/* Die Vervollständigung von Usern: der Hinweis „Kein User passt.“ gedeckt, die Fundstelle im Namen neongelb auf Bordeaux */
+.users-search-input-note {
+  color: var(--ink-muted);
+}
+
+.users-search-input-name mark {
+  background: var(--neon-300);
+  color: var(--bordeaux-900);
 }
 
 .form-check-input {
@@ -1999,6 +2010,56 @@ body {
 .gallery-tile-link > .file-preview-placeholder,
 .gallery-image-tile-button > .file-preview-placeholder {
   border-radius: 0.6rem;
+}
+
+/*
+ * Gemeinsame Galerie (Nutzer 2026-11-22): Die Bildkachel ist in der Farbe dessen umrandet, der das Bild hochgeladen hat
+ * (--upload-frame-color, aus seinem Profil). Die Farbe bleibt auch beim Zeigen stehen, die Kachel hebt sich wie jede
+ * andere. Später können Rahmen-Stylings aus dem Markt an dieser Stelle mehr als eine Farbe sein.
+ */
+.gallery-image-tile-framed,
+.gallery-image-tile-framed:hover,
+.gallery-image-tile-framed:focus-within {
+  border: var(--upload-frame-width) solid var(--upload-frame-color);
+}
+
+/* Das kleine Farbfeld zur Rahmenfarbe eines Users (Legende, Liste der Uploadberechtigten, Profil): ein Rahmen im Kleinen */
+.upload-frame-swatch {
+  border: 0.3rem solid var(--upload-frame-color);
+  border-radius: 0.35rem;
+  background: var(--paper);
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+
+/*
+ * Die gemeinsame Galerie eines anderen Users in der Liste der eigenen Galerien: neongelb getöntes Papier mit
+ * gestrichelter Bordeaux-Kante, als Kachel und als Zeile der Tabelle; die Marke „gemeinsam“ neongelb auf Bordeaux.
+ */
+.gallery-tile-shared {
+  border: 1px dashed var(--bordeaux-500);
+  background: var(--neon-100);
+}
+
+.gallery-tile-shared-owner,
+.gallery-table-shared-owner {
+  color: var(--ink-muted);
+}
+
+.gallery-table-row-shared > td {
+  --bs-table-bg-type: var(--neon-100);
+}
+
+/* die Bordeaux-Kante links; der zweite Schatten ist die Fläche der Zelle, wie Bootstrap sie malt */
+.gallery-table-row-shared > td:first-child {
+  box-shadow:
+    inset 3px 0 0 var(--bordeaux-500),
+    inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+}
+
+.gallery-shared-mark {
+  border-radius: 999px;
+  background: var(--bordeaux-700);
+  color: var(--neon-400);
 }
 
 /* die gezogene Kachel: neongelber Hauch, Bordeaux-Kante, so sieht man, wo sie landet */

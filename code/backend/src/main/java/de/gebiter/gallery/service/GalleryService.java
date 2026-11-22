@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import de.gebiter.file.FileSolrFieldNames;
 import de.gebiter.file.dto.FileDocumentPage;
@@ -43,10 +46,17 @@ import jakarta.persistence.EntityNotFoundException;
  * nutzt nur sein eigenes {@link GalleryRepository}; die Bilder liegen im Kern FILE und werden über die File-Services
  * gelesen und geschrieben.
  * <p>
- * Wer eine Galerie sieht: der Besitzer immer. Sonst zuerst die Regel des Profils (privat: nichts), dann die Sichtbarkeit
- * der Galerie (ANY und AUTHENTICATED ja, FRIENDS nur Freunde, NONE niemand). Eine Galerie, die man nicht sehen darf,
- * sieht aus wie „gibt es nicht“. Ändern, Sortieren, Löschen und Hochladen nur der Besitzer, die GUID kommt aus dem
- * Token.
+ * Wer eine Galerie sieht: der Besitzer immer, ebenso jeder Uploadberechtigte ({@code GalleryUploader}, Nutzer
+ * 2026-11-22), egal wie Profil und Galerie eingestellt sind. Sonst zuerst die Regel des Profils (privat: nichts), dann
+ * die Sichtbarkeit der Galerie (ANY und AUTHENTICATED ja, FRIENDS nur Freunde, NONE niemand). Eine Galerie, die man
+ * nicht sehen darf, sieht aus wie „gibt es nicht“. Ändern, Sortieren und Löschen nur der Besitzer, die GUID kommt aus dem
+ * Token. Hochladen der Besitzer und die Uploadberechtigten.
+ * <p>
+ * DIE EIGENEN GALERIEN JE USER LIEGEN IM HAUPTSPEICHER, wie die Freundesliste: Bei jedem Login und jedem Token-Refresh
+ * lädt der {@code SessionService} ihre ids neu, der {@link CurrentUsersProvider} liest sie von hier, ohne Postgres.
+ * Anlegen und Löschen ziehen die Liste nach dem Commit sofort nach. Gebraucht wird sie dort, wo keine Abfrage an
+ * Postgres gehen soll: im Lesefilter (der Besitzer sieht jedes Bild seiner Galerien, auch das eines anderen Uploaders)
+ * und bei den Rechten an einer Datei (der Besitzer bearbeitet und löscht jedes Bild seiner Galerien).
  * <p>
  * Die Sichtbarkeit der Galerie steht auch in jedem ihrer Solr-Dokumente (die Lesegrenze, {@code
  * docu/konzept-lesezugriff.md}); ändert sie sich, schreibt der Service sie in alle Dokumente der Galerie.
@@ -90,6 +100,9 @@ public class GalleryService {
 	private final RichTextService richTextService;
 
 	private final ApplicationEventPublisher applicationEventPublisher;
+
+	/** GUID eines Users → ids seiner eigenen Galerien, geladen bei Login und Refresh. */
+	private final Map<UUID, List<Long>> ownGalleryIdsByUsersGuid = new ConcurrentHashMap<>();
 
 	public GalleryService(GalleryRepository galleryRepository, UsersService usersService,
 			CurrentUsersProvider currentUsersProvider, FileDocumentResolveService fileDocumentResolveService,
@@ -135,7 +148,9 @@ public class GalleryService {
 			listingPosition = lastListingPosition + 1;
 		}
 		Gallery newGallery = new Gallery(currentUsersGuid, checkedTitle, checkedDescription, visibility, listingPosition);
-		return galleryRepository.save(newGallery);
+		Gallery savedGallery = galleryRepository.save(newGallery);
+		reloadOwnGalleryIdsAfterCommit(currentUsersGuid);
+		return savedGallery;
 	}
 
 	/**
@@ -150,8 +165,9 @@ public class GalleryService {
 	}
 
 	/**
-	 * READ: Die Galerien eines Profils, die der angemeldete User sehen darf, in ihrer Reihenfolge. Ein Profil, das er
-	 * nicht sehen darf, hat für ihn keine Galerien.
+	 * READ: Die Galerien eines Profils, die der angemeldete User sehen darf, in ihrer Reihenfolge: nach ihrer
+	 * Sichtbarkeit, dazu jede, in die er hochladen darf. Ein Profil, das er nicht sehen darf, hat für ihn keine Galerien
+	 * (die Galerien, in die er hochladen darf, findet er in seinem eigenen Profil).
 	 *
 	 * @throws EntityNotFoundException wenn er das Profil nicht sehen darf
 	 */
@@ -166,7 +182,8 @@ public class GalleryService {
 				ownerUsersGuid);
 		List<GalleryForClient> visibleGalleries = new ArrayList<>();
 		for (Gallery ownerGallery : ownerGalleries) {
-			boolean galleryVisible = isGalleryVisibleWithinVisibleProfile(ownerGallery);
+			boolean galleryUploader = isCurrentUsersGalleryUploader(ownerGallery);
+			boolean galleryVisible = galleryUploader || isGalleryVisibleWithinVisibleProfile(ownerGallery);
 			if (galleryVisible) {
 				GalleryForClient galleryForClient = createGalleryForClient(ownerGallery);
 				visibleGalleries.add(galleryForClient);
@@ -238,6 +255,40 @@ public class GalleryService {
 	@Transactional(readOnly = true)
 	public void checkOwnGalleryExists(Long id) {
 		doGetOwnGallery(id);
+	}
+
+	/**
+	 * READ: Prüft für einen anderen Service, dass es die Galerie gibt und der angemeldete User sie sehen darf, bevor er
+	 * etwas zu ihr liefert (z. B. der {@code GalleryUploaderService} ihre Uploadberechtigten). Eine Galerie, die er nicht
+	 * sehen darf, sieht aus wie „gibt es nicht“.
+	 *
+	 * @throws EntityNotFoundException wenn es die Galerie nicht gibt oder er sie nicht sehen darf
+	 */
+	@Transactional(readOnly = true)
+	public void checkVisibleGalleryExists(Long id) {
+		doGetVisibleGallery(id);
+	}
+
+	/**
+	 * READ (Login, Refresh): Lädt die ids der eigenen Galerien eines Users aus Postgres in den Hauptspeicher und ersetzt
+	 * den alten Stand. Nur der {@code SessionService} ruft das, beim Ausstellen jedes Tokens.
+	 */
+	@Transactional(readOnly = true)
+	public void loadOwnGalleryIdsIntoMemory(UUID usersGuid) {
+		Helper.requireNotNull(usersGuid, "usersGuid");
+		doLoadOwnGalleryIdsIntoMemory(usersGuid);
+	}
+
+	/**
+	 * READ: Die ids der eigenen Galerien eines Users aus dem Hauptspeicher, ohne Postgres. Leer, wenn er keine Galerie
+	 * hat. Für den {@link CurrentUsersProvider} und damit für den Lesefilter jeder Suche und die Rechte an einer Datei.
+	 */
+	public List<Long> getOwnGalleryIdsFromMemory(UUID usersGuid) {
+		List<Long> ownGalleryIds = ownGalleryIdsByUsersGuid.get(usersGuid);
+		if (ownGalleryIds == null) {
+			return List.of();
+		}
+		return ownGalleryIds;
 	}
 
 	/**
@@ -385,23 +436,25 @@ public class GalleryService {
 	}
 
 	/**
-	 * Für den Upload in eine Galerie (der {@code FileUploadService} ruft es, bevor er die Bytes annimmt): Die Galerie
-	 * muss dem angemeldeten User gehören. Liefert die Felder, die das Backend ins neue Solr-Dokument schreibt: die
-	 * Galerie, ihre Sichtbarkeit und den Platz am Ende der Galerie. Vorher werden die Plätze der vorhandenen Bilder in
-	 * Ordnung gebracht, damit „am Ende“ stimmt: Bei n Bildern auf den Plätzen 1 bis n bekommt das neue Platz n + 1.
+	 * Für den Upload in eine Galerie (der {@code FileUploadService} ruft es, bevor er die Bytes annimmt): Der angemeldete
+	 * User muss in die Galerie hochladen dürfen, als ihr Besitzer oder als Uploadberechtigter ({@code GalleryUploader},
+	 * Nutzer 2026-11-22). Liefert die Felder, die das Backend ins neue Solr-Dokument schreibt: die Galerie, ihre
+	 * Sichtbarkeit und den Platz am Ende der Galerie. Die Sichtbarkeit ist immer die der Galerie, bei FRIENDS zählen die
+	 * Freunde des Besitzers, auch wenn ein anderer hochlädt. Vorher werden die Plätze der vorhandenen Bilder in Ordnung
+	 * gebracht, damit „am Ende“ stimmt: Bei n Bildern auf den Plätzen 1 bis n bekommt das neue Platz n + 1.
 	 *
-	 * @throws EntityNotFoundException wenn es die Galerie nicht gibt oder sie nicht ihm gehört
+	 * @throws EntityNotFoundException wenn es die Galerie nicht gibt oder er nicht in sie hochladen darf
 	 */
 	@Transactional(readOnly = true)
-	public Map<String, Object> prepareOwnGalleryUpload(Long galleryId) {
-		Gallery ownGallery = doGetOwnGallery(galleryId);
-		Long ownGalleryId = ownGallery.getId();
-		List<String> galleryFileIds = doRepairGalleryFileListingPositions(ownGalleryId);
+	public Map<String, Object> prepareGalleryUpload(Long galleryId) {
+		Gallery uploadGallery = doGetUploadableGallery(galleryId);
+		Long uploadGalleryId = uploadGallery.getId();
+		List<String> galleryFileIds = doRepairGalleryFileListingPositions(uploadGalleryId);
 		long endListingPosition = galleryFileIds.size() + 1L;
-		Map<String, Object> galleryFieldValues = createVisibilityFieldValues(ownGallery);
+		Map<String, Object> galleryFieldValues = createVisibilityFieldValues(uploadGallery);
 		String galleryIdsFieldName = fileSolrFieldNames.galleryIds();
 		String galleryListingPositionFieldName = fileSolrFieldNames.galleryListingPosition();
-		galleryFieldValues.put(galleryIdsFieldName, List.of(ownGalleryId));
+		galleryFieldValues.put(galleryIdsFieldName, List.of(uploadGalleryId));
 		galleryFieldValues.put(galleryListingPositionFieldName, endListingPosition);
 		// ein neues Dokument braucht keine leeren Felder: ohne FRIENDS fällt die Freundes-GUID weg
 		galleryFieldValues.values().removeIf(fieldValue -> fieldValue == null);
@@ -409,11 +462,12 @@ public class GalleryService {
 	}
 
 	/**
-	 * DELETE: Der Besitzer löscht seine Galerie. Zuerst gehen ihre Freigaben weg: Die Meldung {@link GalleryDeletedEvent}
-	 * lässt den {@code GalleryShareService} jede Freigabe erst aus den Bildern in Solr nehmen und dann in Postgres
-	 * löschen. Scheitert das, bleibt die Galerie bestehen, und das Löschen lässt sich wiederholen. Danach die Bilder: Sie
-	 * bleiben erhalten, verlieren die Galerie und ihren Platz und werden privat (NONE), damit nichts verloren geht und
-	 * nichts ungewollt sichtbar bleibt.
+	 * DELETE: Der Besitzer löscht seine Galerie. Zuerst geht weg, was an ihr hängt: Die Meldung
+	 * {@link GalleryDeletedEvent} lässt den {@code GalleryShareService} jede Freigabe erst aus den Bildern in Solr nehmen
+	 * und dann in Postgres löschen, und den {@code GalleryUploaderService} ihre Uploadberechtigten löschen. Scheitert das,
+	 * bleibt die Galerie bestehen, und das Löschen lässt sich wiederholen. Danach die Bilder: Sie bleiben erhalten,
+	 * verlieren die Galerie und ihren Platz und werden privat (NONE), damit nichts verloren geht und nichts ungewollt
+	 * sichtbar bleibt. Das gilt auch für die Bilder anderer Uploader: Sie gehören danach nur noch ihrem Autor.
 	 *
 	 * @throws EntityNotFoundException wenn es die Galerie nicht gibt oder sie nicht ihm gehört
 	 */
@@ -434,6 +488,8 @@ public class GalleryService {
 		releaseFieldValues.put(readableForFriendsFieldName, null);
 		doChangeAllGalleryFiles(ownGallery, releaseFieldValues);
 		galleryRepository.delete(ownGallery);
+		UUID ownerUsersGuid = ownGallery.getOwnerUsersGuid();
+		reloadOwnGalleryIdsAfterCommit(ownerUsersGuid);
 	}
 
 	/**
@@ -578,9 +634,16 @@ public class GalleryService {
 				fileCount, coverPreviewBase64Png, lastUploadedAt);
 	}
 
-	/** Die Galerie, nur wenn der angemeldete User sie sehen darf; sonst sieht es aus wie „gibt es nicht“. */
+	/**
+	 * Die Galerie, nur wenn der angemeldete User sie sehen darf; sonst sieht es aus wie „gibt es nicht“. Ein
+	 * Uploadberechtigter sieht sie immer, auch wenn das Profil des Besitzers oder die Galerie privat ist.
+	 */
 	private Gallery doGetVisibleGallery(Long id) {
 		Gallery existingGallery = doGetGallery(id);
+		boolean galleryUploader = isCurrentUsersGalleryUploader(existingGallery);
+		if (galleryUploader) {
+			return existingGallery;
+		}
 		UUID ownerUsersGuid = existingGallery.getOwnerUsersGuid();
 		boolean profileVisible = usersService.isProfileVisibleToCurrentUsers(ownerUsersGuid);
 		boolean galleryVisible = profileVisible && isGalleryVisibleWithinVisibleProfile(existingGallery);
@@ -600,11 +663,63 @@ public class GalleryService {
 		return existingGallery;
 	}
 
-	/** Gehört die Galerie dem angemeldeten User? Nur er hat Schreibrecht an ihr. */
+	/**
+	 * Die Galerie, nur wenn der angemeldete User in sie hochladen darf: als ihr Besitzer oder als Uploadberechtigter;
+	 * sonst sieht es aus wie „gibt es nicht“.
+	 */
+	private Gallery doGetUploadableGallery(Long id) {
+		Gallery existingGallery = doGetGallery(id);
+		boolean ownGallery = isOwnGallery(existingGallery);
+		boolean galleryUploader = isCurrentUsersGalleryUploader(existingGallery);
+		if (!ownGallery && !galleryUploader) {
+			throw new EntityNotFoundException("Die Galerie gibt es nicht.");
+		}
+		return existingGallery;
+	}
+
+	/** Gehört die Galerie dem angemeldeten User? Nur er ändert, sortiert und löscht sie. */
 	private boolean isOwnGallery(Gallery gallery) {
 		UUID currentUsersGuid = currentUsersProvider.currentUsersGuid();
 		UUID ownerUsersGuid = gallery.getOwnerUsersGuid();
 		return currentUsersGuid.equals(ownerUsersGuid);
+	}
+
+	/**
+	 * Ist der angemeldete User Uploadberechtigter dieser Galerie? Aus dem Hauptspeicher
+	 * ({@link CurrentUsersProvider#currentUsersUploaderGalleryIds()}), ohne Postgres und ohne den
+	 * {@code GalleryUploaderService}, der diesen Service selbst nutzt (kein Kreis).
+	 */
+	private boolean isCurrentUsersGalleryUploader(Gallery gallery) {
+		Long galleryId = gallery.getId();
+		List<Long> currentUsersUploaderGalleryIds = currentUsersProvider.currentUsersUploaderGalleryIds();
+		return currentUsersUploaderGalleryIds.contains(galleryId);
+	}
+
+	private void doLoadOwnGalleryIdsIntoMemory(UUID usersGuid) {
+		List<Gallery> ownGalleries = galleryRepository.findByOwnerUsersGuidOrderByListingPositionAscIdAsc(usersGuid);
+		List<Long> ownGalleryIds = new ArrayList<>();
+		for (Gallery ownGallery : ownGalleries) {
+			Long ownGalleryId = ownGallery.getId();
+			ownGalleryIds.add(ownGalleryId);
+		}
+		List<Long> unchangeableOwnGalleryIds = List.copyOf(ownGalleryIds);
+		ownGalleryIdsByUsersGuid.put(usersGuid, unchangeableOwnGalleryIds);
+	}
+
+	/** Lädt die Liste der eigenen Galerien eines Users neu, sobald die Änderung in Postgres steht. */
+	private void reloadOwnGalleryIdsAfterCommit(UUID usersGuid) {
+		boolean insideTransaction = TransactionSynchronizationManager.isSynchronizationActive();
+		if (!insideTransaction) {
+			doLoadOwnGalleryIdsIntoMemory(usersGuid);
+			return;
+		}
+		TransactionSynchronization reloadAfterCommit = new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				doLoadOwnGalleryIdsIntoMemory(usersGuid);
+			}
+		};
+		TransactionSynchronizationManager.registerSynchronization(reloadAfterCommit);
 	}
 
 	private Gallery doGetGallery(Long id) {

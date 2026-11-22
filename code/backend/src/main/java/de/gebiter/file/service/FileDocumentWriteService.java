@@ -175,11 +175,13 @@ public class FileDocumentWriteService {
 	}
 
 	/**
-	 * UPDATE: Ändert die Metadaten der EIGENEN Datei (eigene Datei mit Schreibrolle). Nur die genannten Felder, die der Client
-	 * ändern darf; ein leerer Wert nimmt das Feld heraus. Liefert das Dokument, wie der User es danach lesen darf.
+	 * UPDATE: Ändert die Metadaten einer Datei auf dem User-Weg: die eigene Datei mit Schreibrolle, eine zum Bearbeiten
+	 * freigegebene oder ein Bild in einer eigenen Galerie, auch das eines anderen Uploaders (Nutzer 2026-11-22). Nur die
+	 * genannten Felder, die der Client ändern darf; ein leerer Wert nimmt das Feld heraus. Liefert das Dokument, wie der
+	 * User es danach lesen darf.
 	 *
 	 * @throws EntityNotFoundException wenn es keine aktive Datei mit dieser id gibt
-	 * @throws de.gebiter.file.FileAccessDeniedException wenn es nicht seine Datei ist oder ihm die Schreibrolle fehlt
+	 * @throws de.gebiter.file.FileAccessDeniedException wenn er die Datei nicht bearbeiten darf
 	 */
 	public Map<String, Object> changeOwnFileDocument(String id, Map<String, Object> rawClientFieldValues) {
 		FileDocumentBackendFacts fileDocumentBackendFacts = requireActiveFileDocument(id);
@@ -203,17 +205,19 @@ public class FileDocumentWriteService {
 
 	/**
 	 * UPDATE: Ändert die Sichtbarkeit der EIGENEN Datei (eigene Datei mit Schreibrolle), z. B. auf der Seite der Datei.
-	 * Liefert das Dokument, wie der User es danach lesen darf. Liegt die Datei in einer Galerie, setzt eine spätere
-	 * Änderung der Sichtbarkeit der Galerie sie wieder auf deren Wert.
+	 * Liefert das Dokument, wie der User es danach lesen darf. Liegt die Datei in einer eigenen Galerie, setzt eine
+	 * spätere Änderung der Sichtbarkeit der Galerie sie wieder auf deren Wert. Liegt sie in einer fremden Galerie (als
+	 * Uploadberechtigter hochgeladen), geht es nicht: Wer das Bild sieht, gibt die Galerie vor (Nutzer 2026-11-22).
 	 *
 	 * @throws IllegalArgumentException wenn die Sichtbarkeit fehlt
 	 * @throws EntityNotFoundException wenn es keine aktive Datei mit dieser id gibt
-	 * @throws de.gebiter.file.FileAccessDeniedException wenn es nicht seine Datei ist oder ihm die Schreibrolle fehlt
+	 * @throws de.gebiter.file.FileAccessDeniedException wenn es nicht seine Datei ist, ihm die Schreibrolle fehlt oder
+	 *         die Datei in einer fremden Galerie liegt
 	 */
 	public Map<String, Object> changeOwnFileDocumentVisibility(String id, Visibility visibility) {
 		Helper.requireNotNull(visibility, "visibility");
 		FileDocumentBackendFacts fileDocumentBackendFacts = requireActiveFileDocument(id);
-		fileDocumentAccessService.requireCurrentUsersOwnFileWithWriterRole(fileDocumentBackendFacts);
+		fileDocumentAccessService.requireCurrentUsersOwnFileOutsideForeignGallery(fileDocumentBackendFacts);
 		doChangeFileDocumentVisibility(id, fileDocumentBackendFacts, visibility);
 		return fileDocumentResolveService.resolveFileDocumentById(id);
 	}
@@ -250,12 +254,16 @@ public class FileDocumentWriteService {
 	}
 
 	/**
-	 * DELETE (weich): Setzt die EIGENE Datei auf DELETED. Danach findet sie kein User mehr, die Bytes bleiben; endgültig
-	 * löscht nur der Admin.
+	 * DELETE (weich): Setzt eine Datei auf dem User-Weg auf DELETED: die eigene Datei mit Schreibrolle oder ein Bild in
+	 * einer eigenen Galerie, auch das eines anderen Uploaders (Nutzer 2026-11-22: Der Besitzer löscht jedes Bild seiner
+	 * Galerie). Danach findet sie kein User mehr, die Bytes bleiben; endgültig löscht nur der Admin.
+	 *
+	 * @throws EntityNotFoundException wenn es keine aktive Datei mit dieser id gibt
+	 * @throws de.gebiter.file.FileAccessDeniedException wenn er die Datei nicht löschen darf
 	 */
 	public void deleteOwnFileDocument(String id) {
 		FileDocumentBackendFacts fileDocumentBackendFacts = requireActiveFileDocument(id);
-		fileDocumentAccessService.requireCurrentUsersOwnFileWithWriterRole(fileDocumentBackendFacts);
+		fileDocumentAccessService.requireCurrentUsersOwnFileOrOwnGalleryFile(fileDocumentBackendFacts);
 		doSoftDeleteFileDocument(id, fileDocumentBackendFacts);
 	}
 
@@ -367,7 +375,8 @@ public class FileDocumentWriteService {
 	/**
 	 * UPDATE: Wer außer dem Autor die Metadaten bearbeiten darf (Nutzer 2026-11-09): die GUIDs, die der Autor freigibt,
 	 * höchstens {@code gebiter.file.editor-users-max-count}; diese User dürfen die Datei auch lesen. Bestimmen darf das der
-	 * Autor mit Schreibrolle, ADMIN oder FILE_MANAGER. Der Autor selbst und Doppelte fallen heraus, jede GUID muss ein
+	 * Autor mit Schreibrolle (nicht bei einem Bild in einer fremden Galerie, dort gibt die Galerie vor, wer es sieht),
+	 * ADMIN oder FILE_MANAGER. Der Autor selbst und Doppelte fallen heraus, jede GUID muss ein
 	 * vorhandener User sein. Eine leere Liste nimmt alle Freigaben zurück. Liefert das Dokument, wie der User es danach
 	 * lesen darf.
 	 *
@@ -383,7 +392,8 @@ public class FileDocumentWriteService {
 		FileDocumentBackendFacts fileDocumentBackendFacts = requireActiveFileDocument(id);
 		boolean manageable = fileDocumentAccessService.isManageableByCurrentUsers(fileDocumentBackendFacts);
 		if (!manageable) {
-			throw new FileAccessDeniedException("Bearbeiter freigeben darf nur der Autor der Datei.");
+			throw new FileAccessDeniedException(
+					"Bearbeiter freigeben darf nur der Autor der Datei, und nicht bei einem Bild in einer fremden Galerie.");
 		}
 		String authorUsersGuid = fileDocumentBackendFacts.authorUsersGuid();
 		Set<String> checkedEditorUsersGuids = new LinkedHashSet<>();

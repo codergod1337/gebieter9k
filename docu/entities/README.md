@@ -22,6 +22,7 @@ zurück (Javadoc der Entity und der Controller, Kommentar am Frontend-Typ). Erze
 - [FileExtensionGroup](FileExtensionGroup.md): Eine Übergruppe der Endungen, z.
 - [Gallery](Gallery.md): Eine Galerie im Profil (Konzept `docu/konzept-galerie.md`): Titel, Beschreibung und Sichtbarkeit legt der Besitzer selbst fest.
 - [GalleryShare](GalleryShare.md): Eine Freigabe einer Galerie über einen Token (Konzept `docu/konzept-galerie-freigabe.md`): Wer den Link mit dem Token hat, sieht die Bilder der Galerie ohne Anmeldung.
+- [GalleryUploader](GalleryUploader.md): Ein Uploadberechtigter einer Galerie: Der Besitzer trägt einen anderen User ein, der dann Bilder in diese Galerie hochladen darf (gemeinsame Galerie).
 - [Guestbook](Guestbook.md): Ein Eintrag im Gästebuch eines Users: wer ihn wo geschrieben hat und was.
 - [GuestbookComment](GuestbookComment.md): Ein Kommentar unter einem Gästebucheintrag.
 - [GuestbookReaction](GuestbookReaction.md): Ein Smiley auf einen Gästebucheintrag oder einen seiner Kommentare (Vorgabe des Nutzers 2026-11-09): nur in eine Richtung, nicht zurücknehmbar.
@@ -37,7 +38,7 @@ zurück (Javadoc der Entity und der Controller, Kommentar am Frontend-Typ). Erze
 - [UsersAchievement](UsersAchievement.md): Ein erreichtes Achievement eines Users (Nutzer 2026-11-09): wer, welches, wann.
 - [UsersContact](UsersContact.md): Eine Kontaktangabe eines Users, z.
 - [UsersCredential](UsersCredential.md): Das Passwort eines Users – nur setzbar und prüfbar, nie lesbar.
-- [UsersDetail](UsersDetail.md): Erweiterte Profildaten eines Users – das, was andere sehen, wenn sie auf sein Profil kommen: Profilbild, Status-Text, Banner-Drift, Avatar-Farben und Zähler.
+- [UsersDetail](UsersDetail.md): Erweiterte Profildaten eines Users – das, was andere sehen, wenn sie auf sein Profil kommen: Profilbild, Status-Text, Banner-Drift, Avatar-Farben, Rahmenfarbe der Uploads und Zähler.
 - [UsersFriendRequest](UsersFriendRequest.md): Ein Freundschaftsantrag, die ganze Anfrage in einer Tabelle (Vorgabe des Nutzers 2026-11-09): wer fragt (`requesterUsersGuid`), wer annimmt oder ablehnt (`acceptorUsersGuid`), wann gefragt wurde und die Antwort.
 - [UsersFriendship](UsersFriendship.md): Ein Eintrag in der Freundesliste eines Users: `usersGuid` hat `friendUsersGuid` als Freund.
 - [UsersLogin2fa](UsersLogin2fa.md): Die Wartezeile der 2FA zwischen „Passwort stimmt“ und „angemeldet“.

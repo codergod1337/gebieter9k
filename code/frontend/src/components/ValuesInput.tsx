@@ -49,7 +49,7 @@ function splitPastedValues(pastedText: string): string[] {
  *
  * Mit `searchSuggestions` zeigt es beim Tippen vorhandene Werte darunter, die Fundstelle markiert: Pfeil hoch und
  * runter wählen, Enter oder Klick übernimmt den Vorschlag als Chip, Escape schließt die Liste. So bleiben z. B. Tags
- * einheitlich.
+ * einheitlich. Die Liste der Vorschläge sieht überall gleich aus (`.suggestion-list`, auch in `UsersSearchInput`).
  */
 export function ValuesInput({
   controlId,
@@ -222,11 +222,11 @@ export function ValuesInput({
         />
       </div>
       {shownSuggestions.length > 0 && (
-        <ul className="values-input-suggestions" role="listbox" aria-label="Vorschläge">
+        <ul className="suggestion-list" role="listbox" aria-label="Vorschläge">
           {shownSuggestions.map((suggestion, suggestionIndex) => {
-            let suggestionClassName = 'values-input-suggestion'
+            let suggestionClassName = 'suggestion-list-entry'
             if (suggestionIndex === activeSuggestionIndex) {
-              suggestionClassName = 'values-input-suggestion active'
+              suggestionClassName = 'suggestion-list-entry active'
             }
             return (
               <li key={suggestion.value} role="option" aria-selected={suggestionIndex === activeSuggestionIndex}>

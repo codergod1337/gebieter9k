@@ -1,12 +1,16 @@
 package de.gebiter.users.service;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +21,7 @@ import de.gebiter.status.model.Visibility;
 import de.gebiter.users.dto.UsersAvatarForClient;
 import de.gebiter.users.dto.UsersForClient;
 import de.gebiter.users.dto.UsersForProfile;
+import de.gebiter.users.dto.UsersForSearch;
 import de.gebiter.users.model.Users;
 import de.gebiter.users.model.UsersDetail;
 import de.gebiter.users.repository.UsersRepository;
@@ -64,13 +69,27 @@ public class UsersService {
 	/** Das Passwort eines vom Admin angelegten Users, wenn der Admin keins eingibt ({@code gebiter.users.start-password}). */
 	private final String startPassword;
 
+	/**
+	 * Ab so vielen getippten Zeichen sucht die Vervollständigung auch in der E-Mail-Adresse
+	 * ({@code gebiter.users.search-email-min-length}).
+	 */
+	private final int searchEmailMinLength;
+
+	/** So viele Treffer liefert die Vervollständigung höchstens ({@code gebiter.users.search-max-results}). */
+	private final int searchMaxResults;
+
 	public UsersService(UsersRepository usersRepository, UsersDetailService usersDetailService,
 			UsersCredentialService usersCredentialService, CurrentUsersProvider currentUsersProvider,
 			@Value("${gebiter.accessrolecollection.default-key}") String defaultAccessRoleCollectionKey,
 			@Value("${gebiter.users.default-profile-visibility}") Visibility defaultProfileVisibility,
 			@Value("${gebiter.users.default-friend-list-visibility}") Visibility defaultFriendListVisibility,
 			@Value("${gebiter.users.avatar-resolve-max-guids}") int avatarResolveMaxGuids,
-			@Value("${gebiter.users.start-password}") String startPassword) {
+			@Value("${gebiter.users.start-password}") String startPassword,
+			@Value("${gebiter.users.search-email-min-length}") int searchEmailMinLength,
+			@Value("${gebiter.users.search-max-results}") int searchMaxResults) {
+		if (searchMaxResults < 1) {
+			throw new IllegalStateException("gebiter.users.search-max-results muss mindestens 1 sein.");
+		}
 		this.usersRepository = usersRepository;
 		this.usersDetailService = usersDetailService;
 		this.usersCredentialService = usersCredentialService;
@@ -80,6 +99,8 @@ public class UsersService {
 		this.defaultFriendListVisibility = defaultFriendListVisibility;
 		this.avatarResolveMaxGuids = avatarResolveMaxGuids;
 		this.startPassword = startPassword;
+		this.searchEmailMinLength = searchEmailMinLength;
+		this.searchMaxResults = searchMaxResults;
 	}
 
 	/**
@@ -288,17 +309,86 @@ public class UsersService {
 		return usersAvatarsForClient;
 	}
 
+	/**
+	 * READ (Suchen): Vervollständigung von Usern beim Tippen (Nutzer 2026-11-22), z. B. um jemanden als Uploadberechtigten
+	 * in eine Galerie einzutragen. Zwei Wege zu einem Treffer:
+	 * <ul>
+	 * <li>der Username enthält den getippten Text (ohne Groß- und Kleinschreibung): So ist JEDER User findbar, auch mit
+	 * privatem Profil;</li>
+	 * <li>ab {@code gebiter.users.search-email-min-length} Zeichen auch: Die E-Mail-Adresse BEGINNT mit dem getippten
+	 * Text. Dieser Weg gilt nur für User, deren Profil der Suchende sehen darf (öffentlich, oder „Freunde“ und
+	 * befreundet); die eine Regel dafür ist {@link #isProfileVisibleToCurrentUsers(UUID)}.</li>
+	 * </ul>
+	 * Beispiel: Bob tippt „bob.m“. Der User „bobby“ passt nicht über den Username, wohl aber über seine Adresse
+	 * bob.meier@web.de, wenn sein Profil für Bob sichtbar ist. Die Antwort nennt nie eine E-Mail-Adresse: je Treffer GUID,
+	 * Username und Avatar. Treffer über den Username zuerst, höchstens {@code gebiter.users.search-max-results}. Gelöschte
+	 * User gibt es nicht. Der Suchende selbst steht auch darin; wen eine Auswahl nicht anbieten soll, lässt der Aufrufer
+	 * weg.
+	 *
+	 * @param searchText der getippte Text; {@code null} oder leer ergibt keine Treffer
+	 */
+	@Transactional(readOnly = true)
+	public List<UsersForSearch> searchUsers(String searchText) {
+		List<UsersForSearch> usersForSearch = new ArrayList<>();
+		if (searchText == null) {
+			return usersForSearch;
+		}
+		String strippedSearchText = searchText.strip();
+		if (strippedSearchText.isEmpty()) {
+			return usersForSearch;
+		}
+		Pageable firstResults = PageRequest.of(0, searchMaxResults);
+		// LinkedHashMap: Treffer über den Username bleiben vorn, jeder User steht nur einmal darin
+		Map<UUID, Users> matchingUsersByGuid = new LinkedHashMap<>();
+		List<Users> usernameMatches = usersRepository
+				.findByStatusNotAndUsernameContainingIgnoreCaseOrderByUsernameAsc(UsersStatus.DELETED, strippedSearchText,
+						firstResults);
+		for (Users usernameMatch : usernameMatches) {
+			UUID usernameMatchGuid = usernameMatch.getGuid();
+			matchingUsersByGuid.put(usernameMatchGuid, usernameMatch);
+		}
+		boolean emailSearched = strippedSearchText.length() >= searchEmailMinLength;
+		if (emailSearched) {
+			List<Users> emailMatches = usersRepository.findByStatusNotAndEmailStartingWithIgnoreCaseOrderByUsernameAsc(
+					UsersStatus.DELETED, strippedSearchText, firstResults);
+			for (Users emailMatch : emailMatches) {
+				boolean profileVisible = doIsProfileVisibleToCurrentUsers(emailMatch);
+				if (profileVisible) {
+					UUID emailMatchGuid = emailMatch.getGuid();
+					matchingUsersByGuid.putIfAbsent(emailMatchGuid, emailMatch);
+				}
+			}
+		}
+		for (Users matchingUsers : matchingUsersByGuid.values()) {
+			if (usersForSearch.size() >= searchMaxResults) {
+				break;
+			}
+			UUID matchingUsersGuid = matchingUsers.getGuid();
+			String username = matchingUsers.getUsername();
+			UsersAvatarForClient usersAvatar = doCreateUsersAvatarForClient(matchingUsers);
+			UsersForSearch matchForSearch = new UsersForSearch(matchingUsersGuid, username, usersAvatar);
+			usersForSearch.add(matchForSearch);
+		}
+		return usersForSearch;
+	}
+
 	/** Die Darstellung eines Users nach der Sichtbarkeit seines Profils, der Kern von einzeln und mehreren. */
 	private UsersAvatarForClient doGetUsersAvatarForClient(UUID usersGuid) {
 		Optional<Users> foundUsers = usersRepository.findById(usersGuid);
 		boolean usersMissing = foundUsers.isEmpty() || foundUsers.get().getStatus() == UsersStatus.DELETED;
 		if (usersMissing) {
-			return new UsersAvatarForClient(usersGuid, false, null, null, null, null);
+			return new UsersAvatarForClient(usersGuid, false, null, null, null, null, null);
 		}
 		Users existingUsers = foundUsers.get();
+		return doCreateUsersAvatarForClient(existingUsers);
+	}
+
+	/** Die Darstellung eines vorhandenen, nicht gelöschten Users nach der Sichtbarkeit seines Profils. */
+	private UsersAvatarForClient doCreateUsersAvatarForClient(Users existingUsers) {
+		UUID usersGuid = existingUsers.getGuid();
 		boolean profileVisible = doIsProfileVisibleToCurrentUsers(existingUsers);
 		if (!profileVisible) {
-			return new UsersAvatarForClient(usersGuid, true, null, null, null, null);
+			return new UsersAvatarForClient(usersGuid, true, null, null, null, null, null);
 		}
 		String username = existingUsers.getUsername();
 		UsersDetail usersDetail = usersDetailService.getUsersDetail(usersGuid);
@@ -306,8 +396,9 @@ public class UsersService {
 		String profileImageSmallBase64Png = usersDetail.getProfileImageSmallBase64Png();
 		String avatarTextColor = usersDetail.getAvatarTextColor();
 		String avatarBackgroundColor = usersDetail.getAvatarBackgroundColor();
+		String uploadFrameColor = usersDetail.getUploadFrameColor();
 		return new UsersAvatarForClient(usersGuid, false, username, profileImageSmallBase64Png, avatarTextColor,
-				avatarBackgroundColor);
+				avatarBackgroundColor, uploadFrameColor);
 	}
 
 	/**
@@ -323,7 +414,8 @@ public class UsersService {
 	}
 
 	/**
-	 * READ: Die Details eines Users (Profilbild, Status-Text, Banner-Drift, Avatar-Farben, Zähler), nur wenn der angemeldete User sein
+	 * READ: Die Details eines Users (Profilbild, Status-Text, Banner-Drift, Avatar-Farben, Rahmenfarbe der Uploads,
+	 * Zähler), nur wenn der angemeldete User sein
 	 * Profil sehen darf; sonst sieht es aus wie „gibt es nicht“. Steht hier und nicht im {@code UsersDetailService}, weil
 	 * die Regel am User hängt und der {@code UsersDetailService} den UsersService nicht nutzen darf (Zirkel über die
 	 * Anlage). Der Admin liest alles über {@code /api/admin/users-detail}.

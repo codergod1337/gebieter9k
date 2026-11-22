@@ -110,6 +110,7 @@ export function findGuestbookAuthor(guestbookPage: GuestbookPage, authorUsersGui
       profileImageSmallBase64Png: null,
       avatarTextColor: null,
       avatarBackgroundColor: null,
+      uploadFrameColor: null,
     }
   }
   return {
@@ -119,5 +120,7 @@ export function findGuestbookAuthor(guestbookPage: GuestbookPage, authorUsersGui
     profileImageSmallBase64Png: guestbookAuthor.profileImageSmallBase64Png,
     avatarTextColor: guestbookAuthor.avatarTextColor,
     avatarBackgroundColor: guestbookAuthor.avatarBackgroundColor,
+    // Die Rahmenfarbe der Uploads braucht das Gästebuch nicht, sein Autor trägt sie nicht mit
+    uploadFrameColor: null,
   }
 }

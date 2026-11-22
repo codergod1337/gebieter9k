@@ -12,8 +12,9 @@ import java.util.UUID;
  * Interface.
  * <p>
  * ALLE ANTWORTEN KOMMEN AUS DEM TOKEN der laufenden Anfrage und kosten keinen Datenbankzugriff.
- * Sie sind dafür so alt wie das Token. Neue Rechte stehen erst im nächsten Token. Einzige Ausnahme: die
- * Freundesliste, sie liegt im Hauptspeicher (siehe {@link #currentUsersFriendUsersGuids()}).
+ * Sie sind dafür so alt wie das Token. Neue Rechte stehen erst im nächsten Token. Ausnahmen: die Freundesliste
+ * ({@link #currentUsersFriendUsersGuids()}), die eigenen Galerien ({@link #currentUsersOwnGalleryIds()}) und die
+ * fremden Galerien, in die er hochladen darf ({@link #currentUsersUploaderGalleryIds()}). Sie liegen im Hauptspeicher.
  */
 public interface CurrentUsersProvider {
 
@@ -50,6 +51,23 @@ public interface CurrentUsersProvider {
 	 * neu, Annehmen und Kündigen ziehen sie sofort nach. Kein Datenbankzugriff. Für den Lesefilter jeder Suche.
 	 */
 	List<UUID> currentUsersFriendUsersGuids();
+
+	/**
+	 * Die ids der eigenen Galerien des angemeldeten Users, aus dem Hauptspeicher: Bei jedem Login und Token-Refresh lädt
+	 * der {@code SessionService} die Liste neu, Anlegen und Löschen einer Galerie ziehen sie sofort nach. Kein
+	 * Datenbankzugriff. Für den Lesefilter jeder Suche (der Besitzer sieht jedes Bild seiner Galerien, auch das eines
+	 * anderen Uploaders) und für die Rechte an einer Datei (der Besitzer bearbeitet und löscht jedes Bild seiner
+	 * Galerien).
+	 */
+	List<Long> currentUsersOwnGalleryIds();
+
+	/**
+	 * Die ids der fremden Galerien, in die der angemeldete User hochladen darf (Uploadberechtigter, Nutzer 2026-11-22),
+	 * aus dem Hauptspeicher: Bei jedem Login und Token-Refresh lädt der {@code SessionService} die Liste neu, Eintragen
+	 * und Austragen ziehen sie sofort nach. Kein Datenbankzugriff. Für den Lesefilter jeder Suche (ein Uploadberechtigter
+	 * sieht die ganze Galerie) und für die Prüfung vor einem Upload.
+	 */
+	List<Long> currentUsersUploaderGalleryIds();
 
 	/**
 	 * Führt {@code action} aus, als wäre dieser User mit diesen Rechten angemeldet, für Abläufe ohne Request, die

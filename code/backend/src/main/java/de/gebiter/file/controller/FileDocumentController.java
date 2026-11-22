@@ -179,7 +179,10 @@ public class FileDocumentController {
 		fileDownloadService.streamFileDocument(id, false, rangeHeader, response);
 	}
 
-	/** UPDATE: Ändert die Metadaten der EIGENEN Datei. Body: {@code {"id": "…", "fieldValuesByFieldName": {…}}}. */
+	/**
+	 * UPDATE: Ändert die Metadaten der eigenen Datei, einer zum Bearbeiten freigegebenen oder eines Bildes in einer
+	 * eigenen Galerie. Body: {@code {"id": "…", "fieldValuesByFieldName": {…}}}.
+	 */
 	@PutMapping
 	public ResponseEntity<Map<String, Object>> changeOwnFileDocument(
 			@RequestBody FileDocumentChangeRequest changeRequest) {
@@ -204,7 +207,10 @@ public class FileDocumentController {
 		return ResponseEntity.ok(changedDocument);
 	}
 
-	/** UPDATE: Ändert die Sichtbarkeit der EIGENEN Datei. Body: {@code {"id": "…", "visibility": "FRIENDS"}}. */
+	/**
+	 * UPDATE: Ändert die Sichtbarkeit der EIGENEN Datei. Body: {@code {"id": "…", "visibility": "FRIENDS"}}. 403 bei einem
+	 * Bild in einer fremden Galerie: Dort gibt die Galerie vor, wer es sieht.
+	 */
 	@PutMapping("/visibility")
 	public ResponseEntity<Map<String, Object>> changeOwnFileDocumentVisibility(
 			@RequestBody FileDocumentVisibilityChangeRequest changeRequest) {
@@ -215,7 +221,10 @@ public class FileDocumentController {
 		return ResponseEntity.ok(changedDocument);
 	}
 
-	/** DELETE (weich): Setzt die EIGENE Datei auf DELETED. Body: {@code {"id": "…"}}. */
+	/**
+	 * DELETE (weich): Setzt die eigene Datei oder ein Bild in einer eigenen Galerie auf DELETED. Body:
+	 * {@code {"id": "…"}}.
+	 */
 	@DeleteMapping
 	public ResponseEntity<Void> deleteOwnFileDocument(@RequestBody FileDocumentIdRequest idRequest) {
 		String id = idRequest.id();

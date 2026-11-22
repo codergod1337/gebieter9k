@@ -18,9 +18,10 @@ type GalleryUploadPopupProps = {
 }
 
 /**
- * „Neue Bilder“ einer eigenen Galerie (Nutzer 2026-11-20: Der Upload steht nicht mehr dauernd über den Kacheln, er
- * öffnet sich über den Knopf rechts im Kopf der Galerie): ein Popup mit dem einen Upload-Ablauf der Plattform
- * ({@link GalleryUploadBox}), so wie „neues Angebot“ im Gebietermarkt seinen Upload-Schritt zeigt.
+ * „Neue Bilder“ einer Galerie, für ihren Besitzer und ihre Uploadberechtigten (Nutzer 2026-11-20: Der Upload steht
+ * nicht mehr dauernd über den Kacheln, er öffnet sich über den Knopf rechts im Kopf der Galerie): ein Popup mit dem
+ * einen Upload-Ablauf der Plattform ({@link GalleryUploadBox}), so wie „neues Angebot“ im Gebietermarkt seinen
+ * Upload-Schritt zeigt.
  *
  * Schließen baut den Ablauf ab und bricht damit laufende Uploads ab. Lädt beim Schließen noch etwas hoch, fragt das
  * Popup deshalb erst nach: „Weiter hochladen“ oder „Abbrechen und schließen“. Fertig hochgeladene Bilder betrifft das

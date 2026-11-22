@@ -6,6 +6,8 @@ import { ErrorAlert } from '../components/ErrorAlert.tsx'
 import { RangeSlider } from '../components/RangeSlider.tsx'
 import { SubmitButton } from '../components/SubmitButton.tsx'
 import { UsersAvatar } from '../components/UsersAvatar.tsx'
+import { UsersUploadFrameSwatch } from '../components/UsersUploadFrameSwatch.tsx'
+import { getDefaultUploadFrameColor } from '../users/getUsersUploadFrameColor.ts'
 import {
   BANNER_DRIFT_SPEED_DEFAULT_PERCENT,
   BANNER_DRIFT_SPEED_MAX_PERCENT,
@@ -20,6 +22,8 @@ export type ProfileHeadSettings = {
   avatarTextColor: string | null
   /** `null`: Standard (Verlauf aus der GUID). */
   avatarBackgroundColor: string | null
+  /** Die Rahmenfarbe der eigenen Uploads; `null`: Standard (Farbe aus der GUID). */
+  uploadFrameColor: string | null
 }
 
 type ProfileHeadSettingsPopupProps = {
@@ -33,6 +37,8 @@ type ProfileHeadSettingsPopupProps = {
   /** Die gespeicherten Farben des Avatars ohne Profilbild, `null`: Standard. */
   avatarTextColor: string | null
   avatarBackgroundColor: string | null
+  /** Die gespeicherte Rahmenfarbe der eigenen Uploads, `null`: Standard. */
+  uploadFrameColor: string | null
   isSaving: boolean
   /** Fehler des Speicherns, `null` wenn keiner. */
   errorMessage: string | null
@@ -66,10 +72,12 @@ function describeBannerDriftSpeed(percent: number) {
 }
 
 /**
- * Das Popup hinter dem Zahnrad im Profilkopf: der Status-Text (was man gerade macht), wie schnell das Banner driftet
- * und die Farben des Avatars ohne Profilbild (Schrift und Hintergrund, Nutzer 2026-11-09). Alles gehört zum Profil
- * (`UsersDetail`), jeder Besucher sieht es so. Das Banner zeigt das Tempo schon beim Schieben, der Avatar daneben die
- * Farben; gespeichert wird erst mit „Speichern“, Abbrechen nimmt die Vorschau zurück.
+ * Das Popup hinter dem Zahnrad im Profilkopf: der Status-Text (was man gerade macht), wie schnell das Banner driftet,
+ * die Farben des Avatars ohne Profilbild (Schrift und Hintergrund, Nutzer 2026-11-09) und die Rahmenfarbe der eigenen
+ * Uploads (Nutzer 2026-11-22: In einer gemeinsamen Galerie ist jede Bildkachel in der Farbe ihres Uploaders umrandet).
+ * Alles gehört zum Profil (`UsersDetail`), jeder Besucher sieht es so. Das Banner zeigt das Tempo schon beim Schieben,
+ * der Avatar daneben die Farben, das Farbfeld den Rahmen; gespeichert wird erst mit „Speichern“, Abbrechen nimmt die
+ * Vorschau zurück.
  */
 export function ProfileHeadSettingsPopup({
   usersGuid,
@@ -78,6 +86,7 @@ export function ProfileHeadSettingsPopup({
   bannerDriftSpeedPercent,
   avatarTextColor,
   avatarBackgroundColor,
+  uploadFrameColor,
   isSaving,
   errorMessage,
   onBannerDriftSpeedPreview,
@@ -88,6 +97,9 @@ export function ProfileHeadSettingsPopup({
   const [chosenDriftPercent, setChosenDriftPercent] = useState<number>(bannerDriftSpeedPercent)
   const [chosenTextColor, setChosenTextColor] = useState<string | null>(avatarTextColor)
   const [chosenBackgroundColor, setChosenBackgroundColor] = useState<string | null>(avatarBackgroundColor)
+  const [chosenUploadFrameColor, setChosenUploadFrameColor] = useState<string | null>(uploadFrameColor)
+  // ein Farbwähler braucht immer einen Wert: ohne gewählte Farbe zeigt er die aus der GUID
+  const uploadFrameColorShown = chosenUploadFrameColor ?? getDefaultUploadFrameColor(usersGuid)
   const textColorShown = chosenTextColor ?? DEFAULT_TEXT_COLOR_SHOWN
   const backgroundColorShown = chosenBackgroundColor ?? DEFAULT_BACKGROUND_COLOR_SHOWN
   const statusTextLength = enteredStatusText.length
@@ -108,6 +120,11 @@ export function ProfileHeadSettingsPopup({
     setChosenBackgroundColor(changedBackgroundColor)
   }
 
+  function handleUploadFrameColorChange(event: ChangeEvent<HTMLInputElement>) {
+    const changedUploadFrameColor = event.target.value
+    setChosenUploadFrameColor(changedUploadFrameColor)
+  }
+
   function handleDriftPercentChange(changedPercent: number) {
     setChosenDriftPercent(changedPercent)
     onBannerDriftSpeedPreview(changedPercent)
@@ -125,6 +142,7 @@ export function ProfileHeadSettingsPopup({
       bannerDriftSpeedPercent: chosenDriftPercent,
       avatarTextColor: chosenTextColor,
       avatarBackgroundColor: chosenBackgroundColor,
+      uploadFrameColor: chosenUploadFrameColor,
     }
     const saved = await onSave(profileHeadSettings)
     if (saved) {
@@ -205,6 +223,35 @@ export function ProfileHeadSettingsPopup({
             </div>
             <Form.Text>
               Standard: weiße Schrift auf einem Verlauf aus deiner GUID. Mit Profilbild sieht man die Farben nicht.
+            </Form.Text>
+          </div>
+          <div className="mb-4">
+            <div className="form-label">Rahmenfarbe deiner Bilder in gemeinsamen Galerien</div>
+            <div className="profile-head-avatar-colors">
+              <UsersUploadFrameSwatch usersGuid={usersGuid} previewColor={chosenUploadFrameColor} />
+              <Form.Group controlId="profileHeadUploadFrameColor">
+                <Form.Label className="small mb-1">Rahmen</Form.Label>
+                <div className="profile-head-color-field">
+                  <Form.Control
+                    type="color"
+                    className="form-control-color"
+                    value={uploadFrameColorShown}
+                    disabled={isSaving}
+                    onChange={handleUploadFrameColorChange}
+                  />
+                  <Button
+                    variant="link"
+                    size="sm"
+                    disabled={isSaving || chosenUploadFrameColor === null}
+                    onClick={() => setChosenUploadFrameColor(null)}>
+                    Standard
+                  </Button>
+                </div>
+              </Form.Group>
+            </div>
+            <Form.Text>
+              In einer Galerie, in die mehrere hochladen, ist jedes Bild in der Farbe dessen umrandet, der es hochgeladen
+              hat. Standard: eine Farbe aus deiner GUID.
             </Form.Text>
           </div>
           <RangeSlider

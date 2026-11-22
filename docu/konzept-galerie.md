@@ -157,7 +157,7 @@ Platz. Eine Methode bringt das in Ordnung, `GalleryService.doRepairGalleryFileLi
 | Anlass | Stelle | Beispiel |
 |---|---|---|
 | Der Besitzer löst die Bilder seiner Galerie auf (`POST /api/gallery/file/resolve`) | `GalleryService.resolveGalleryFiles`, vor dem Lesen der Seite | Plätze 2, 2, 3, 3 werden zu 1, 2, 3, 4; die Antwort zeigt schon die neuen Plätze |
-| Vor einem Upload in die Galerie | `GalleryService.prepareOwnGalleryUpload` | drei Bilder auf 1 bis 3, das neue bekommt 4 |
+| Vor einem Upload in die Galerie | `GalleryService.prepareGalleryUpload` (bis 2026-11-22 `prepareOwnGalleryUpload`) | drei Bilder auf 1 bis 3, das neue bekommt 4 |
 | Ein Bild der Galerie wird weich gelöscht (Autor oder Admin) | Meldung `FileDocumentSoftDeletedEvent` aus `FileDocumentWriteService`, gehört von `GalleryService` | fünf Bilder, Platz 3 gelöscht: aus 4 und 5 werden 3 und 4 |
 
 Das Sortieren (`PUT /api/gallery/file/listing-position`) schreibt die Plätze ohnehin neu und vergleicht dabei mit dem
@@ -251,3 +251,73 @@ mehr Angaben. Am Desktop bleiben die Kacheln (`GalleryTile`).
   Lesefilter des Betrachters); `GET /api/gallery-share` liefert alle Freigaben aller eigenen Galerien
   (`GalleryShareService.getAllOwnGalleryShare`). Die Freigaben lädt der Tab nur im eigenen Profil auf dem Handy.
 - Im Fuß der Box steht die Zahl der Galerien (`components/LoadStatus`).
+
+## 10. Gemeinsame Galerie: Uploadberechtigte (2026-11-22)
+
+Nutzer 2026-11-22: „jeder galleriebesitzer soll user hinzufügen können die bilder in seine galerie hochladen dürfen. so
+soll es ermöglicht werden dann man eine gemeinsagme ablage für urlaubsbilder hat.“ Entity `GalleryUploader`
+(`docu/entities/GalleryUploader.md`), dort stehen die Tabelle „Wer darf was“ und alle Stellen im Code.
+
+### 10.1 Entschieden
+
+- **Eintragen** darf jeder Besitzer in seiner Galerie, ohne eigenes Recht. Die Verwaltung steht im Reiter „Freigabe“ der
+  Galerie als eigene Box „Uploadberechtigte“, getrennt von den Freigaben über einen Link (das sind zwei verschiedene
+  Dinge: Der Link zeigt Bilder ohne Anmeldung, ein Uploadberechtigter lädt hoch).
+- **Sehen:** Besitzer und Uploadberechtigte sehen immer die ganze Galerie mit allen Bildern, egal wie sie eingestellt
+  ist. Vom Nutzer nicht ausdrücklich beantwortet, nach dem Anwendungsfall „gemeinsame Ablage“ so gebaut.
+- **Schreiben:** Schreibberechtigt ist IMMER der Besitzer, an jedem Bild seiner Galerie, auch an den Uploads anderer
+  (bearbeiten und löschen). Ein Uploader bearbeitet und löscht seine eigenen Uploads. Die Sichtbarkeit eines einzelnen
+  Bildes ändert ein Uploader in einer fremden Galerie nicht, die gibt die Galerie vor.
+- **Rahmen:** Jede Bildkachel zeigt mit ihrem Rahmen, wer hochgeladen hat. Die Farbe wählt jeder User in seinem Profil
+  (`UsersDetail.uploadFrameColor`, Zahnrad im Profilkopf); ohne Wahl eine Farbe aus seiner GUID.
+- **Finden:** Die Galerien, in die man hochladen darf, stehen im EIGENEN Profil unter „Galerien“ hinter den eigenen,
+  kursiv und farblich abgehoben. Zwei Endpunkte: die eigenen Galerien (`POST /api/gallery/resolve`) und die eigenen
+  Einträge als Uploadberechtigter (`GET /api/gallery-uploader`); jede Galerie dazu einzeln (`GET /api/gallery/{id}`).
+- **Vervollständigung von Usern** (global, `components/UsersSearchInput.tsx`, `POST /api/users/search`): Über den
+  Username ist jeder User findbar. Ab 4 Zeichen trifft auch der ANFANG der E-Mail-Adresse, aber nur bei Usern, deren
+  Profil der Suchende sehen darf (öffentlich, oder „Freunde“ und befreundet). Die Liste zeigt nie eine Adresse.
+  Gespeichert wird die GUID.
+
+### 10.2 Beispiel
+
+Alice hat die Galerie 7 „Urlaub 2026“ auf „Nur ich“. Sie trägt Bob und Carla ein.
+
+- Bob öffnet sein Profil, „Galerien“: hinter seinen eigenen steht kursiv „Urlaub 2026“, Marke „gemeinsam“, „von alice“.
+- Er öffnet sie (`/profile/<alice>/galleries/7`), sieht alle Bilder und den Knopf „neue Bilder“ und lädt drei hoch.
+  Autor der drei ist Bob: Sie zählen an seiner Grenze (`gebiter.file.max-files-per-users`), er bekommt die Punkte.
+- Jede Kachel ist umrandet: Alices Bilder in ihrer Farbe, Bobs in seiner, Carlas in ihrer. Über den Kacheln steht die
+  Legende mit Farbfeld und Name.
+- Bob hat den Stift an seinen drei Bildern, Alice an allen. Alice löscht ein Bild von Bob auf der Seite der Datei.
+- Dora ist nicht eingetragen: Für sie gibt es die Galerie nicht („Nur ich“).
+
+### 10.3 Technik
+
+- Kein Feld im Solr-Dokument und kein Postgres in der Suche: Je angemeldetem User liegen zwei Listen im Hauptspeicher,
+  wie die Freundesliste (geladen bei Login und Refresh, nach jeder Änderung nachgezogen): seine eigenen Galerien
+  (`GalleryService`) und die fremden, in die er hochladen darf (`GalleryUploaderService`). Der Lesefilter nimmt
+  „`galleryIds` enthält eine davon“ als weiteren Weg auf (`docu/konzept-lesezugriff.md`, Abschnitt 4).
+- Die Rechte an einem Bild (`FileDocumentAccessService`) lesen „liegt in einer eigenen Galerie“ aus derselben Liste.
+- Hochladen: `FileUploadService.uploadFileIntoGallery` → `GalleryService.prepareGalleryUpload` (Besitzer oder
+  Uploadberechtigter). Das Bild bekommt die Sichtbarkeit der Galerie; bei „Freunde“ zählen die Freunde des Besitzers.
+- Frontend: `GalleryUploaderBox`, `NewGalleryUploaderPopup`, `UsersSearchInput`, `UsersUploadFrameSwatch`,
+  `UsersUploadFrameLegend`; `GalleryPage` (Rahmen, Legende, Knopf), `GalleryListTab` (gemeinsame Galerien), die zentrale
+  `Table` kennt dafür feste Zeilen (`isRowFixed`) und eine Klasse je Zeile (`rowClassName`).
+
+### 10.4 Löschen
+
+- Austragen löscht nur die Zeile in `gallery_uploader`. Die Bilder des Users bleiben in der Galerie, er bleibt ihr Autor.
+- Mit der Galerie gehen ihre Uploadberechtigten (`GalleryDeletedEvent`, vor der Galerie selbst). Die Bilder aller
+  Uploader bleiben, verlieren die Galerie und werden privat; jedes gehört danach nur noch seinem Autor.
+
+### 10.5 Nur Richtung (Nutzer 2026-11-22, „das machen wir im detail später“)
+
+Statt der bloßen Farbe später Rahmen-Stylings aus dem Markt, wie der gestaltete Rahmen des Profilbilds: im Markt
+angeboten, gekauft, eins davon aktiviert, und das gilt dann an den eigenen Bildern. Die Kachel trägt dafür schon die
+Klasse `gallery-image-tile-framed`, die Farbe kommt als `--upload-frame-color`.
+
+### 10.6 Offen
+
+- Die Besucherseite einer Freigabe über einen Link (`/share/galerie/<token>`) zeigt weder Rahmen noch Legende.
+- Zwei Farben aus der GUID können sich ähneln; eindeutig wird es erst, wenn jeder seine Farbe wählt.
+- Ändert ein File-Manager die Sichtbarkeit eines einzelnen fremden Uploads auf „Freunde“, zählen dabei die Freunde des
+  Autors, nicht die des Besitzers der Galerie (bis die Galerie ihre Sichtbarkeit wieder überträgt).

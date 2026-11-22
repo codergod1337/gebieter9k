@@ -17,6 +17,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
+import de.gebiter.gallery.service.GalleryService;
+import de.gebiter.gallery.service.GalleryUploaderService;
 import de.gebiter.users.service.UsersFriendshipService;
 
 /**
@@ -24,7 +26,8 @@ import de.gebiter.users.service.UsersFriendshipService;
  * Vorlageprojekt.
  * <p>
  * ALLES KOMMT AUS DEM TOKEN DER LAUFENDEN ANFRAGE, ohne Datenbankzugriff. Signatur und Ablauf hat
- * die Filterkette schon geprüft, bevor hier etwas ausgelesen wird.
+ * die Filterkette schon geprüft, bevor hier etwas ausgelesen wird. Nur die Freundesliste und die Galerien des Users
+ * (eigene und die, in die er hochladen darf) kommen aus dem Hauptspeicher ihrer Services, auch ohne Datenbankzugriff.
  * <p>
  * WERFEN STATT LEER ZURÜCKGEBEN: Fragt jemand ohne angemeldeten User nach dessen GUID, ist das ein
  * Fehler im Aufbau und kein leerer Sonderfall.
@@ -40,10 +43,20 @@ public class SecurityContextCurrentUsersProvider implements CurrentUsersProvider
 	 */
 	private final ObjectProvider<UsersFriendshipService> usersFriendshipServiceProvider;
 
+	/** Erst beim Aufruf geholt, aus demselben Grund: Der {@link GalleryService} braucht selbst diesen Provider. */
+	private final ObjectProvider<GalleryService> galleryServiceProvider;
+
+	/** Erst beim Aufruf geholt, aus demselben Grund: Der {@link GalleryUploaderService} braucht selbst diesen Provider. */
+	private final ObjectProvider<GalleryUploaderService> galleryUploaderServiceProvider;
+
 	public SecurityContextCurrentUsersProvider(JwtConfig jwtConfig,
-			ObjectProvider<UsersFriendshipService> usersFriendshipServiceProvider) {
+			ObjectProvider<UsersFriendshipService> usersFriendshipServiceProvider,
+			ObjectProvider<GalleryService> galleryServiceProvider,
+			ObjectProvider<GalleryUploaderService> galleryUploaderServiceProvider) {
 		this.jwtConfig = jwtConfig;
 		this.usersFriendshipServiceProvider = usersFriendshipServiceProvider;
+		this.galleryServiceProvider = galleryServiceProvider;
+		this.galleryUploaderServiceProvider = galleryUploaderServiceProvider;
 	}
 
 	@Override
@@ -84,6 +97,22 @@ public class SecurityContextCurrentUsersProvider implements CurrentUsersProvider
 		UUID currentUsersGuid = currentUsersGuid();
 		UsersFriendshipService usersFriendshipService = usersFriendshipServiceProvider.getObject();
 		return usersFriendshipService.getFriendUsersGuidsFromMemory(currentUsersGuid);
+	}
+
+	/** Aus dem Hauptspeicher des {@link GalleryService}, ohne Datenbankzugriff. */
+	@Override
+	public List<Long> currentUsersOwnGalleryIds() {
+		UUID currentUsersGuid = currentUsersGuid();
+		GalleryService galleryService = galleryServiceProvider.getObject();
+		return galleryService.getOwnGalleryIdsFromMemory(currentUsersGuid);
+	}
+
+	/** Aus dem Hauptspeicher des {@link GalleryUploaderService}, ohne Datenbankzugriff. */
+	@Override
+	public List<Long> currentUsersUploaderGalleryIds() {
+		UUID currentUsersGuid = currentUsersGuid();
+		GalleryUploaderService galleryUploaderService = galleryUploaderServiceProvider.getObject();
+		return galleryUploaderService.getUploaderGalleryIdsFromMemory(currentUsersGuid);
 	}
 
 	@Override

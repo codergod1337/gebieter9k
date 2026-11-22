@@ -13,7 +13,7 @@ import jakarta.persistence.Table;
 
 /**
  * Erweiterte Profildaten eines Users – das, was andere sehen, wenn sie auf sein Profil kommen: Profilbild, Status-Text,
- * Banner-Drift, Avatar-Farben und Zähler. Alles freiwillig. Wer das Profil überhaupt sehen darf, regelt allein
+ * Banner-Drift, Avatar-Farben, Rahmenfarbe der Uploads und Zähler. Alles freiwillig. Wer das Profil überhaupt sehen darf, regelt allein
  * {@link Users#getProfileVisibility()}; ohne diese Freigabe wird UsersDetail gar nicht geladen. Kontaktangaben mit eigener
  * Sichtbarkeit je Feld stehen in {@link UsersContact}.
  * <p>
@@ -102,6 +102,16 @@ public class UsersDetail {
 	@Column(length = 7)
 	private String avatarBackgroundColor;
 
+	/**
+	 * Die Rahmenfarbe der eigenen Uploads als {@code #rrggbb} (Nutzer 2026-11-22): In einer gemeinsamen Galerie trägt jede
+	 * Bildkachel den Rahmen in der Farbe dessen, der das Bild hochgeladen hat. {@code null} heißt Standard: eine Farbe aus
+	 * der GUID. Gehört zum Profil und ist deshalb für jeden sichtbar, der das Profil sehen darf. Setzt nur der User
+	 * selbst. Richtung für später (Nutzer 2026-11-22): Rahmen-Stylings aus dem Markt, von denen man eins aktiviert,
+	 * ersetzen dann die bloße Farbe.
+	 */
+	@Column(length = 7)
+	private String uploadFrameColor;
+
 	/** Für JPA und für Jackson beim Einlesen eines Request Body. */
 	protected UsersDetail() {
 	}
@@ -180,5 +190,13 @@ public class UsersDetail {
 
 	public void setAvatarBackgroundColor(String avatarBackgroundColor) {
 		this.avatarBackgroundColor = avatarBackgroundColor;
+	}
+
+	public String getUploadFrameColor() {
+		return uploadFrameColor;
+	}
+
+	public void setUploadFrameColor(String uploadFrameColor) {
+		this.uploadFrameColor = uploadFrameColor;
 	}
 }

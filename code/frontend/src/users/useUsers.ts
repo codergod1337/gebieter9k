@@ -2,10 +2,11 @@ import { useCallback } from 'react'
 import type { ApiHookState } from '../api/ApiHookState.ts'
 import { useApiRequest } from '../api/useApiRequest.ts'
 import type { NewUsers, Users, UsersForClient, Visibility } from './Users.ts'
+import type { UsersForSearch } from './UsersForSearch.ts'
 
 /**
  * Was {@link useUsers} anbietet: den einheitlichen {@link ApiHookState} und je Endpunkt von
- * `/api/users` (einen User nach seiner Sichtbarkeit lesen, die eigene Sichtbarkeit ändern) und `/api/admin/users`
+ * `/api/users` (einen User nach seiner Sichtbarkeit lesen, User beim Tippen suchen, die eigene Sichtbarkeit ändern) und `/api/admin/users`
  * (alles ganz lesen, anlegen, ändern, löschen, nur ADMIN) eine Funktion, benannt wie die Methode im `UsersService` des Backends.
  *
  * Anlegen und Ändern liefern die Entity, Lesen das Objekt bzw. die Liste, Löschen `true` oder
@@ -17,6 +18,7 @@ export type UsersHook = ApiHookState & {
   getUsers: (usersGuid: string) => Promise<Users | null>
   getAllUsers: () => Promise<Users[] | null>
   getDeletedUsers: () => Promise<Users[] | null>
+  searchUsers: (searchText: string) => Promise<UsersForSearch[] | null>
   changeUsers: (changedUsers: Users) => Promise<Users | null>
   changeOwnUsersVisibility: (profileVisibility: Visibility, friendListVisibility: Visibility) => Promise<Users | null>
   deleteUsers: (usersGuid: string) => Promise<boolean>
@@ -58,6 +60,16 @@ export function useUsers(): UsersHook {
     return sendForData<Users[]>({ method: 'GET', path: '/api/admin/users/deleted' })
   }, [sendForData])
 
+  /**
+   * READ (Suchen): Vervollständigung von Usern beim Tippen. Treffer über den Username (jeder User) und, ab
+   * `USERS_SEARCH_EMAIL_MIN_LENGTH` Zeichen, über den Anfang der E-Mail-Adresse (nur wer sein Profil den Suchenden sehen
+   * lässt). Je Treffer GUID, Username und Avatar, nie die E-Mail-Adresse.
+   */
+  const searchUsers = useCallback((searchText: string) => {
+    const searchRequest = { searchText }
+    return sendForData<UsersForSearch[]>({ method: 'POST', path: '/api/users/search', body: searchRequest })
+  }, [sendForData])
+
   /** UPDATE: Ändert einen User und liefert ihn. Der Body ist das volle Objekt samt `guid`. */
   const changeUsers = useCallback((changedUsers: Users) => {
     return sendForData<Users>({ method: 'PUT', path: '/api/admin/users', body: changedUsers })
@@ -83,6 +95,7 @@ export function useUsers(): UsersHook {
     getUsers,
     getAllUsers,
     getDeletedUsers,
+    searchUsers,
     changeUsers,
     changeOwnUsersVisibility,
     deleteUsers,

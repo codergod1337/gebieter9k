@@ -234,7 +234,8 @@ public class GalleryShareService {
 	/**
 	 * Für den Upload in eine Galerie (der {@code FileUploadService} ruft es, bevor er die Bytes annimmt): das Feld, mit
 	 * dem das neue Bild die Freigaben seiner Galerie von Anfang an trägt. Ohne Freigabe eine leere Map. Ohne
-	 * Rechteprüfung: Dass die Galerie dem User gehört, hat der Aufrufer schon über den {@link GalleryService} geprüft.
+	 * Rechteprüfung: Dass der User in die Galerie hochladen darf (Besitzer oder Uploadberechtigter), hat der Aufrufer
+	 * schon über den {@link GalleryService} geprüft.
 	 *
 	 * @return {@code galleryShareTokenHashes} → die Hashes aller Freigaben der Galerie, oder leer
 	 */

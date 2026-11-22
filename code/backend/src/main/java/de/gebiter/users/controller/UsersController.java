@@ -17,6 +17,8 @@ import de.gebiter.users.dto.OwnUsersVisibilityRequest;
 import de.gebiter.users.dto.UsersAvatarForClient;
 import de.gebiter.users.dto.UsersAvatarResolveRequest;
 import de.gebiter.users.dto.UsersForClient;
+import de.gebiter.users.dto.UsersForSearch;
+import de.gebiter.users.dto.UsersSearchRequest;
 import de.gebiter.users.model.Users;
 import de.gebiter.users.service.UsersService;
 
@@ -71,6 +73,19 @@ public class UsersController {
 		List<UUID> usersGuids = resolveRequest.usersGuids();
 		List<UsersAvatarForClient> usersAvatarsForClient = usersService.resolveUsersAvatarsForClient(usersGuids);
 		return ResponseEntity.ok(usersAvatarsForClient);
+	}
+
+	/**
+	 * READ (Suchen): Vervollständigung von Usern beim Tippen. Body: {@code {"searchText": "bob"}}. Treffer über den
+	 * Username (jeder User) und, ab {@code gebiter.users.search-email-min-length} Zeichen, über den Anfang der
+	 * E-Mail-Adresse (nur wer sein Profil den Suchenden sehen lässt). Je Treffer GUID, Username und Avatar, nie die
+	 * E-Mail-Adresse; höchstens {@code gebiter.users.search-max-results}.
+	 */
+	@PostMapping("/search")
+	public ResponseEntity<List<UsersForSearch>> searchUsers(@RequestBody UsersSearchRequest searchRequest) {
+		String searchText = searchRequest.searchText();
+		List<UsersForSearch> usersForSearch = usersService.searchUsers(searchText);
+		return ResponseEntity.ok(usersForSearch);
 	}
 
 	/**

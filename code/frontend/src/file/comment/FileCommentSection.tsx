@@ -42,6 +42,7 @@ function findAuthor(fileCommentThread: FileCommentThread, authorUsersGuid: strin
     profileImageSmallBase64Png: null,
     avatarTextColor: null,
     avatarBackgroundColor: null,
+    uploadFrameColor: null,
   }
 }
 

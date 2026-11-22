@@ -6,13 +6,18 @@ import { useCurrentSession } from '../auth/login/useCurrentSession.ts'
 import { ErrorAlert } from '../components/ErrorAlert.tsx'
 import { getGalleryPath } from './galleryPaths.ts'
 import { GalleryShareBox } from './GalleryShareBox.tsx'
+import { GalleryUploaderBox } from './GalleryUploaderBox.tsx'
 import { useGallery } from './useGallery.ts'
 
 /**
  * Der Reiter „Freigabe“ einer eigenen Galerie unter `/profile/<guid>/galleries/<id>/share` (Nutzer 2026-11-20: ein
- * eigener Reiter, nicht mehr unter allen Bildkacheln): die Freigaben der Galerie über einen Link
- * ({@link GalleryShareBox}, Konzept `docu/konzept-galerie-freigabe.md`). Den Reiter zeigt der Subheader des Profils
- * nur dem Besitzer; wer die Adresse einer fremden Galerie von Hand öffnet, landet bei ihren Bildern.
+ * eigener Reiter, nicht mehr unter allen Bildkacheln), zwei getrennte Boxen:
+ * - die Freigaben der Galerie über einen Link ({@link GalleryShareBox}, Konzept `docu/konzept-galerie-freigabe.md`):
+ *   Wer den Link hat, sieht die Bilder ohne Anmeldung;
+ * - die Uploadberechtigten ({@link GalleryUploaderBox}, Nutzer 2026-11-22, Konzept `docu/konzept-galerie.md`): User, die
+ *   Bilder in die Galerie hochladen dürfen.
+ * Den Reiter zeigt der Subheader des Profils nur dem Besitzer; wer die Adresse einer fremden Galerie von Hand öffnet,
+ * landet bei ihren Bildern.
  */
 export function GallerySharePage() {
   const { galleryId } = useParams()
@@ -36,5 +41,10 @@ export function GallerySharePage() {
     const galleryPath = getGalleryPath(gallery.ownerUsersGuid, gallery.id)
     return <Navigate to={galleryPath} replace />
   }
-  return <GalleryShareBox galleryId={gallery.id} galleryTitle={gallery.title} />
+  return (
+    <>
+      <GalleryShareBox galleryId={gallery.id} galleryTitle={gallery.title} />
+      <GalleryUploaderBox galleryId={gallery.id} galleryTitle={gallery.title} ownerUsersGuid={gallery.ownerUsersGuid} />
+    </>
+  )
 }

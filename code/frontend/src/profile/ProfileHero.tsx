@@ -17,6 +17,7 @@ import {
   PROFILE_IMAGE_SMALL_SIZE_PIXELS,
   type UsersDetail,
 } from '../users/UsersDetail.ts'
+import { forgetUsersAvatarForClient } from '../users/useUsersAvatarForClient.ts'
 import { useUsersDetail } from '../users/useUsersDetail.ts'
 import type { UsersForProfile } from '../users/Users.ts'
 import { ProfileCover } from './ProfileCover.tsx'
@@ -130,11 +131,13 @@ export function ProfileHero({
   let statusText: string | null = null
   let avatarTextColor: string | null = null
   let avatarBackgroundColor: string | null = null
+  let uploadFrameColor: string | null = null
   if (usersDetail !== null) {
     currentProfileImageBase64Png = usersDetail.profileImageBase64Png
     statusText = usersDetail.statusText
     avatarTextColor = usersDetail.avatarTextColor
     avatarBackgroundColor = usersDetail.avatarBackgroundColor
+    uploadFrameColor = usersDetail.uploadFrameColor
   }
   let profileImageSaveErrorMessage: string | null = null
   if (profileImageHook.error !== null) {
@@ -201,7 +204,11 @@ export function ProfileHero({
     return saveProfileImage(null)
   }
 
-  /** Speichert Status-Text, Drift und Avatarfarben nacheinander und lädt die Details neu; liefert, ob alles geklappt hat. */
+  /**
+   * Speichert Status-Text, Drift, Avatarfarben und die Rahmenfarbe der Uploads nacheinander und lädt die Details neu;
+   * liefert, ob alles geklappt hat. Danach vergisst die Seite die gemerkte Darstellung des eigenen Users, damit Avatar
+   * und Rahmen überall gleich die neuen Farben zeigen.
+   */
   async function saveHeadSettings(profileHeadSettings: ProfileHeadSettings): Promise<boolean> {
     if (ownProfileHead === null) {
       return false
@@ -221,6 +228,13 @@ export function ProfileHero({
     if (colorsSaved === null) {
       return false
     }
+    const uploadFrameColorSaved = await headSettingsHook.changeOwnUsersDetailUploadFrameColor(
+      profileHeadSettings.uploadFrameColor,
+    )
+    if (uploadFrameColorSaved === null) {
+      return false
+    }
+    forgetUsersAvatarForClient(profileUsersGuid)
     await ownProfileHead.onUsersDetailChanged()
     return true
   }
@@ -355,6 +369,7 @@ export function ProfileHero({
           bannerDriftSpeedPercent={savedDriftPercent}
           avatarTextColor={avatarTextColor}
           avatarBackgroundColor={avatarBackgroundColor}
+          uploadFrameColor={uploadFrameColor}
           isSaving={headSettingsHook.isLoading}
           errorMessage={headSettingsErrorMessage}
           onBannerDriftSpeedPreview={setPreviewDriftPercent}

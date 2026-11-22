@@ -2,12 +2,12 @@
 
 > Erzeugt von `docu/tools/generate_entity_docs.py` aus dem Code. Nicht von Hand ändern: Code ändern und neu erzeugen.
 
-Erweiterte Profildaten eines Users – das, was andere sehen, wenn sie auf sein Profil kommen: Profilbild, Status-Text, Banner-Drift, Avatar-Farben und Zähler. Alles freiwillig. Wer das Profil überhaupt sehen darf, regelt allein `Users.getProfileVisibility()`; ohne diese Freigabe wird UsersDetail gar nicht geladen. Kontaktangaben mit eigener Sichtbarkeit je Feld stehen in `UsersContact`.
+Erweiterte Profildaten eines Users – das, was andere sehen, wenn sie auf sein Profil kommen: Profilbild, Status-Text, Banner-Drift, Avatar-Farben, Rahmenfarbe der Uploads und Zähler. Alles freiwillig. Wer das Profil überhaupt sehen darf, regelt allein `Users.getProfileVisibility()`; ohne diese Freigabe wird UsersDetail gar nicht geladen. Kontaktangaben mit eigener Sichtbarkeit je Feld stehen in `UsersContact`.
 
 - **Tabelle:** `users_detail`
 - **Klasse:** [`code/backend/src/main/java/de/gebiter/users/model/UsersDetail.java`](../../code/backend/src/main/java/de/gebiter/users/model/UsersDetail.java)
 - **Frontend-Typ:** [`code/frontend/src/users/UsersDetail.ts`](../../code/frontend/src/users/UsersDetail.ts)
-- **DTOs:** `OwnUsersDetailAboutTextRequest`, `OwnUsersDetailAvatarColorsRequest`, `OwnUsersDetailBannerDriftSpeedRequest`, `OwnUsersDetailProfileImageRequest`, `OwnUsersDetailStatusTextRequest`
+- **DTOs:** `OwnUsersDetailAboutTextRequest`, `OwnUsersDetailAvatarColorsRequest`, `OwnUsersDetailBannerDriftSpeedRequest`, `OwnUsersDetailProfileImageRequest`, `OwnUsersDetailStatusTextRequest`, `OwnUsersDetailUploadFrameColorRequest`
 
 ## Beispiel-JSON
 
@@ -27,7 +27,8 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
   },
   "bannerDriftSpeedPercent": 100,
   "avatarTextColor": "#e9ff3b",
-  "avatarBackgroundColor": "#e9ff3b"
+  "avatarBackgroundColor": "#e9ff3b",
+  "uploadFrameColor": "#e9ff3b"
 }
 ```
 
@@ -46,6 +47,7 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 | `bannerDriftSpeedPercent` | `Integer` |  | ja | Wie schnell das Standard-Banner dieses Profils driftet, in Prozent des Tempos aus dem Theme: 0 steht still, `null` gilt als 100, höchstens `gebiter.profile-banner-drift.max-percent`. Gehört zum Profil und ist deshalb für jeden sichtbar, der das Profil sehen darf (Nutzer 2026-11-09). Setzt nur der User selbst. |
 | `avatarTextColor` | `String` | max. 7 Zeichen | ja | Die Farben des Avatars ohne Profilbild, also der Initialen (Nutzer 2026-11-09): Schrift und Hintergrund als `#rrggbb`. `null` heißt Standard: weiße Schrift, Hintergrund als Verlauf aus der GUID. Gehören zum Profil und sind deshalb für jeden sichtbar, der das Profil sehen darf. Setzt nur der User selbst. |
 | `avatarBackgroundColor` | `String` | max. 7 Zeichen | ja | Die Hintergrundfarbe des Avatars ohne Profilbild als `#rrggbb`; `null`: Verlauf aus der GUID. |
+| `uploadFrameColor` | `String` | max. 7 Zeichen | ja | Die Rahmenfarbe der eigenen Uploads als `#rrggbb` (Nutzer 2026-11-22): In einer gemeinsamen Galerie trägt jede Bildkachel den Rahmen in der Farbe dessen, der das Bild hochgeladen hat. `null` heißt Standard: eine Farbe aus der GUID. Gehört zum Profil und ist deshalb für jeden sichtbar, der das Profil sehen darf. Setzt nur der User selbst. Richtung für später (Nutzer 2026-11-22): Rahmen-Stylings aus dem Markt, von denen man eins aktiviert, ersetzen dann die bloße Farbe. |
 
 ## Endpunkte
 
@@ -59,20 +61,22 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 | PUT | `/api/users-detail/about-text` | [`UsersDetailController.changeOwnUsersDetailAboutText`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersDetailController.java) | `UsersDetail`, `OwnUsersDetailAboutTextRequest` |
 | PUT | `/api/users-detail/banner-drift-speed` | [`UsersDetailController.changeOwnUsersDetailBannerDriftSpeed`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersDetailController.java) | `UsersDetail`, `OwnUsersDetailBannerDriftSpeedRequest` |
 | PUT | `/api/users-detail/avatar-colors` | [`UsersDetailController.changeOwnUsersDetailAvatarColors`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersDetailController.java) | `UsersDetail`, `OwnUsersDetailAvatarColorsRequest` |
+| PUT | `/api/users-detail/upload-frame-color` | [`UsersDetailController.changeOwnUsersDetailUploadFrameColor`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersDetailController.java) | `UsersDetail`, `OwnUsersDetailUploadFrameColorRequest` (die Rahmenfarbe der eigenen Uploads; leer setzt sie auf den Standard zurück) |
 
 ## Verwendung im Backend
 
 - [`code/backend/src/main/java/de/gebiter/guestbook/service/GuestbookService.java`](../../code/backend/src/main/java/de/gebiter/guestbook/service/GuestbookService.java): `createGuestbookAuthor`
 - [`code/backend/src/main/java/de/gebiter/users/controller/UsersDetailAdminController.java`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersDetailAdminController.java): `getUsersDetail`, `getAllUsersDetail`
-- [`code/backend/src/main/java/de/gebiter/users/controller/UsersDetailController.java`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersDetailController.java): `getVisibleUsersDetail`, `changeOwnUsersDetailProfileImage`, `changeOwnUsersDetailStatusText`, `changeOwnUsersDetailAboutText`, `changeOwnUsersDetailBannerDriftSpeed`, `changeOwnUsersDetailAvatarColors`
+- [`code/backend/src/main/java/de/gebiter/users/controller/UsersDetailController.java`](../../code/backend/src/main/java/de/gebiter/users/controller/UsersDetailController.java): `getVisibleUsersDetail`, `changeOwnUsersDetailProfileImage`, `changeOwnUsersDetailStatusText`, `changeOwnUsersDetailAboutText`, `changeOwnUsersDetailBannerDriftSpeed`, `changeOwnUsersDetailAvatarColors`, `changeOwnUsersDetailUploadFrameColor`
 - [`code/backend/src/main/java/de/gebiter/users/repository/UsersDetailRepository.java`](../../code/backend/src/main/java/de/gebiter/users/repository/UsersDetailRepository.java): (Import, Felder)
-- [`code/backend/src/main/java/de/gebiter/users/service/UsersDetailService.java`](../../code/backend/src/main/java/de/gebiter/users/service/UsersDetailService.java): `createUsersDetail`, `getUsersDetail`, `getAllUsersDetail`, `increaseUsersDetailUploadCount`, `increaseUsersDetailWrittenGuestbookEntryCount`, `changeOwnUsersDetailProfileImage`, `changeOwnUsersDetailStatusText`, `changeOwnUsersDetailAboutText`, `changeOwnUsersDetailBannerDriftSpeed`, `changeOwnUsersDetailAvatarColors`, `doGetOrCreateOwnUsersDetail`, `doCreateUsersDetail`, `doGetUsersDetail`, `doGetAllUsersDetail`
-- [`code/backend/src/main/java/de/gebiter/users/service/UsersService.java`](../../code/backend/src/main/java/de/gebiter/users/service/UsersService.java): `getUsersAvatarForClient`, `getVisibleUsersDetail`, `doGetUsersAvatarForClient`
+- [`code/backend/src/main/java/de/gebiter/users/service/UsersDetailService.java`](../../code/backend/src/main/java/de/gebiter/users/service/UsersDetailService.java): `createUsersDetail`, `getUsersDetail`, `getAllUsersDetail`, `increaseUsersDetailUploadCount`, `increaseUsersDetailWrittenGuestbookEntryCount`, `changeOwnUsersDetailProfileImage`, `changeOwnUsersDetailStatusText`, `changeOwnUsersDetailAboutText`, `changeOwnUsersDetailBannerDriftSpeed`, `changeOwnUsersDetailAvatarColors`, `changeOwnUsersDetailUploadFrameColor`, `doGetOrCreateOwnUsersDetail`, `doCreateUsersDetail`, `doGetUsersDetail`, `doGetAllUsersDetail`
+- [`code/backend/src/main/java/de/gebiter/users/service/UsersService.java`](../../code/backend/src/main/java/de/gebiter/users/service/UsersService.java): `getUsersAvatarForClient`, `getVisibleUsersDetail`, `doGetUsersAvatarForClient`, `doCreateUsersAvatarForClient` (liest daraus auch `uploadFrameColor` für `UsersAvatarForClient`)
 
 ## Verwendung im Frontend
 
 - [`code/frontend/src/profile/ProfileAboutBox.tsx`](../../code/frontend/src/profile/ProfileAboutBox.tsx): (Typ)
 - [`code/frontend/src/profile/ProfileAboutEditPopup.tsx`](../../code/frontend/src/profile/ProfileAboutEditPopup.tsx): (Typ)
-- [`code/frontend/src/profile/ProfileHeadSettingsPopup.tsx`](../../code/frontend/src/profile/ProfileHeadSettingsPopup.tsx): (Typ)
-- [`code/frontend/src/profile/ProfileHero.tsx`](../../code/frontend/src/profile/ProfileHero.tsx): (Typ)
-- [`code/frontend/src/users/useUsersDetail.ts`](../../code/frontend/src/users/useUsersDetail.ts): `useUsersDetail`, `getUsersDetail`, `getAllUsersDetail`, `changeOwnUsersDetailProfileImage`, `changeOwnUsersDetailStatusText`, `changeOwnUsersDetailAboutText`, `changeOwnUsersDetailBannerDriftSpeed`, `changeOwnUsersDetailAvatarColors`
+- [`code/frontend/src/profile/ProfileHeadSettingsPopup.tsx`](../../code/frontend/src/profile/ProfileHeadSettingsPopup.tsx): (Typ); seit 2026-11-22 mit der Rahmenfarbe der eigenen Uploads (Farbwähler, „Standard“ setzt zurück)
+- [`code/frontend/src/profile/ProfileHero.tsx`](../../code/frontend/src/profile/ProfileHero.tsx): (Typ) `saveHeadSettings` speichert auch die Rahmenfarbe (`changeOwnUsersDetailUploadFrameColor`)
+- [`code/frontend/src/users/getUsersUploadFrameColor.ts`](../../code/frontend/src/users/getUsersUploadFrameColor.ts): `getUsersUploadFrameColor`, `getDefaultUploadFrameColor` (die Rahmenfarbe: gewählt oder aus der GUID)
+- [`code/frontend/src/users/useUsersDetail.ts`](../../code/frontend/src/users/useUsersDetail.ts): `useUsersDetail`, `getUsersDetail`, `getAllUsersDetail`, `changeOwnUsersDetailProfileImage`, `changeOwnUsersDetailStatusText`, `changeOwnUsersDetailAboutText`, `changeOwnUsersDetailBannerDriftSpeed`, `changeOwnUsersDetailAvatarColors`, `changeOwnUsersDetailUploadFrameColor`

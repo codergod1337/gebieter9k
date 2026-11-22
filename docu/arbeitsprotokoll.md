@@ -13,6 +13,171 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-22 21:33 – Galerie: Uploadberechtigte bauen (Antworten des Nutzers auf die fünf Fragen)
+
+- Ansage (gekürzt, wörtlich): „ich würde galerien, die andere uploader freigegeben haben bei den jeweiligen uploadern
+  in ihren galerien kursiv und farblich markiert anzeigen. […] man hat einen endpunkt eigene galerien und einen endpunkt
+  für die ids bei denen man auch hochladen darf […] zu 2. ja 3. gute frage, ich würde das im userprofil noch auswählbar
+  machen, für dich als info […] später im shop weitere border stylings, wie zum beispiel der rahmen des profilbildes
+  […] kaufen und für sich immer eins aktivieren […] das machen wir im detail später. […] 4. ja stimmt […] das würde
+  ich auch so lassen, aber wir müssen ja ohne probleme die findbar machen können bei denen es öffentlich ist oder wenn
+  sie freunde sind und die einstellung auf freunde ist. den username würde ich aber immer findbar machen wollen 5. bob
+  findet die galerie in SEINEM profil in galerien, hinter seinen eigenen will ich KURSIV also in der tabelle weiter
+  unten dann die angezeigt haben bei denen er hinzugefügt wurde“.
+- Entschieden (Nutzer):
+  - 2: Der Besitzer löscht jedes Bild seiner Galerie, der Uploader nur seine eigenen; die Sichtbarkeit eines Bildes in
+    einer fremden Galerie ändert der Uploader nicht.
+  - 3: Die Rahmenfarbe wählt jeder User in seinem Profil. NUR ALS RICHTUNG, nicht jetzt: später Rahmen-Stylings im
+    Markt (kaufen, eins aktivieren), dann ersetzt das Styling die Farbe.
+  - 4: Die Liste zeigt nie die E-Mail-Adresse, die Adresse trifft nur vom Anfang her. Über den Usernamen ist JEDER
+    findbar; über die E-Mail nur, wessen Profil der Suchende sehen darf (öffentlich, oder „Freunde“ und befreundet).
+    So von mir verstanden.
+  - 5: Im EIGENEN Profil unter „Galerien“: erst die eigenen, dahinter kursiv und farblich markiert die, bei denen man
+    eingetragen ist. Zwei Endpunkte (eigene Galerien; Galerien, in die man hochladen darf).
+  - 1 blieb ohne ausdrückliche Antwort; von mir nach dem Anwendungsfall „gemeinsame Ablage“ entschieden: Besitzer und
+    Uploadberechtigte sehen immer die ganze Galerie.
+- Plan: 1. Regeln und Code lesen (Sitzungsspeicher der Freunde, Rechte an Dateien, Reiter „Freigabe“, Liste der
+  Galerien, Profil-Einstellungen). 2. Backend: Entity der Uploadberechtigten mit Service und Controller, Lesefilter,
+  Rechte (bearbeiten, löschen), Upload, Vervollständigung von Usern, Rahmenfarbe im Profil. 3. Frontend: globale
+  Vervollständigung, Box „Uploadberechtigte“ im Reiter „Freigabe“, Liste der Galerien, Rahmen und Legende an den
+  Kacheln, Farbwahl im Profil. 4. Bauen (Backend, Frontend), Doku je Entity und Konzepte nachziehen.
+- Stand etwa 21:45 (Uhrzeit nachträglich geschätzt), **Backend geschrieben und übersetzt (`./mvnw -o compile` ohne Fehler), nichts gestartet, nichts auf dem
+  Pi, nicht committet**:
+  - Neu: Entity `GalleryUploader` (Tabelle `gallery_uploader`: `id`, `galleryId`, `uploaderUsersGuid`, je Galerie und
+    User einmal), `GalleryUploaderRepository`, `GalleryUploaderService`, `GalleryUploaderController`
+    (`/api/gallery-uploader`: POST eintragen, GET eigene Einträge, POST `/resolve` die einer Galerie, DELETE
+    austragen), DTOs `NewGalleryUploader`, `GalleryUploaderResolveRequest`, `GalleryUploaderDeleteRequest`.
+  - Im Hauptspeicher wie die Freundesliste (geladen bei Login und Refresh im `SessionService`, nach jeder Änderung
+    nachgezogen): die eigenen Galerien je User (`GalleryService`) und die fremden Galerien, in die er hochladen darf
+    (`GalleryUploaderService`); der `CurrentUsersProvider` liefert beide (`currentUsersOwnGalleryIds`,
+    `currentUsersUploaderGalleryIds`).
+  - Lesefilter (`FileDocumentResolveService.createVisibilityFilterQuery`): zusätzlich „Bild liegt in einer eigenen
+    Galerie oder in einer, in die ich hochladen darf“.
+  - Rechte (`FileDocumentAccessService`): Besitzer der Galerie bearbeitet und löscht jedes Bild seiner Galerie; der
+    Autor bestimmt über ein Bild in einer fremden Galerie nicht mehr (Sichtbarkeit, Bearbeiter).
+  - `GalleryService`: Uploadberechtigte sehen die Galerie immer, `prepareOwnGalleryUpload` heißt jetzt
+    `prepareGalleryUpload` (Besitzer oder Uploadberechtigter), neu `checkVisibleGalleryExists`.
+  - Vervollständigung: `POST /api/users/search` (`UsersService.searchUsers`, `UsersForSearch`, `UsersSearchRequest`),
+    YAML `gebiter.users.search-email-min-length: 4`, `search-max-results: 10`.
+  - Rahmenfarbe: `UsersDetail.uploadFrameColor`, `PUT /api/users-detail/upload-frame-color`, steht auch in
+    `UsersAvatarForClient`.
+- Stand etwa 21:53 (Uhrzeit nachträglich geschätzt), **Frontend geschrieben, `npm run build` (tsc und Vite) ohne
+  Fehler**:
+  - Global neu in `components/`: `UsersSearchInput` (Vervollständigung von Usern), `UsersUploadFrameSwatch`
+    (Farbfeld zur Rahmenfarbe), `UsersUploadFrameLegend` (Legende Farbe → User). Die Vorschlagsliste heißt jetzt
+    allgemein `.suggestion-list`/`.suggestion-list-entry` (vorher `.values-input-suggestions`), `ValuesInput` und
+    `UsersSearchInput` teilen sie. `Table` kann jetzt feste Zeilen (`isRowFixed`) und eine Klasse je Zeile
+    (`rowClassName`).
+  - `users/`: `UsersForSearch.ts`, `getUsersUploadFrameColor.ts`, `useUsers.searchUsers`,
+    `useUsersDetail.changeOwnUsersDetailUploadFrameColor`, `forgetUsersAvatarForClient`.
+  - `gallery/`: `GalleryUploader.ts`, `useGalleryUploader.ts`, `galleryUploaderTexts.ts`,
+    `galleryUploaderColumns.tsx`, `GalleryUploaderBox.tsx`, `NewGalleryUploaderPopup.tsx`, `GallerySharedMark.tsx`;
+    geändert `GallerySharePage` (zweite Box), `GalleryPage` (Knopf „neue Bilder“ auch für Uploadberechtigte, Stift
+    für den Besitzer an jedem Bild, Rahmen und Legende), `GalleryImageTile` (`frameColor`), `GalleryListTab` und
+    `GalleryTile` und `galleryColumns` (gemeinsame Galerien hinter den eigenen, kursiv, Marke „gemeinsam“).
+  - Profil: `ProfileHeadSettingsPopup` und `ProfileHero` (Rahmenfarbe wählen und speichern).
+  - CSS: `base.css` (Lage, Maße, kursiv) und `themes/default.css` (Farben, Rahmen).
+- Stand 21:59, **im Firefox ohne Fenster gesehen, mit einem nachgestellten Backend im Scratchpad** (Bob als normaler
+  User, Alice als Besitzerin der Galerie „Urlaub 2026“ auf „Nur ich“, Carla, dazu ein privates Profil), kein Fehler der
+  Seite:
+  - Bobs Liste der Galerien: 2 eigene Kacheln, dahinter die gemeinsame kursiv auf neongelbem Grund mit gestrichelter
+    Kante, Marke „gemeinsam“, „von alice“; Fuß „2 Galerien, am Griff verschieben · 1 gemeinsame Galerie eines anderen
+    Users“. Auf dem Handy als Tabelle, die gemeinsame Zeile kursiv, ihr Griff gesperrt (die Zeile mit Marke und
+    Besitzer lag erst über dem Titel, behoben).
+  - Alices Galerie als Bob: 5 Kacheln, jede in der Farbe ihres Uploaders umrandet, Legende mit 4 Usern (das private
+    Profil als „Anonym“), Knopf „neue Bilder“ da, Stift nur an Bobs zwei Bildern.
+  - Reiter „Freigabe“ einer eigenen Galerie: zwei Boxen; „neuer Uploadberechtigter“: „a“ findet alice und das private
+    Profil über den Usernamen, „dora@“ (Adresse des privaten Profils) findet nichts, „alice@“ findet alice; wählen,
+    speichern, Zeile und Rückmeldung erscheinen.
+  - Profil, Zahnrad: Abschnitt „Rahmenfarbe deiner Bilder in gemeinsamen Galerien“ mit Farbfeld und Farbwähler.
+  - NICHT gesehen: alles gegen das echte Backend (Hochladen als Uploadberechtigter, Lesefilter in Solr, Löschen
+    durch den Besitzer, Speichern der Farbe).
+- Stand 22:04, **Doku und Regeln nachgezogen, dem Nutzer berichtet**:
+  - Kontextstart (`./start.sh test -Dtest=Gebiter9kApplicationTests`) NICHT gelaufen: Der Pi war weder über einen
+    Tunnel noch im LAN erreichbar. Stattdessen am Code geprüft: kein Kreis in den Abhängigkeiten (nur Controller nutzen
+    den `SessionService`), die neuen Abfragenamen der Repositories passen zu den Feldern. Offen bleibt der echte Start
+    (zwei neue `@Value` im `UsersService`); er legt in der Pi-DB die Tabelle `gallery_uploader` und die Spalte
+    `users_detail.upload_frame_color` an.
+  - Doku: neu `entities/GalleryUploader.md` (von Hand, Grundgerüst aus dem Werkzeug, das in einer Kopie im Scratchpad
+    lief); ergänzt `entities/Gallery.md`, `Users.md`, `UsersDetail.md`, `README.md`, `konzept-galerie.md` (Abschnitt
+    10), `konzept-lesezugriff.md` (Lesefilter, Rechte), `konzept-file-kern.md`.
+  - Regeln (`Vollidiot/`): neu `gallery-uploaders-shared-gallery.md`; ergänzt `platform-how-it-works.md`,
+    `frontend-structure.md`, `log-current-work.md`, Index.
+  - Nicht committet, nichts auf dem Pi. Der Nutzer pusht vom Laptop selbst; danach auf dem Pi pull, bauen, prüfen.
+- Von mir entschieden und dem Nutzer zur Entscheidung genannt: Besitzer und Uploadberechtigte sehen die ganze Galerie;
+  Austragen lässt die Bilder in der Galerie; der Besitzer ändert an fremden Uploads nicht die Sichtbarkeit je Bild;
+  Rahmen und Legende nur, sobald außer dem Besitzer jemand beteiligt ist; kein Höchstwert für Uploadberechtigte.
+
+## 2026-11-22 21:17 – Galerie: weitere User dürfen in eine fremde Galerie hochladen (Anforderungen prüfen)
+
+- Ansage (gekürzt, wörtlich): „jeder galleriebesitzer soll user hinzufügen können die bilder in seine galerie hochladen
+  dürfen. so soll es ermöglicht werden dann man eine gemeinsagme ablage für urlaubsbilder hat. das möchte ich dann auch
+  mit dem bildkachel rahmen angezeigt haben wer der uploader ist, also eindeutige einfärbung für den uploader. dazu
+  brauchen wir bei der freigabe auch eine separate user als uploadberechtiger interface. dazu kannst du gleich eine
+  globale user vervollständigungskomponente machen. die soll die usernamen autovervollständigen oder nach 4 zeichen auch
+  die useremail vervollständigen, in die liste will ich dann natürlich die jeweilige userguid einlocken.
+  schreibbrechtigt ist dann IMMER der galeriebesetzer, bei allen uploads in seiner galerie auch für die uploads von
+  anderen usern. und die anderen user dürfen auch ihre eigenen uploads in einer fremden galerie bearbeiten. ist die das
+  als anforderungskatalog genau genug?“
+- Plan: nur lesen, nichts bauen. 1. Den heutigen Stand der Galerie nachlesen (Entity `Gallery`, Upload
+  `POST /api/gallery/upload`, Lesefilter, Bearbeiten-Regel `isFileDocumentChangeableByCurrentUsers`, Reiter „Freigabe“,
+  Kachel) und was es zur Vervollständigung von Usern schon gibt. 2. Die Anforderungen dagegenhalten: was ist damit
+  eindeutig, was ist offen. 3. Antworten, offene Punkte als nummerierte Fragen.
+- Stand 21:30, nur gelesen, nichts gebaut. Gesehen:
+  - Hochladen, Sortieren, Ändern der Galerie heute nur der Besitzer (`GalleryService.doGetOwnGallery`,
+    `prepareOwnGalleryUpload`); eine fremde Galerie sieht man nur über Profil- und Galerie-Sichtbarkeit
+    (`doGetVisibleGallery`).
+  - Lesefilter (`FileDocumentResolveService.createVisibilityFilterQuery`): Autor ODER AUTHENTICATED/ANY ODER
+    Bearbeiter ODER Freund des Besitzers. Einen Weg „Besitzer der Galerie“ oder „Uploadberechtigter“ gibt es nicht:
+    In einer Galerie „Nur ich“ sähe der Besitzer (ohne ADMIN) fremde Uploads nicht, der Uploader nur seine eigenen.
+  - Rechte an einer Datei (`FileDocumentAccessService`): bearbeiten (Autor, Bearbeiter), bestimmen (Autor), weich
+    löschen (Autor, ADMIN). Der Besitzer der Galerie kommt darin nicht vor.
+  - Eine Vervollständigung von Usern gibt es nicht (weder Endpunkt noch Komponente); `FileEditorsPopup` bietet nur
+    die eigenen Freunde mit Haken an. Andere bekommen von einem User nie die E-Mail-Adresse (`UsersForProfile`).
+  - Farben: Jeder User hat Avatar-Farben in `UsersDetail`, eindeutig sind die nicht.
+- Antwort an den Nutzer: Kern ist genau genug; fünf Punkte offen, als nummerierte Fragen mit Empfehlung gestellt
+  (1 wer sieht was, 2 darf der Besitzer fremde Uploads löschen, 3 woher die Farbe, 4 E-Mail in der Vervollständigung,
+  5 wo findet der Uploader die Galerie). Gebaut wird nach seinen Antworten.
+
+## 2026-11-21 21:02 – Frage: Jupyter-Notebooks in der App darstellen, sinnvoll?
+
+- Ansage: „wenn ich jupyter notebooks darstellen möchte, könnten wir das in unsere app integrieren? oder wäre das nicht
+  so sinnvoll“
+- Nur gelesen, nichts gebaut. Gesehen: Der Viewer (`frontend/src/file/document/`) hat schon je Typ einen eigenen
+  Baustein (`fileDocumentViewerKind.ts`: Bild, Video, Word mit docx-preview, Tabelle mit SheetJS, Text), die Bytes
+  kommen über `/api/file-document/download/<id>`; fremdes HTML wird nirgends ausgeführt (`inline-mime-types`,
+  `renderAltChunks: false`, `removeUnsafeLinks`).
+- Antwort: Anzeigen passt als weiterer Viewer (`NOTEBOOK`), ohne neuen Endpunkt; Ausführen (Kernel) nicht auf dem Pi.
+  Offen und nicht geprüft: welchen Typ Tika für `.ipynb` meldet, welche Markdown-Bibliothek, Volltext für die Suche
+  (roh wäre es JSON samt Base64-Bildern). Die Vorlage `code/vorlage/gitfiles` liegt auf dem Laptop nicht, dort konnte
+  ich nicht nachsehen.
+- Zwei Rückfragen an den Nutzer gestellt (nur ansehen oder auch ausführen; über welchen Upload-Weg).
+- Entschieden (Nutzer): „ok dann machen wir das nicht. machen wir dann eigenes github repo wenn wir dazu kommen“. Kein
+  Notebook-Viewer in der App; die Notebooks bekommen später ein eigenes GitHub-Repo. Nichts gebaut, nichts offen.
+
+## 2026-11-21 20:55 – Frage: Trägt jedes später hochgeladene Bild die Freigabe seiner Galerie?
+
+- Ansage: „wenn eine galerie freigegeben ist, stellst du sicher, dass so lange dir freigabe existiert und aktiv ist,
+  jedes weitere bild das in dieser galerie dann hochgeladen wird auch freigegeben ist“
+- Plan: nur lesen. 1. Im Code den Upload in eine Galerie nachlesen (`FileUploadService.uploadFileIntoGallery`,
+  `GalleryShareService.prepareGalleryShareUpload`) und jeden anderen Weg, auf dem ein Bild in eine Galerie kommt oder
+  sein Dokument neu geschrieben wird. 2. Auf dem Pi an den echten Freigaben nachzählen (Postgres und Solr, nur lesend):
+  aktive Bilder der Galerie gegen Bilder mit dem Hash der Freigabe, besonders die nach dem Anlegen hochgeladenen.
+- Ansage mittendrin (gegen 20:58): „warum schreibst du ein prüfscript […]? schau dir den […] code an und verifiziere das“.
+  Das Skript war da einmal gelaufen (nur lesend, vom Pi wieder gelöscht); danach nur noch Code gelesen.
+- Stand 21:00, Antwort: ja, am Code belegt, nichts geändert.
+  - Einziger Weg in eine Galerie: `POST /api/gallery/upload` → `FileUploadService.uploadFileIntoGallery`. Er holt vor
+    den Bytes `GalleryShareService.prepareGalleryShareUpload` (Hashes ALLER Freigaben der Galerie, ohne Filter auf
+    Ablauf oder verbrauchte Aufrufe) und schreibt sie in demselben Solr-Schreiben ins neue Dokument, das es anlegt
+    (`doCheckInFile` → `createFileDocumentFromUpload`), Status sofort ACTIVE. `galleryIds` setzt sonst niemand.
+  - Alle späteren Schreibzugriffe (Auswertung, Sortieren, Sichtbarkeit, Bearbeiten) sind Atomic Updates einzelner
+    Felder; das Feld `galleryShareTokenHashes` ist im Kern gespeichert (stored, docValues), es bleibt also stehen.
+  - Ob die Freigabe gilt, entscheidet bei jedem Aufruf Postgres (`getValidGalleryShare`); eine abgelaufene und später
+    verlängerte Freigabe zeigt deshalb auch die Bilder, die dazwischen hochgeladen wurden.
+  - Nicht belegt: Es gibt keinen automatischen Test für diesen Weg, und auf dem Pi ist seit dem Anlegen der Freigabe 15
+    (2026-11-20 21:05 MEZ) kein Bild hochgeladen worden (Galerie 5 „test 1“: 10 aktive Bilder, 10 mit dem Hash, Zähler
+    10; neuestes Bild von 16:51 MEZ).
+
 ## 2026-11-21 16:54 – Meldung: trotz Login erscheint wieder das Login-Modul
 
 - Ansage: „hast du jetzt den login verkackt? also dass es nun trotz login, das login modul anzeigt?“
@@ -20,6 +185,66 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
   `psql` nur lesend, und um 16:47 von hier über den Tunnel ein Kontextstart des Backends gegen die Pi-DB (zwei Tests).
 - Plan: 1. Im Code nachsehen, was ein Start des Backends an den Sitzungen in der Datenbank ändert. 2. Log des Backends
   auf dem Pi und die Sitzungen in der Pi-DB ansehen. 3. Die Anmeldung von außen nachstellen, soweit es ohne 2FA geht.
+- Stand 16:57, Ursache im Log des Pi gefunden, NICHT der Code von heute (der war da noch gar nicht auf dem Pi):
+  - Mein Test-Start von 16:47 hat an der Pi-DB nichts geändert (Log: alle Grunddaten „vorhanden“, FORCE_ADMIN aus,
+    Solr-Abgleich 0 neu). Auf dem Pi lief bis 16:58 der Stand von gestern, Container 19 Stunden ohne Neustart.
+  - nginx-Log (Uhrzeiten hier in MEZ), alles vom iPhone, Konto `7777…`: 16:51:56 `POST /api/share/session/refresh` →
+    **499** (das Handy hat die Anfrage abgebrochen, das Backend hatte den Refresh-Token da schon getauscht; die Antwort
+    mit dem neuen Token kam nie an). 16:51:59 schickt das Handy deshalb den alten, schon verbrauchten Token noch
+    einmal → Backend-Log WARN „Refresh-Token von User 7777… wiederverwendet (ein schon verbrauchter Token tauchte
+    wieder auf): alle Sitzungen beendet“ (`UsersRefreshTokenService.consumeUsersRefreshToken`, Regel „Diebstahl“).
+    Danach jede Erneuerung 401.
+  - 16:52:35 bis 16:53:01 vier Mal `POST /api/share/users-login-2fa` (Schritt 1, E-Mail und Passwort) → 401 mit
+    129 Byte, das ist genau die Meldung „E-Mail-Adresse oder Passwort ist falsch.“ (die Meldung „abgelaufen“ hätte
+    153). Schritt 1 antwortet so nur bei unbekannter E-Mail-Adresse oder falschem Passwort. Kein Aufruf von Schritt 2.
+  - 16:53:22 bis 16:53:30 drei Mal Startseite: `GET /api/session` 200 (das JWT der beendeten Sitzung gilt noch ein
+    paar Minuten), direkt danach die Erneuerung 401 → die Oberfläche zeigt das Login-Modul.
+  - Pi-DB um 17:00: Für das Konto `7777…` steht keine Zeile in `users_refresh_token` (keine Sitzung); seit dem
+    Neustart 16:58 kam kein Login-Versuch mehr an.
+  - Dem Nutzer als EIN Problem mit Vorschlag vorgelegt (Schonfrist für einen gerade verbrauchten Token); gebaut wird
+    nichts vor seinem Ja.
+
+## 2026-11-21 17:02 – Frage: warum ist der Refresh-Token weg, und welche E-Mail-Adresse hat das Admin-Konto?
+
+- Ansage: „und warum ist mein refresh token ausgelaufen, schau mal bitte in die datenbank mein admin konto sollte doch
+  [seine Gmail-Adresse] als email gehabt haben“ (Adresse hier ausgelassen, das Protokoll liegt im öffentlichen Repo).
+- Plan: nur lesen. 1. In der Pi-DB die Konten ansehen (`users`: GUID, Name, E-Mail, Status, Position), dazu
+  `users_credential`, `users_totp`, `users_refresh_token`. 2. Im Code und in der YAML nachsehen, was das Admin-Konto
+  `7777…` ist und wer es anfasst (`gebiter.admin-users`, FORCE_ADMIN auf dem Pi). 3. Antworten, was belegt ist.
+- Stand 17:04, nur gelesen, nichts geändert:
+  - Der Refresh-Token ist NICHT abgelaufen (er gilt 14 Tage ab jeder Erneuerung): Alle Sitzungen des Kontos `7777…`
+    hat um 16:51:59 die Regel „wiederverwendeter Token“ gelöscht (Eintrag oben). In `users_refresh_token` steht für
+    das Konto keine Zeile mehr; seit dem Neustart 16:58 kam kein Login-Versuch beim Pi an.
+  - Pi-DB, Tabelle `users`: 2 Konten, keins gelöscht. Das Admin-Konto `7777…` hat Username `alice` und als
+    E-Mail-Adresse `alice` (Position ALLMAECHTIGER, Recht ADMIN, Passwort gesetzt, App bestätigt am 2026-11-08). Ein
+    Konto mit seiner Gmail-Adresse gibt es nicht. Der Name vor dem `@` steht nur einmal in der Datenbank: als
+    Kontaktangabe INSTAGRAM des Admin-Kontos (`users_contact`, ohne `@gmail.com`).
+  - Woher `alice`: Der Start-Runner legt das Konto mit `gebiter.admin-users.email: alice` an (so seit dem ersten
+    Commit vom 2026-11-11) und fasst die Adresse danach nie wieder an; FORCE_ADMIN steht auf dem Pi nicht in der
+    `.env`. Eine Spur, dass die Adresse je anders war, gibt es nicht (keine Historie in der DB, nichts in Doku, Git
+    oder den `.env`-Dateien).
+  - Folge: Wer sich mit der Gmail-Adresse anmeldet, bekommt „E-Mail-Adresse oder Passwort ist falsch“. Das passt zu
+    den vier abgelehnten Versuchen von 16:52 (welche Adresse getippt wurde, steht in keinem Log).
+  - Dem Nutzer als EINE Frage vorgelegt: Soll die E-Mail-Adresse des Admin-Kontos auf seine Gmail-Adresse?
+  - Antwort 17:08: „ah ok ne das ist dann ok hatte ich so nicht auf dem schirm“. **Entschieden: Die E-Mail des
+    Admin-Kontos bleibt `alice`,** an der Datenbank wird nichts geändert. Nicht wieder fragen.
+  - Zum Vorschlag „Schonfrist für einen gerade verbrauchten Refresh-Token“ kam keine Antwort: bleibt offen, gebaut
+    wird daran nichts ohne sein Ja.
+  - Seine Adresse steht absichtlich nicht in diesem Protokoll (öffentliches Repo).
+
+## 2026-11-21 16:56 – Push `5e334d3` auf den Pi bringen (pull, bauen, prüfen)
+
+- Ansage: „code ist Auf git, du kannst auf dem pi also pullen und bauen!“
+- Geprüft: lokal = `origin/main` = `5e334d3` („pray beacoup5“, 28 Dateien: alles von heute), Arbeitsverzeichnis sauber;
+  16 Werte aus `code/.env` und das Kennwort des Pi gegen den Commit geprüft, kein Treffer.
+- **Stand 17:00, fertig und auf dem Pi** (Einzelheiten in `setup.md` 5.16): Pi vorher Last 0,0, 12 GiB RAM frei,
+  45,8 °C; Images als `:vorher` gesichert; Pull von `d8c4e69` auf `5e334d3`, Klon sauber; Bau `backend` 23 s,
+  `frontend` 7 s; Start 17,3 s, kein ERROR, kein WARN; alle 5 Container laufen. `GET`/`PUT`/`DELETE
+  /api/admin/gallery-share` ohne Anmeldung 401. Von außen: neues Bundle `index-D17nU8za.js` mit den neuen Texten.
+  **Der echte Freigabelink zeigt im Firefox die Galerie mit 10 Kacheln, kein Fehler** (vorher leere Seite).
+  Hilfsdateien auf dem Pi gelöscht.
+- NICHT gesehen auf dem Pi: Admin-Reiter (Ändern, Löschen, QR-Code), braucht die Anmeldung. Der Nutzer testet.
+- Lokal nicht committet: dieses Protokoll, `setup.md` (privat), `Vollidiot/` (Regeln).
 
 ## 2026-11-21 16:28 – Weiße Seite beim Freigabelink; Admin-Reiter „Freigaben“: bearbeiten, löschen, QR-Code
 
