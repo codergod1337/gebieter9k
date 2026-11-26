@@ -81,7 +81,7 @@ Alle für jeden angemeldeten User (Pfad `/api/**`). Stimmen, Lesen und Zurückne
 - [`code/frontend/src/components/Hoverlay.tsx`](../../code/frontend/src/components/Hoverlay.tsx): mit `interactive` die Sprechblase zum Hineinklicken
 - [`code/frontend/src/file/document/FileDocumentDetailPage.tsx`](../../code/frontend/src/file/document/FileDocumentDetailPage.tsx): zeigt die `FileCheerBar` unter der Kachel
 - [`code/frontend/src/gallery/GalleryImageTile.tsx`](../../code/frontend/src/gallery/GalleryImageTile.tsx): zeigt die `FileCheerBar` an jeder Bildkachel, unter dem Bild
-- [`code/frontend/src/gallery/GalleryImageViewerPopup.tsx`](../../code/frontend/src/gallery/GalleryImageViewerPopup.tsx): zeigt die `FileCheerBar` am großen Bild, in der Fußzeile
+- [`code/frontend/src/gallery/GalleryImageViewer.tsx`](../../code/frontend/src/gallery/GalleryImageViewer.tsx): zeigt die `FileCheerBar` am großen Bild, in der Leiste über dem Bild
 - Einstellungen: `gebiter.file.cheer-shown-users-max` (15 genannte User je Richtung) und `gebiter.file.cheer-users-page-size` (100 je Seite bei „Alle laden“) in [`application.yaml`](../../code/backend/src/main/resources/application.yaml), gelesen von `FileConfig.cheerShownUsersMax` und `FileConfig.cheerUsersPageSize`
 - Aussehen: `.file-cheer`, `.file-cheer-button` (mit `-own`, `-settled`), `.file-cheer-count`, `.file-cheer-hint` (mit `-title`, `-count`, `-note`, `-more`), an der Kachel `.gallery-image-tile-cheers` in [`base.css`](../../code/frontend/src/styles/base.css), Farben in [`default.css`](../../code/frontend/public/themes/default.css) (dieselben Pillen wie die Smileys des Gästebuchs)
 

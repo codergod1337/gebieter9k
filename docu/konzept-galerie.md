@@ -76,7 +76,8 @@ genau, der Rest als Richtung (siehe `konzept-lesezugriff.md` für die Lesegrenze
   - Bilder als Kacheln aus Solr, mit dem Lesefilter, Vorschau aus `previewBase64Png`, seitenweise mit
     `PageNavigation`, im eigenen Profil per Drag and Drop sortierbar.
   - Im eigenen Profil die `FileDropzone` mit dem Dropdown der FileClasses.
-  - Ein Klick öffnet den Viewer, mit Origin und Seite in der Adresse nach `konzept-navigation.md`.
+  - Ein Klick öffnet den Viewer, mit Origin und Seite in der Adresse nach `konzept-navigation.md`. Seit 2026-11-26
+    ist er kein Popup mehr, siehe „Das große Bild“ unten.
 
 ## 4. Danach (nur Richtung)
 
@@ -115,7 +116,7 @@ Filter nach Hashtags.
   `<Outlet/>`. Die Dummy-Box „Galerie“ in der Übersicht ist entfernt.
 - `gallery/`: `GalleryListTab` (Kacheln, `NewEntityButton` „neue Galerie“, Drag and Drop), `GalleryEditPopup`,
   `GalleryTile`, `GalleryPage` (Seite und Bild in der Adresse, Viewer), `GalleryUploadBox`, `GalleryImageTile`,
-  `GalleryImageViewerPopup`.
+  `GalleryImageViewer` (bis 2026-11-26 `GalleryImageViewerPopup`).
 - **Hochladen = der globale Upload-Ablauf** `file/upload/FileUploadForm` (Nutzer 2026-11-09: genau wie im File-Manager).
   `GalleryUploadBox` gibt nur mit: die FileClasses mit Ziel GALLERY und Schreibrecht, den Endpunkt `/api/gallery/upload`,
   eigene gemerkte fertige Uploads je Galerie und die Felder je Bild: **nur Beschreibung und Tags** (Tags mit
@@ -321,3 +322,29 @@ Klasse `gallery-image-tile-framed`, die Farbe kommt als `--upload-frame-color`.
 - Zwei Farben aus der GUID können sich ähneln; eindeutig wird es erst, wenn jeder seine Farbe wählt.
 - Ändert ein File-Manager die Sichtbarkeit eines einzelnen fremden Uploads auf „Freunde“, zählen dabei die Freunde des
   Autors, nicht die des Besitzers der Galerie (bis die Galerie ihre Sichtbarkeit wieder überträgt).
+
+## Das große Bild (Nutzer 2026-11-26)
+
+Ansage: Das Bild soll nicht in einem Popup aufgehen, sondern unter dem Subheader stehen; breite Bilder auf die Breite
+der Seite verkleinert, mit der Lupe in die native Größe, dort Mausrad und rechte Maustaste „wie in jedem etwas besseren
+Grafikprogramm“.
+
+- **Wo:** Ein Klick auf eine Bildkachel zeigt das Bild anstelle der Kacheln, direkt unter dem Subheader, über die ganze
+  Breite der Seite (`gallery/GalleryImageViewer`; Main nimmt dafür seinen Rand weg: `.main-content:has(> .gallery-viewer)`
+  in base.css). Die Adresse bleibt `?image=<id>`; die Kacheln bleiben unsichtbar bestehen und laden beim Zurückkommen
+  nichts neu. Dasselbe auf der Besucherseite einer Freigabe, dort ohne Subheader.
+- **Leiste über dem Bild** (bleibt beim Rollen stehen): „Zurück zu den Bildern“, Voriges, Nächstes, die Überschrift, ein
+  „i“ mit der Bedienung, die Stimmen, Herunterladen. Die Kommentare stehen unter dem Bild.
+- **Das Bild selbst** ist der globale Baustein `components/ZoomableImage` (Logik in `components/useImageZoom`):
+  - Eingepasst: so breit wie die Seite, wenn das Bild breiter ist, sonst in seiner eigenen Größe und mittig. Beispiel:
+    ein Foto mit 4000 × 2500 Pixeln steht in einem 1400 Pixel breiten Fenster mit 1388 × 868 Pixeln da.
+  - Über einem verkleinerten Bild ist der Mauszeiger die Lupe mit Plus. Ein Klick zeigt es in nativer Größe in einem
+    Bereich mit Scrollbalken, der das Fenster unter den Leisten füllt; die angeklickte Stelle bleibt unter dem Zeiger.
+  - Dort zoomt das Mausrad in Schritten (Faktor 1,25) zwischen „eingepasst“ und „nativ“, um den Mauszeiger herum; im
+    Beispiel 4000 → 3200 → 2560 → 2048 → 1638 → 1388 Pixel Breite. Die Seite rollt dabei nicht.
+  - Die gedrückte rechte Maustaste verschiebt das Bild (`components/usePanScroll`, wie in der Matrix).
+  - Ein weiterer Klick (Lupe mit Minus) passt wieder ein. Ein Bild, das ohnehin ganz hineinpasst, hat keine Lupe.
+- **Auch auf der Viewer-Seite einer Datei** (`file/document/FileDocumentViewerPage`): dieselbe Bildanzeige statt des
+  alten Umschalters „eingepasst / Originalgröße“.
+- Geprüft am 2026-11-26 im Firefox ohne Fenster auf der nachgestellten Besucherseite, mit echter Maus (Klick, Rad,
+  rechte Taste). In der Galerie hinter der Anmeldung und auf der Viewer-Seite einer Datei von Claude nicht gesehen.

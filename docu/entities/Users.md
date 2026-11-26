@@ -156,4 +156,4 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 - [`code/frontend/src/admin/users/newUsersTexts.ts`](../../code/frontend/src/admin/users/newUsersTexts.ts): (Typ)
 - [`code/frontend/src/file/cheer/fileCheerLooks.ts`](../../code/frontend/src/file/cheer/fileCheerLooks.ts): (Typ)
 - [`code/frontend/src/gallery/GalleryImageTile.tsx`](../../code/frontend/src/gallery/GalleryImageTile.tsx): `GalleryImageTile`, `openEdit`
-- [`code/frontend/src/gallery/GalleryImageViewerPopup.tsx`](../../code/frontend/src/gallery/GalleryImageViewerPopup.tsx): (Typ)
+- [`code/frontend/src/gallery/GalleryImageViewer.tsx`](../../code/frontend/src/gallery/GalleryImageViewer.tsx): (Typ)

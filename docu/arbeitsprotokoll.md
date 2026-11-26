@@ -13,6 +13,16 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-26 20:55 – Push `a51c6ae` auf den Pi bringen (pull, Frontend bauen, prüfen)
+
+- Der Nutzer hat um 20:53 selbst committet und gepusht: `a51c6ae` „viewer neu und demo wissensdatenbank“ (65 Dateien).
+  Der Code darin ist der fertige Stand (Arbeitskopie = HEAD für alles unter `code/`). Nicht im Commit, weil danach
+  geschrieben: `konzept-galerie.md` (Abschnitt „Das große Bild“), `entities/FileCheer.md`, `FileComment.md`,
+  `Users.md`, die letzten Einträge dieses Protokolls.
+- Plan (feste Regel: nach dem Push bauen, ohne zu fragen): Commit auf Zugangsdaten prüfen; Pi erreichen, Lage ansehen,
+  Images sichern, `git pull --ff-only`, nur `frontend` bauen (im Commit ist kein Backend-Code), erst dann starten;
+  von außen prüfen (Bundle, `/wissen/…` im Firefox).
+
 ## 2026-11-26 20:43 – Galerie: Bild nicht mehr im Popup, sondern unter dem Subheader, mit Lupe, Zoom und Ziehen
 
 - Ansage (kam um 20:39 während der Arbeit an der Wissensdatenbank, „wenn du damit fertig bist“): „noch mal was zum
@@ -44,6 +54,25 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
      es dieselbe Aufgabe ist (Regel „eine Komponente je Aufgabe“), die Bildanzeige in `file/document/FileDocumentViewerPage`.
   4. CSS: Main gibt dem großen Bild die ganze Breite (`.main-content:has(> .gallery-viewer)`), alte Regeln des Popups
      und `file-viewer-image-*` raus.
+- **Stand 20:53, fertig (lokal, nicht committet, nicht auf dem Pi):**
+  - Neu: `components/ZoomableImage.tsx`, `useImageZoom.ts`, `zoomableImageTexts.ts`, `gallery/GalleryImageViewer.tsx`.
+    Gelöscht: `gallery/GalleryImageViewerPopup.tsx`. Geändert: `gallery/GalleryPage.tsx`,
+    `gallery/GalleryShareVisitorPage.tsx`, `gallery/galleryTexts.ts`, `file/document/FileDocumentViewerPage.tsx`,
+    `styles/base.css` (`--main-sticky-top` an `.main`, Abschnitt ZoomableImage, Regeln des Viewers neu,
+    `file-viewer-image-*` raus), `public/themes/default.css` (Leiste des Viewers, Grund der Zoom-Ansicht).
+  - `npx tsc -b` und `npm run build` ohne Fehler.
+  - Im Firefox ohne Fenster geprüft, auf der nachgestellten Besucherseite einer Freigabe mit drei Testbildern (SVG mit
+    Raster) und echter Maus: Klick auf die Kachel → `?image=breit`, kein Popup, Kacheln versteckt, Main ohne Rand;
+    4000 × 2500 eingepasst auf 1388 × 868 (Fensterbreite), Zeiger `zoom-in`; Klick → 4000 breit, derselbe Bildpunkt
+    unter dem Zeiger; Rad raus 3200, 2560, 2048, 1638, 1388, dann Ende, Seite rollt nicht; Rad rein bis 4000; rechte
+    Taste ziehen 200|150 → Scroll 800|600 auf 1000|750; Klick → wieder eingepasst; 600 × 400 mittig, ohne Lupe; hohes
+    Bild 3000 × 6000 eingepasst 1388 × 2776; „Zurück zu den Bildern“ zeigt die Kacheln wieder.
+  - NICHT gesehen: die Galerie hinter der Anmeldung (mit Subheader; dort nur geprüft, dass `--main-sticky-top` mit
+    Subheader Header + Subheader ergibt) und die Viewer-Seite einer Datei.
+  - Klein, bewusst so gelassen: Ganz herausgezoomt in der Zoom-Ansicht ist das Bild um die Breite des Scrollbalkens
+    breiter als der Bereich.
+  - Doku: `konzept-galerie.md` (Abschnitt „Das große Bild“), `entities/FileCheer.md`, `FileComment.md`, `Users.md`
+    (neuer Dateiname), Regel `frontend-structure` (ZoomableImage in der Liste der globalen Bausteine).
 
 ## 2026-11-26 20:15 – Wissensdatenbank: Modul mit Demokapitel bauen (Frontend, ohne Solr-Kern)
 

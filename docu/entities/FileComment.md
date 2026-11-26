@@ -95,7 +95,7 @@ Die ersten vier für jeden angemeldeten User (Pfad `/api/**`); Schreiben und Lö
 - [`code/frontend/src/file/comment/fileCommentTexts.ts`](../../code/frontend/src/file/comment/fileCommentTexts.ts): alle Texte, mehrsprachig angelegt
 - Globale Bausteine, dieselben wie im Gästebuch: [`CommentItem.tsx`](../../code/frontend/src/components/CommentItem.tsx), [`AuthorHead.tsx`](../../code/frontend/src/components/AuthorHead.tsx), [`RichTextForm.tsx`](../../code/frontend/src/components/RichTextForm.tsx), [`ConfirmDeleteButton.tsx`](../../code/frontend/src/components/ConfirmDeleteButton.tsx)
 - [`code/frontend/src/gallery/GalleryImageTile.tsx`](../../code/frontend/src/gallery/GalleryImageTile.tsx): zeigt die `FileCommentBubble` neben der `FileCheerBar`
-- [`code/frontend/src/gallery/GalleryImageViewerPopup.tsx`](../../code/frontend/src/gallery/GalleryImageViewerPopup.tsx): zeigt die `FileCommentSection` neben dem großen Bild
+- [`code/frontend/src/gallery/GalleryImageViewer.tsx`](../../code/frontend/src/gallery/GalleryImageViewer.tsx): zeigt die `FileCommentSection` unter dem großen Bild
 - [`code/frontend/src/gallery/GalleryPage.tsx`](../../code/frontend/src/gallery/GalleryPage.tsx): `rememberCommentCount` (die Kachel zeigt nach dem Kommentieren gleich die neue Zahl)
 - [`code/frontend/src/gallery/GalleryShareVisitorPage.tsx`](../../code/frontend/src/gallery/GalleryShareVisitorPage.tsx): Sprechblase mit der Zahl aus der Seite, Verlauf nur zum Lesen (`loadSharedFileCommentThread`)
 - [`code/frontend/src/file/document/FileDocumentDetailPage.tsx`](../../code/frontend/src/file/document/FileDocumentDetailPage.tsx): zeigt die `FileCommentSection` unter der Beschreibung
