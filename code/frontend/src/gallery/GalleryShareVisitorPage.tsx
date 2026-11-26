@@ -19,7 +19,7 @@ import { getTextInCurrentLanguage } from '../language/getTextInCurrentLanguage.t
 import { getTextInCurrentLanguageWithValues } from '../language/getTextInCurrentLanguageWithValues.ts'
 import { formatUrlPage, parseUrlPage, useUrlParam, useUrlParamsChanger } from '../navigation/useUrlParam.ts'
 import { GalleryImageTile } from './GalleryImageTile.tsx'
-import { GalleryImageViewerPopup, type GalleryViewerImage } from './GalleryImageViewerPopup.tsx'
+import { GalleryImageViewer, type GalleryViewerImage } from './GalleryImageViewer.tsx'
 import { GALLERY_SHARE_SELECTION_MAX_FILE_COUNT } from './GalleryShare.ts'
 import { GalleryShareCheerCounts } from './GalleryShareCheerCounts.tsx'
 import { FileCommentBubble } from '../file/comment/FileCommentBubble.tsx'
@@ -45,8 +45,9 @@ function ignoreReorder() {
 /**
  * Die Besucherseite einer Galerie-Freigabe unter `/share/galerie/<token>` (Konzept `docu/konzept-galerie-freigabe.md`),
  * OHNE Anmeldung: Wer den Link hat, sieht Titel, Beschreibung und die Bilder der Galerie als Kacheln, öffnet ein Bild
- * groß und lädt herunter: ein Bild, eine Auswahl (beliebig viele Kacheln ankreuzen, auch über mehrere Seiten) oder
- * alle. Auswahl und „alle“ kommen als eine ZIP-Datei, die der Browser direkt auf die Platte schreibt.
+ * groß (anstelle der Kacheln, über die ganze Breite der Seite) und lädt herunter: ein Bild, eine Auswahl (beliebig
+ * viele Kacheln ankreuzen, auch über mehrere Seiten) oder alle. Auswahl und „alle“ kommen als eine ZIP-Datei, die der
+ * Browser direkt auf die Platte schreibt.
  *
  * Dieselbe Bildkachel und derselbe Viewer wie in der Galerie, nur mit den Adressen unter dem Token. Die Stimmen sind
  * für alle zu sehen; abstimmen kann nur ein angemeldeter User, ein Klick zeigt den Hinweis „melde dich kostenlos an“.
@@ -273,110 +274,112 @@ export function GalleryShareVisitorPage() {
 
   return (
     <div className="main-content">
-      <ContentBox title={sharedGallery.title} actions={downloadAllButton} footer={<span className="small">{footerText}</span>}>
-        {sharedGallery.description !== null && (
-          <RichTextView richText={sharedGallery.description} className="gallery-description" />
-        )}
-        {shownFiles.length === 0 && (
-          <p className="text-body-secondary mb-0">{getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.visitorNoFiles)}</p>
-        )}
-        {shownFiles.length > 0 && (
-          <>
-            <div className="gallery-share-toolbar">
-              <Button size="sm" variant="outline-secondary" onClick={selectShownFiles}>
-                {getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.visitorSelectPage)}
-              </Button>
-              <Button size="sm" variant="outline-secondary" disabled={selectedCount === 0} onClick={() => setSelectedFileIds([])}>
-                {getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.visitorUnselectAll)}
-              </Button>
-              {/* Ein Formular, kein Request aus dem Skript: Nur so schreibt der Browser das ZIP direkt auf die Platte. */}
-              <form method="post" action={selectionDownloadUrl}>
-                <input type="hidden" name="fileIds" value={joinedSelectedFileIds} />
-                <Button type="submit" size="sm" variant="primary" disabled={selectedCount === 0 || selectionTooLarge}>
-                  <i className="bi bi-download me-1" aria-hidden="true"></i>
-                  {downloadSelectionText}
+      <div hidden={openViewerImage !== null}>
+        <ContentBox title={sharedGallery.title} actions={downloadAllButton} footer={<span className="small">{footerText}</span>}>
+          {sharedGallery.description !== null && (
+            <RichTextView richText={sharedGallery.description} className="gallery-description" />
+          )}
+          {shownFiles.length === 0 && (
+            <p className="text-body-secondary mb-0">{getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.visitorNoFiles)}</p>
+          )}
+          {shownFiles.length > 0 && (
+            <>
+              <div className="gallery-share-toolbar">
+                <Button size="sm" variant="outline-secondary" onClick={selectShownFiles}>
+                  {getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.visitorSelectPage)}
                 </Button>
-              </form>
-            </div>
-            <ErrorAlert message={selectionTooLargeMessage} />
-            <SortableArea items={shownFiles} itemKey={getFileDocumentId} onReorder={ignoreReorder} layout="grid">
-              <div className="gallery-images">
-                {shownFiles.map((fileDocument) => {
-                  const fileDocumentId = getFileDocumentId(fileDocument)
-                  const fileName = getFileDocumentText(fileDocument, nameSet.fileName)
-                  const heading = getFileDocumentHeading(fileDocument, nameSet)
-                  const previewBase64Png = fileDocument[nameSet.previewBase64Png]
-                  const selected = selectedFileIds.includes(fileDocumentId)
-                  const selectLabel = getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.visitorSelectLabel, { heading })
-                  const downloadLabel = getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.visitorDownloadLabel, { heading })
-                  const downloadUrl = getSharedFileDownloadUrl(visitorShareToken, fileDocumentId)
-                  // Die Zahl der Kommentare kommt mit der Seite; ein Bild ohne Kommentar fehlt dort
-                  let commentCount = 0
-                  const knownCommentCount = sharedGallery.commentCountsByFileDocumentId[fileDocumentId]
-                  if (knownCommentCount !== undefined) {
-                    commentCount = knownCommentCount
-                  }
-                  return (
-                    <GalleryImageTile
-                      key={fileDocumentId}
-                      fileDocumentId={fileDocumentId}
-                      fileName={fileName}
-                      heading={heading}
-                      previewBase64Png={previewBase64Png}
-                      sortable={false}
-                      sortingDisabled
-                      changeable={false}
-                      onOpen={openImage}
-                      headStart={
-                        <Form.Check
-                          type="checkbox"
-                          className="gallery-share-select"
-                          id={'galleryShareSelect' + fileDocumentId}
-                          checked={selected}
-                          onChange={() => toggleSelected(fileDocumentId)}
-                          aria-label={selectLabel}
-                        />
-                      }
-                      cheers={
-                        <>
-                          <GalleryShareCheerCounts
-                            cheerUpCount={fileDocument[nameSet.cheerUpCount]}
-                            cheerDownCount={fileDocument[nameSet.cheerDownCount]}
-                            onCheerRequested={requestCheer}
-                          />
-                          <FileCommentBubble
-                            fileDocumentId={fileDocumentId}
-                            commentCount={commentCount}
-                            onOpen={() => openImage(fileDocumentId)}
-                          />
-                        </>
-                      }
-                      actions={
-                        <Button as="a" href={downloadUrl} size="sm" variant="outline-secondary" aria-label={downloadLabel}>
-                          <i className="bi bi-download"></i>
-                        </Button>
-                      }
-                    />
-                  )
-                })}
+                <Button size="sm" variant="outline-secondary" disabled={selectedCount === 0} onClick={() => setSelectedFileIds([])}>
+                  {getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.visitorUnselectAll)}
+                </Button>
+                {/* Ein Formular, kein Request aus dem Skript: Nur so schreibt der Browser das ZIP direkt auf die Platte. */}
+                <form method="post" action={selectionDownloadUrl}>
+                  <input type="hidden" name="fileIds" value={joinedSelectedFileIds} />
+                  <Button type="submit" size="sm" variant="primary" disabled={selectedCount === 0 || selectionTooLarge}>
+                    <i className="bi bi-download me-1" aria-hidden="true"></i>
+                    {downloadSelectionText}
+                  </Button>
+                </form>
               </div>
-            </SortableArea>
-          </>
-        )}
-        {pageCount > 1 && (
-          <div className="gallery-pager">
-            <PageNavigation
-              page={page}
-              pageCount={pageCount}
-              disabled={galleryShareHook.isLoading}
-              onPageChange={changePage}
-              ariaLabel={getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.visitorPagerLabel)}
-            />
-          </div>
-        )}
-      </ContentBox>
+              <ErrorAlert message={selectionTooLargeMessage} />
+              <SortableArea items={shownFiles} itemKey={getFileDocumentId} onReorder={ignoreReorder} layout="grid">
+                <div className="gallery-images">
+                  {shownFiles.map((fileDocument) => {
+                    const fileDocumentId = getFileDocumentId(fileDocument)
+                    const fileName = getFileDocumentText(fileDocument, nameSet.fileName)
+                    const heading = getFileDocumentHeading(fileDocument, nameSet)
+                    const previewBase64Png = fileDocument[nameSet.previewBase64Png]
+                    const selected = selectedFileIds.includes(fileDocumentId)
+                    const selectLabel = getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.visitorSelectLabel, { heading })
+                    const downloadLabel = getTextInCurrentLanguageWithValues(GALLERY_SHARE_TEXTS.visitorDownloadLabel, { heading })
+                    const downloadUrl = getSharedFileDownloadUrl(visitorShareToken, fileDocumentId)
+                    // Die Zahl der Kommentare kommt mit der Seite; ein Bild ohne Kommentar fehlt dort
+                    let commentCount = 0
+                    const knownCommentCount = sharedGallery.commentCountsByFileDocumentId[fileDocumentId]
+                    if (knownCommentCount !== undefined) {
+                      commentCount = knownCommentCount
+                    }
+                    return (
+                      <GalleryImageTile
+                        key={fileDocumentId}
+                        fileDocumentId={fileDocumentId}
+                        fileName={fileName}
+                        heading={heading}
+                        previewBase64Png={previewBase64Png}
+                        sortable={false}
+                        sortingDisabled
+                        changeable={false}
+                        onOpen={openImage}
+                        headStart={
+                          <Form.Check
+                            type="checkbox"
+                            className="gallery-share-select"
+                            id={'galleryShareSelect' + fileDocumentId}
+                            checked={selected}
+                            onChange={() => toggleSelected(fileDocumentId)}
+                            aria-label={selectLabel}
+                          />
+                        }
+                        cheers={
+                          <>
+                            <GalleryShareCheerCounts
+                              cheerUpCount={fileDocument[nameSet.cheerUpCount]}
+                              cheerDownCount={fileDocument[nameSet.cheerDownCount]}
+                              onCheerRequested={requestCheer}
+                            />
+                            <FileCommentBubble
+                              fileDocumentId={fileDocumentId}
+                              commentCount={commentCount}
+                              onOpen={() => openImage(fileDocumentId)}
+                            />
+                          </>
+                        }
+                        actions={
+                          <Button as="a" href={downloadUrl} size="sm" variant="outline-secondary" aria-label={downloadLabel}>
+                            <i className="bi bi-download"></i>
+                          </Button>
+                        }
+                      />
+                    )
+                  })}
+                </div>
+              </SortableArea>
+            </>
+          )}
+          {pageCount > 1 && (
+            <div className="gallery-pager">
+              <PageNavigation
+                page={page}
+                pageCount={pageCount}
+                disabled={galleryShareHook.isLoading}
+                onPageChange={changePage}
+                ariaLabel={getTextInCurrentLanguage(GALLERY_SHARE_TEXTS.visitorPagerLabel)}
+              />
+            </div>
+          )}
+        </ContentBox>
+      </div>
       {openViewerImage !== null && (
-        <GalleryImageViewerPopup
+        <GalleryImageViewer
           image={openViewerImage}
           previousImage={previousViewerImage}
           nextImage={nextViewerImage}

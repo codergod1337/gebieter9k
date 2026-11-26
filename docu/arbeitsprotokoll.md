@@ -13,6 +13,272 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-26 20:43 – Galerie: Bild nicht mehr im Popup, sondern unter dem Subheader, mit Lupe, Zoom und Ziehen
+
+- Ansage (kam um 20:39 während der Arbeit an der Wissensdatenbank, „wenn du damit fertig bist“): „noch mal was zum
+  viewer, hier will ich das nicht in einem popup, wenn ich ein bild ansehe, also wenn ich auf eine bildkachel klicke,
+  will ich dass das bild unterhalb des subheders angezeigt wird. dass wir für große bilder die maximale breite der
+  seite haben. sprich default das bild SKALIERT auf die volle seitenbreite, wenn es breiter sein solle als die
+  bildschirmbreite. ansonsten einfach bild in voller breite. […] wenn ich nochmal auf das bild klicke mit einem lupen
+  plus symbol! dann will cih das bild in nativer größ angezeigt mit scrollbalken und ich würde gerne auch mit
+  gedrückter rechter maustaste das bild draggen also verschieben können - ich meine kompfortables scrollen. in der
+  nativen ansicht will ich dann auch mit mausrad wieder raus und reinscrollen können, also zwischen der nativen
+  bildgröße und der browser breiten skalierung in mehreren stufen teilweise rein und rauszoomen. also wie in jedem
+  etwas besseren grafikprogramm“
+- So verstanden: Klick auf eine Bildkachel öffnet das Bild nicht mehr im Popup (`GalleryImageViewerPopup`), sondern
+  als Ansicht direkt unter dem Subheader, über die ganze Breite der Seite. Ist das Bild breiter als das Fenster, wird
+  es auf die Fensterbreite verkleinert, sonst steht es in seiner eigenen Größe. Mauszeiger über dem Bild: Lupe mit
+  Plus; ein Klick zeigt es in nativer Größe mit Scrollbalken. Dort: rechte Maustaste gedrückt halten verschiebt,
+  Mausrad zoomt in mehreren Stufen zwischen „auf Fensterbreite“ und „nativ“.
+- Plan: erst nur lesen (`GalleryImageViewerPopup`, `GalleryPage`, `GalleryShareVisitorPage`, `usePanScroll`), dann
+  eintragen, was genau umgebaut wird.
+- Gelesen (20:46). Umbau, nur Frontend:
+  1. Global neu: `components/ZoomableImage.tsx` + `components/useImageZoom.ts`: Bild eingepasst auf die Breite seines
+     Platzes (nie größer als nativ), Lupe mit Plus, Klick → native Größe in einem Bereich mit Scrollbalken, dort Mausrad
+     = Zoom in Stufen (Faktor 1,25, zwischen „eingepasst“ und „nativ“, um den Mauszeiger herum), rechte Maustaste
+     verschiebt (`usePanScroll`, wie in der Matrix), Klick passt wieder ein.
+  2. `gallery/GalleryImageViewer.tsx` ersetzt `GalleryImageViewerPopup.tsx` (wird gelöscht): Leiste (zurück zu den
+     Bildern, voriges, nächstes, Überschrift, Stimmen, Herunterladen) direkt unter dem Subheader, darunter das Bild über
+     die ganze Breite der Seite, darunter die Kommentare. Die Adresse bleibt (`?image=…`).
+  3. Umstellen: `GalleryPage`, `GalleryShareVisitorPage` (Besucherseite der Freigabe, dort ohne Subheader) und, weil
+     es dieselbe Aufgabe ist (Regel „eine Komponente je Aufgabe“), die Bildanzeige in `file/document/FileDocumentViewerPage`.
+  4. CSS: Main gibt dem großen Bild die ganze Breite (`.main-content:has(> .gallery-viewer)`), alte Regeln des Popups
+     und `file-viewer-image-*` raus.
+
+## 2026-11-26 20:15 – Wissensdatenbank: Modul mit Demokapitel bauen (Frontend, ohne Solr-Kern)
+
+- Ansage: „ich hab keine lust das nun ein xtes mal im detail zu erklären und du bist erneut zu dumm, ich will dass du
+  nun ein wissensdatenbank modul anlegst noch ohne solr kern einfach mit einem demokapitel und zwar grundlagen/
+  koordinaten transformation“
+- Keine Rückfragen mehr, bauen. Was offen war, lege ich selbst fest und nenne es im Bericht (alles leicht zu ändern):
+  Ordner `src/knowledge/`, Bezeichner englisch wie im übrigen Code, Adresse deutsch
+  (`/wissen/grundlagen/koordinatentransformation`), das Paket lädt der Browser erst beim Öffnen, kein neues npm-Paket.
+- Plan: Modul ohne Login (Subheader, Reiter „Grundlagen“), Kapitel „Grundlagen“ mit der Seite
+  „Koordinatentransformation“ (kartesisch ↔ polar): Skizze als SVG, die Herleitungen Schritt für Schritt, der bewegte
+  Term gleich gefärbt und sichtbar von der alten an die neue Stelle geführt. Formeln als eigene Term-Klassen (je Klasse
+  eine Datei), gezeichnet mit HTML und CSS. Inhalte stehen fürs Demo im Code; der Solr-Kern kommt später.
+- Danach: Typprüfung, Bau, im Firefox ansehen, Konzept umschreiben (Überholtes raus), `konzept-navigation.md`.
+  Kein Commit, kein Bau auf dem Pi ohne Ansage.
+- Geändert gegenüber dem Plan: Das Paket ist fest in der App, kein Nachladen (mit den Inhalten später in Solr bleibt
+  es klein, und so stehen die Routen wie bei jedem Modul in `App.tsx`).
+- **Stand 20:40, fertig (lokal, nicht committet, nicht auf dem Pi):**
+  - Neu: `code/frontend/src/knowledge/` (Modul, `math/`, `derivation/`, `basics/coordinatetransformation/`), 50 Dateien.
+    Geändert: `src/App.tsx` (drei Routen vor der Prüfung der Sitzung), `src/styles/base.css` (Abschnitte Formeln,
+    Herleitung, Wissensdatenbank, Skizze am Ende), `public/themes/default.css` (Abschnitt Wissensdatenbank am Ende).
+  - `npx tsc -b` und `npm run build` ohne Fehler. Im Firefox ohne Fenster gegen den gebauten Stand geprüft: `/wissen`
+    springt zu `/wissen/grundlagen`, Klick in der Liste öffnet die Seite, 4 Herleitungen, je Klick eine Zeile mehr,
+    4 Kopien mitten im Flug, danach keine mehr, Adresse `?xCoordinateStep=3&…`, Neuladen mit Stand ohne Flug, „Schritt
+    zurück“ nimmt die Zeile weg, unbekanntes Kapitel zeigt den Hinweis, schmale Breite geht, keine Fehler der Seite.
+  - Doku: `konzept-wissensdatenbank.md` neu geschrieben (Überholtes raus), Zeile in `konzept-navigation.md` 4.
+  - Hilfsskripte und Fotos nur im Scratchpad; Hilfsprozesse beendet.
+- Als Nächstes an der Wissensdatenbank: Der Nutzer sieht sich das Demo an. Offene Fragen in Konzept, Abschnitt 5.
+
+## 2026-11-26 20:08 – Wissensdatenbank: wie liegt eine Formel im Dokument? (nur Plan, kein Code)
+
+- Ansage: „wir müssen noch überlegen wie wir es geau ablegen, ich glaube richtext format ist scheisse, da wir ja
+  maximale freiheit benötigen für formeln oer maybe auch mini svg dass wir äquivalenzumformungen eindeutig animieren
+  können wo welcher wert "hingeht"“
+- Damit entschieden (Nutzer): kein Rich-Text als Format des Inhalts.
+- Nachgesehen (nur gelesen, Dokus im Netz): KaTeX und MathJax können einem Teilstück einer Formel eine Kennung geben
+  (KaTeX `\htmlId` hinter der Option `trust`, MathJax `\cssId{id}{math}`). Kein Paket gewählt, keine Version geprüft.
+- Dem Nutzer vorgelegt, EINE Entscheidung: wie eine Formel abgelegt wird. (1) Formeltext (LaTeX) mit markierten
+  Termen, (2) eigener Baum aus Termen als JSON, (3) fertige Zeichnung (SVG/MathML) je Schritt. Meine Empfehlung: (1),
+  dazu SVG als eigener Baustein für Skizzen; Pfeil oder Gleiten rechnet das Frontend beim Anzeigen, abgelegt wird nur
+  die Quelle. Wartet auf seine Entscheidung.
+- Geparkt, weiter offen: die drei Rückfragen von 20:06 (Kern-Key und Feldnamen, Referenzen, Status).
+- **20:12, Antwort des Nutzers:** „ne du nervst mich weil du schon wieder dumm bist“. Die drei Möglichkeiten sind also
+  NICHT angenommen und gelten nicht als Plan. Meine Vermutung, nicht bestätigt: Er hatte gesagt „wir müssen noch
+  überlegen“, und ich habe drei fertige Lösungen zum Auswählen hingelegt und seine SVG-Idee gleich abgeräumt.
+  Zurückgefragt, wie er sich die Animation einer Umformung vorstellt. Nichts entschieden, kein Code.
+
+## 2026-11-26 20:04 – Wissensdatenbank: neue Richtung, Inhalte in einem eigenen Solr-Kern (nur Plan, kein Code)
+
+- Ansage: „ich glaube wir machen das aber als neuen solrkern. sprich ein solr wissens kern dokument pro seite. also
+  eine seite, ob wir es dann je unterpunkt machen oder gröber oder feiner würde ich mich noch nicht festlegen wollen.
+  ich stelle mit eine art richtext format vor das wir im solr dokument ablegen und dann im frontend rendern. zusätzlich
+  brauchen wir noch eine paar hooks also referenzfelder statusfelder und auch schlagwortfelder“
+- Das kippt zwei Punkte im Konzept vom 2026-11-24: „Inhalte stehen im Code des Pakets“ und „kein Backend“.
+- Plan: nur lesen, wie ein Kern heute entsteht (YAML, `de.gebiter.solr`, `docu/solr-cores`, `SolrReference` = Hooks,
+  `SolrField`, Export/Sicherung), dann dem Nutzer sagen, wie ich es verstanden habe, meine Zweifel, den neuen groben
+  Plan und den ersten Schritt. Konzept erst umschreiben, wenn die Richtung bestätigt ist. Kein Code.
+- **Stand 20:06, nur gelesen:** `docu/solr-cores/README.md` und `FILE.md`, `entities/SolrReference.md`,
+  `application.yaml` (`gebiter.solr`, `gebiter.rich-text`), `SolrCoreExportService`, `SolrCoreAdminController`,
+  `compose.yaml` (Startkette Solr), `components/richTextHtml.ts`. Befund: Kern = `core-keys` (YAML) + `SOLR_CORES`
+  (`.env`) + Felder im Solr-Manager; Referenzen stehen automatisch in JEDEM Kern; der heutige Rich-Text kann keine
+  Formel, keine Farbe, kein Bild; Export nur per Knopf (einziger Aufrufer `SolrCoreAdminController`), Einspielen fehlt.
+- Geändert: `konzept-wissensdatenbank.md`, neuer Abschnitt 0 (neue Richtung, was damit überholt ist). Die Abschnitte
+  1 bis 6 sind noch die alte Fassung.
+- Dem Nutzer gesagt: zwei Zweifel (1. das Format: Rich-Text reicht für Formeln und „Schieben“ nicht, Vorschlag
+  Bausteine als JSON, interaktive Elemente bleiben Code und werden per Key eingebunden; 2. der Text läge nur in Solr,
+  Einspielen fehlt), neuer grober Plan in sechs Stücken, erster Schritt = Kern mit Grundfeldern.
+- Rückfragen an den Nutzer, offen: 1. Kern-Key `KNOWLEDGE` und englische Feldnamen wie im Kern FILE? 2. Welche
+  Referenzen (gelten in jedem Kern) und was davon ist eher ein normales Feld des Kerns? 3. Welche Status?
+  Bis zu den Antworten kein Code.
+
+## 2026-11-26 20:00 – Wissensdatenbank: Modul planen (nur Plan, kein Code)
+
+- Ansage: „so“, dann: „wir wollten ein wissensdantenbank modul planen, dazu haben wir notizen angelegt“
+- Vorgefunden (19:43): lokal = `origin/main` = `7b0992f`; nicht committet sind dieses Protokoll und
+  `docu/konzept-wissensdatenbank.md`. Den Pi heute nicht angesehen.
+- Plan: die Notizen lesen (`konzept-wissensdatenbank.md`, Regel `knowledge-base-module`), im Frontend nur lesen (Routen
+  ohne Login, Subheader, Header ohne Sitzung). Dann dem Nutzer den groben Gesamtplan und den ersten Schritt nennen und
+  darüber reden. Kein Code, bevor Name, Adresse und Sprache der Bezeichner feststehen.
+- **Stand 20:02:** gelesen, nicht geändert: `App.tsx`, `layout/AppHeader.tsx`, `components/Subheader.tsx`,
+  `gallery/GalleryShareVisitorPage.tsx`, `package.json`, `vite.config.ts`. Befund: Das Gerüst braucht keinen Umbau am
+  Seitengerüst (Header ohne Sitzung zeigt nur die Marke, Route ohne Login steht vor der Prüfung der Sitzung).
+  Geändert: `konzept-wissensdatenbank.md`, Abschnitt 6 (neue Frage 6 „Laden des Pakets“, Befund am Code).
+- Dem Nutzer genannt: grober Gesamtplan in sechs Stücken, erster Schritt = Gerüst, drei Rückfragen (Adresse, Sprache
+  der Bezeichner, Laden des Pakets). Wartet auf seine Antworten; bis dahin kein Code.
+
+## 2026-11-24 09:45 – Wissensdatenbank: Plan als Konzept anlegen (nur Doku, kein Code)
+
+- Ansage: „wir haben ja schon einen kleinen plan wie unsere wissensdatenbank ausehen soll, lege doch das in einem
+  paket-plan im fullstack projekt an, dass wenn ich das projekt dann öffne, du weisst worum es geht und ich es dir
+  nicht noch mal erklären muss“
+- Herkunft: Sitzung im Ordner `~/Dokumente/coding/pythonpower`. Das interaktive Lernskript war dort am selben Tag als
+  Python-Projekt begonnen worden; der Nutzer hat entschieden, dass es stattdessen ein eigenes großes Paket im Frontend
+  von gebiter9k wird, ohne Login.
+- Plan: `docu/konzept-wissensdatenbank.md` anlegen (was es werden soll, Entscheidungen, nächstes Stück, offene Fragen),
+  dazu `Vollidiot/knowledge-base-module.md` mit Zeile in `Vollidiot/MEMORY.md`, damit es beim Öffnen des Projekts
+  geladen wird. Am Code nichts ändern.
+- **Stand 09:46:** angelegt sind `docu/konzept-wissensdatenbank.md`, `Vollidiot/knowledge-base-module.md` und die Zeile
+  „Wissensdatenbank“ am Ende von `Vollidiot/MEMORY.md`. Am Code nichts geändert, nichts gebaut, nichts committet.
+- Gelesen, nicht geändert: `code/frontend/src/App.tsx` (Routen, öffentliche Besucherseite in Zeile 121),
+  `code/frontend/package.json`, die Regeln zu Frontend-Struktur, Naming, Security, Doku und Arbeitsweise.
+- Als Nächstes: wartet auf die Antworten des Nutzers zu den offenen Fragen 1 und 2 im Konzept (Name und Adresse des
+  Pakets, Sprache der Bezeichner). Danach das Gerüst (Konzept, Abschnitt 4, Punkt 1).
+
+## 2026-11-23 22:57 – Zurück zum Pi (Stand feststellen, Auftrag noch offen)
+
+- Ansage: „so nun arbeiten wir an unserem pi wieder weiter“
+- Vorgefunden: lokal = `origin/main` = `7b0992f`, geändert ist nur dieses Protokoll (Einträge von heute zum
+  Firmen-VPN, nicht committet). Firmen-VPN ist AUS. Laptop im fremden WLAN (`192.168.10.35`).
+- Plan: nur lesend prüfen, ob der Pi von hier erreichbar ist (SSH-Port, https) und wie er dasteht (Last, RAM,
+  Temperatur, Container, Stand des Klons). Dann dem Nutzer den Stand und die offenen Stücke nennen; was gebaut wird,
+  sagt er.
+- **Stand 22:59, nur gelesen, auf dem Pi nichts geändert:**
+  - Von hier erreichbar: SSH-Port 6969 offen (direkt, ohne Tor), https 200, ausgeliefert wird `index-CDBQLgR3.js`
+    (der Stand vom 2026-11-22).
+  - Pi: läuft seit 12 Tagen, Last 0,00, 12 GiB RAM verfügbar, Platte 12 %, 46,6 °C. Alle 5 Container laufen (`backend`
+    und `frontend` seit dem Bau gestern, 25 h), Backend-Log der letzten 26 h ohne ERROR und ohne WARN. Klon auf
+    `7b0992f`, sauber bis auf die drei alten `._`-Dateien. Images `:vorher` sind noch der Stand von vor zwei Tagen.
+  - `uptime` zählt 3 Sitzungen: Desktop-Autologin und `tty1`, beide seit dem Start am 2026-11-11, dazu meine eigene.
+    Keine fremde Anmeldung.
+  - Mein Fehler: Beim ersten Versuch liefen die Befehle, bevor die SSH-Verbindung stand (`setsid ssh -f` kehrt sofort
+    zurück); auf dem Pi kam dabei nichts an. Seitdem ohne `setsid` und mit Warten auf `-O check`.
+  - SSH wieder geschlossen, Hilfsskript auf dem Pi und im Scratchpad gelöscht.
+- 23:02, Frage des Nutzers: „also wir haben den aktuellen stand schon gebuildet?“ Antwort: ja, belegt durch die
+  Lage von 22:59 (Klon `7b0992f` = lokal = GitHub, Images und Container 25 h alt, also vom Bau am 2026-11-22 22:12,
+  ausgeliefertes Bundle wie im Bau-Eintrag). Lokal ungebaut ist nichts: geändert ist nur dieses Protokoll.
+- Als Nächstes: wartet auf die Ansage des Nutzers, welches Stück drankommt.
+
+## 2026-11-23 15:57 – Firmen-Server `…16.120`: Bestandsaufnahme, warum das alte Compose nicht hochfährt (NUR LESEN)
+
+- Ansage (gekürzt): Zugangsdaten im Chat bekommen. „Unser Compose läuft unter Opt Homepaling [Spracheingabe, also
+  irgendwo unter `/opt`]. […] Das müsste mit intern und extern sein. Aber das externe haben wir nie ins Leben gerufen.
+  […] die oberste Direktive ist, schreib keinen Scheiß rein. Und erstmal Bestandsaufnahme machen. Vor allem auch,
+  warum es nicht hochfährt. Denn die Logs müssten voll sein.“
+- Regel für diesen Server (Memory `pahling-live-system-read-only`): Live-Daten, nur lesen. Kein `up`/`down`/`restart`,
+  nichts löschen, nichts bearbeiten, bevor der Nutzer zu genau dem Schritt Ja sagt. Befunde nur mit Beleg.
+- Plan: 1. Zugangsdaten als Kommentarzeile unten in `code/.env` ablegen (dort liest das Askpass-Skript sie; nie
+  ausgeben). 2. VPN aufbauen, EINE SSH-Anmeldung (Steuer-Socket, damit es bei einer bleibt). 3. Nur lesend:
+  System (Platte, Inodes, Speicher, Laufzeit), `/opt` durchsehen (Ordner intern/extern, Compose-Dateien), Zustand von
+  Docker und der Container, Logs der Container und des Docker-Dienstes. Werte aus `.env`-Dateien dort nicht ausgeben.
+  4. Befund mit Befehl und Ausgabe melden, SSH und VPN wieder schließen.
+- **Stand 16:04, Bestandsaufnahme fertig, auf dem Server NICHTS geändert** (Einzelheiten in `setup.md` 8.1):
+  - Zugangsdaten liegen als Kommentarzeile `# srv120 …` unten in `code/.env` (von mir eingetragen). Eine Anmeldung per
+    SSH, Host-Key beim ersten Mal in `known_hosts` übernommen.
+  - Ursache: Das Backend ist nicht abgestürzt, es ist AUS. Der Rechner (virtuelle Maschine) wurde heute von seinem
+    Wirt sauber heruntergefahren und gut eine Stunde später wieder gestartet. Vier Container kamen von selbst zurück
+    (`restart: unless-stopped`), das Backend nicht: In der Compose-Datei steht bei ihm `restart: "no"`. Seitdem hat
+    niemand versucht, es zu starten (Startzeit des Containers unverändert vom September, kein Log nach dem Herunterfahren).
+  - Folge: Der Webserver davor antwortet auf jeden API-Aufruf mit 502, der Login geht nicht, auch die Meldungen des
+    ERP-Systems laufen ins Leere.
+  - Sonst unauffällig: Datenbank gesund, Suche und Webserver laufen, Platte 85 % (8,7 GB frei), Speicher frei, Logs
+    je Container auf 5 × 20 MB begrenzt. Der „externe“ Teil hat Compose-Dateien, aber keine Container.
+  - Mein Fehler dabei: eine unbegrenzte Suche im Systemjournal (viereinhalb Monate) lief über 80 s und brach ab;
+    geprüft, kein Prozess blieb hängen. Seitdem nur begrenzte Abfragen (`-n`, `--since/--until`, `timeout`).
+  - SSH und VPN wieder geschlossen, Hilfsdateien gelöscht.
+- 16:06, nach dem Ja des Nutzers („ja, startet es mal bitte“): `docker start container_home_backend`. Start in 13,6 s,
+  kein ERROR, kein WARN, der Webserver davor kommt wieder durch (401 statt 502). SSH und VPN geschlossen. Den Login
+  selbst prüft der Nutzer. Offen: `restart: "no"` beim Backend (bleibt nach dem nächsten Neustart wieder aus).
+- 16:11, nur gelesen: Die Neustart-Regel steht seit dem ersten Commit der Compose-Datei so, ein anderer Autostart
+  fehlt. Datenbank sauber herunter- und hochgefahren, gesund. Von außen kommt 403, bevor die Anfrage den Server
+  erreicht (durch das VPN direkt antwortet er mit 200); Ursache davor nicht geklärt, prüft jemand in der Firma.
+
+## 2026-11-23 15:24 – OpenVPN (Zweck noch offen, nichts installiert, nichts geändert)
+
+- Ansage: „so heute haben wir mal was anderes, wir brauchen open vpn“
+- Nur nachgesehen, nichts geändert:
+  - Laptop: im fremden WLAN (`192.168.10.35`, nicht das Heimnetz `192.168.1.x`). `openvpn`,
+    `network-manager-openvpn(-gnome)` und `wireguard-tools` sind NICHT installiert; NetworkManager 1.52.1 ist da,
+    `/dev/net/tun` gibt es. Installieren braucht sudo, das gibt der Nutzer ein.
+  - Von hier aus offen: `gebieter.ddns.net:6969` (SSH zum Pi) und `:443` (https). Andere Freigaben an der FritzBox
+    kenne ich nicht; ein eigener Port für OpenVPN (üblich 1194/UDP) ist dort bisher nicht freigegeben.
+  - Auf dem Pi habe ich noch NICHT nachgesehen (erst, wenn feststeht, dass er beteiligt ist).
+- Zu beachten, falls der Server auf den Pi soll: Regel „niemand kommt physisch an den Pi“ (nichts an Netz, Firewall,
+  Paketen ohne Absprache), und die FritzBox lässt sich von unterwegs nur ändern, wenn der Fernzugang dort an ist.
+- Antwort des Nutzers (15:25): Der Laptop soll sich als Client in ein Firmen-VPN einwählen (Adresse auf Port 443,
+  Anmeldung mit Windows-Domäne und Benutzer). Der Pi ist NICHT beteiligt. Adresse und Benutzer stehen bewusst nicht
+  hier (Protokoll liegt im öffentlichen Repo, fremde Firma); sie kommen nach `setup.md`, sobald es läuft.
+- Stand 15:26, geprüft von außen, nichts geändert:
+  - Die Gegenstelle ist eine WatchGuard-Firewall (Anmeldeseite „WatchGuard Access Portal“). Auf Port 443/TCP antwortet
+    ein echter OpenVPN-Server (Handshake beantwortet). OpenVPN ist also richtig (bei WatchGuard heißt das „Mobile VPN
+    with SSL“). Die Domäne wird in den Benutzernamen geschrieben (`domäne\benutzer`), eine Auswahl gibt es nicht.
+  - Pakete aus Debian 13: `openvpn` 2.6.14-1+deb13u3, `network-manager-openvpn(-gnome)` 1.12.3-1~deb13u1.
+- Plan: 1. Der Nutzer installiert die drei Pakete (sudo). 2. Er holt die Profildatei `client.ovpn` nach der Anmeldung
+  von der Firewall (Seite `/sslvpn.html`) oder vom Admin der Firma; sie enthält Zertifikate und einen Schlüssel, also
+  außerhalb des Projekts ablegen (`~/vpn/`), nie ins Repo. 3. Ich lese die Datei (ohne den Schlüssel auszugeben),
+  richte die Verbindung ein, der Nutzer gibt das Kennwort selbst ein. 4. Prüfen (Adresse im Tunnel, Routen), dann
+  `setup.md` nachziehen.
+- Offen: Welche Schreibweise der Domäne stimmt (mit oder ohne `.de`), zeigt die Anmeldung an der Seite der Firewall;
+  dort höchstens je ein Versuch, sonst sperrt das Windows-Konto womöglich.
+- Stand 15:31: Der Nutzer hat von der Firma nur Adresse, Benutzer und Kennwort, keine Datei. Das ist bei WatchGuard
+  üblich (der Windows-Client holt das Profil selbst); unter Linux holen wir es einmal von Hand. Die drei Pakete sind
+  noch NICHT installiert. Die Abruf-Adresse des WatchGuard-Clients (`/?action=sslvpn_download&filename=client.wgssl`)
+  antwortet ohne Anmeldedaten mit 502 (anders als die Portalseite); ob sie mit Anmeldedaten die Datei liefert, ist
+  nicht geprüft.
+- Als Nächstes (Nutzer): Pakete installieren; im Firefox an der Firewall anmelden, dann `/sslvpn.html` öffnen und
+  sagen, ob dort das Profil zum Herunterladen steht. Sonst zweiter Weg: kleines Skript, das das Profil über die
+  Abruf-Adresse holt und das Kennwort verdeckt abfragt (nicht im Chat, nicht in einer Datei).
+- 15:40, Ansage des Nutzers: Ich soll mich selbst anmelden und das Profil holen; das Kennwort steht als
+  Kommentarzeile ganz unten in `code/.env`. (Zu Recht verärgert: Ich hatte ihn durch Browser-Schritte geschickt.)
+- **Stand 15:50, VPN eingerichtet und geprüft** (Einzelheiten mit echten Werten in `setup.md` Abschnitt 8):
+  - Pakete hat der Nutzer installiert. Anmeldung am Portal klappt, dort gibt es aber keinen Profil-Download (die alte
+    Download-Seite gibt es auf der Firewall nicht mehr). Profil über die Abruf-Adresse des WatchGuard-Programms geholt
+    (Domäne im Benutzernamen), Prüfsummen stimmen, liegt in `~/vpn/pahling/` (außerhalb des Projekts, Rechte 600).
+  - In den NetworkManager importiert, Verbindung `pahling`. Nachgetragen: Benutzer, `data-ciphers` mit `AES-256-CBC`
+    (sonst „failed to negotiate cipher“), `ipv4.never-default yes` (sonst geht der ganze Internetverkehr in den Tunnel
+    und das Internet ist weg), `ipv4.ignore-auto-dns yes` (die DNS-Server der Firma antworten von außen nicht).
+  - Probe (aufbauen, ansehen, abbauen): Tunnel steht, die Firmennetze antworten, Internet läuft daneben. Der Server
+    `…16.120` antwortet auf Ping und hat Port 22 offen. Die Verbindung ist danach wieder AUS.
+  - Zwischendateien im Scratchpad (Sitzungs-Cookie, Archiv, Skripte) gelöscht.
+- 15:49, Ansage des Nutzers: Über das VPN auf `…16.120`; dort fährt das alte Docker Compose nicht mehr hoch, Ursache
+  prüfen. **Live-Daten: nur lesen, nichts ändern, nichts behaupten, was nicht belegt ist.** Die Zugangsdaten gibt er
+  noch.
+- Als Nächstes: wartet auf die Zugangsdaten für `…16.120`. Dann VPN aufbauen, nur lesend nachsehen (Zustand der
+  Container, Logs, Platte, Speicher), Befund mit Beleg melden; jede Änderung erst nach seinem Ja.
+
+## 2026-11-22 22:07 – Push `7b0992f` auf den Pi bringen (pull, bauen, prüfen)
+
+- Ansage: „es ist in git gepusht“
+- Geprüft: lokal = `origin/main` = `7b0992f` („pray beacoup6“).
+- Plan (feste Regel: Code kommt nur über Git auf den Pi, nach dem Push bauen, ohne zu fragen): 1. Regeln und
+  `setup.md` 5.16 nachlesen. 2. Commit auf Zugangsdaten prüfen. 3. Pi erreichen (SSH-Port testen), Lage ansehen,
+  Images sichern. 4. `git pull`, bauen, erst dann starten, Log des Starts lesen (zwei neue `@Value`, neue Tabelle
+  `gallery_uploader`, neue Spalte `users_detail.upload_frame_color`). 5. Von außen prüfen, was ohne Anmeldung geht.
+- **Stand 22:12, fertig und auf dem Pi** (Einzelheiten in `setup.md` 5.16):
+  - Im Commit kein Passwort und kein Schlüssel aus `code/.env`, nicht das Kennwort des Pi. Lokal
+    `./mvnw -o -DskipTests clean compile` ohne Fehler.
+  - Direkter Tunnel (Port 6969 offen); Kontextstart `Gebiter9kApplicationTests` grün (26,9 s). Er hat in der Pi-DB die
+    Tabelle `gallery_uploader` (mit `uq_gallery_uploader`) und die Spalte `users_detail.upload_frame_color` angelegt.
+  - Pi vorher Last 0,01, 12 GiB RAM frei, 44,4 °C; Images als `:vorher` gesichert; Pull von `5e334d3` auf `7b0992f`,
+    Klon sauber; Bau `backend` 23 s, `frontend` 7 s; Start 17,3 s, kein ERROR, kein WARN; alle 5 Container laufen.
+  - Die sechs neuen Endpunkte ohne Anmeldung 401. Von außen: neues Bundle `index-CDBQLgR3.js` mit den neuen Texten.
+    Der echte Freigabelink zeigt im Firefox weiter 10 Kacheln, kein Fehler.
+  - Hilfsdateien auf dem Pi gelöscht, Tunnel geschlossen.
+- NICHT gesehen auf dem Pi: alles hinter der Anmeldung. Der Nutzer testet; dafür braucht er ein zweites Konto.
+
 ## 2026-11-22 21:33 – Galerie: Uploadberechtigte bauen (Antworten des Nutzers auf die fünf Fragen)
 
 - Ansage (gekürzt, wörtlich): „ich würde galerien, die andere uploader freigegeben haben bei den jeweiligen uploadern

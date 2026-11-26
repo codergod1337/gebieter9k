@@ -61,4 +61,10 @@ export const GALLERY_TEXTS = {
   sortingPausedWhileFiltered: {
     de: 'Solange ein Hashtag gewählt ist, lässt sich die Reihenfolge der Bilder nicht ändern.',
   },
+
+  // --- Ein Bild groß, unter dem Subheader (GalleryImageViewer): die Leiste über dem Bild ---
+  viewerBackToImages: { de: 'Zurück zu den Bildern' },
+  viewerPrevious: { de: 'Voriges' },
+  viewerNext: { de: 'Nächstes' },
+  viewerDownload: { de: 'Herunterladen' },
 }

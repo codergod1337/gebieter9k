@@ -4,6 +4,9 @@ import Spinner from 'react-bootstrap/Spinner'
 import { useNavigate } from 'react-router'
 import { ContentBox } from '../../components/ContentBox.tsx'
 import { ErrorAlert } from '../../components/ErrorAlert.tsx'
+import { ZoomableImage } from '../../components/ZoomableImage.tsx'
+import { ZOOMABLE_IMAGE_TEXTS } from '../../components/zoomableImageTexts.ts'
+import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguage.ts'
 import { getFileDocumentText } from '../FileDocument.ts'
 import { getFileDocumentDownloadUrl, getFileDocumentViewUrl } from '../fileDocumentUrls.ts'
 import { useMasterData } from '../../masterdata/useMasterData.ts'
@@ -25,8 +28,8 @@ const FileDocumentSpreadsheetViewer = lazy(async () => {
 })
 
 /**
- * Der Viewer unter `/file-manager/file/<id>/viewer`: Bilder eingepasst (Klick wechselt auf Originalgröße und zurück),
- * Videos im Player des Browsers, der über Byte-Bereiche vorspult. HEIC-Bilder vom iPhone wandelt das Backend dafür in
+ * Der Viewer unter `/file-manager/file/<id>/viewer`: Bilder über das eine große Bild der Plattform ({@link ZoomableImage}:
+ * eingepasst, Klick für die Originalgröße, Mausrad zoomt, rechte Maustaste verschiebt), Videos im Player des Browsers, der über Byte-Bereiche vorspult. HEIC-Bilder vom iPhone wandelt das Backend dafür in
  * JPEG. Word (docx) seitenweise wie in Word, Tabellen (xlsx, ods) blattweise, Text roh, wie in der Vorlage. Kann der
  * Browser ein Bild oder Video nicht zeigen (z. B. HEVC ohne Hardware-Decoder), steht darunter der Hinweis mit Download.
  * Andere Typen nur zum Herunterladen.
@@ -37,7 +40,6 @@ export function FileDocumentViewerPage() {
   const fileDocumentForClientHook = useFileDocumentForClient()
   const fileDocumentId = fileDocumentForClientHook.fileDocumentId
   const fileDocumentForClient = fileDocumentForClientHook.fileDocumentForClient
-  const [originalSize, setOriginalSize] = useState<boolean>(false)
   const [imageFailed, setImageFailed] = useState<boolean>(false)
   const [videoFailed, setVideoFailed] = useState<boolean>(false)
   const navigate = useNavigate()
@@ -56,13 +58,6 @@ export function FileDocumentViewerPage() {
   const viewUrl = getFileDocumentViewUrl(fileDocumentId)
   const downloadUrl = getFileDocumentDownloadUrl(fileDocumentId)
   const fileDocumentPath = getFileDocumentPath(fileDocumentId)
-
-  let imageClassName = 'file-viewer-image-fit'
-  let imageHint = 'Klick: Originalgröße'
-  if (originalSize) {
-    imageClassName = 'file-viewer-image-original'
-    imageHint = 'Klick: eingepasst'
-  }
 
   /**
    * „Details“: Kam man von der Seite der Datei, geht es im Verlauf dorthin zurück (sonst stünden beide doppelt im
@@ -90,7 +85,7 @@ export function FileDocumentViewerPage() {
   )
   let footerText = 'Nur zum Herunterladen, der Browser kann diesen Typ nicht anzeigen.'
   if (viewerKind === 'IMAGE') {
-    footerText = imageHint
+    footerText = getTextInCurrentLanguage(ZOOMABLE_IMAGE_TEXTS.usageHint)
   } else if (viewerKind === 'VIDEO') {
     footerText = 'Video, vorspulen geht.'
   } else if (viewerKind === 'WORD') {
@@ -105,11 +100,7 @@ export function FileDocumentViewerPage() {
   return (
     <ContentBox title={fileName} actions={actions} footer={<span className="small">{footerText}</span>}>
       <div className="file-viewer">
-        {viewerKind === 'IMAGE' && (
-          <button type="button" className="file-viewer-image-button" onClick={() => setOriginalSize(!originalSize)}>
-            <img src={viewUrl} alt={fileName} className={imageClassName} onError={() => setImageFailed(true)} />
-          </button>
-        )}
+        {viewerKind === 'IMAGE' && <ZoomableImage src={viewUrl} alt={fileName} onError={() => setImageFailed(true)} />}
         {viewerKind === 'IMAGE' && imageFailed && (
           <ErrorAlert message="Dieses Bild lässt sich gerade nicht anzeigen. Herunterladen geht." />
         )}

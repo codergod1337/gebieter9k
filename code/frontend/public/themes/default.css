@@ -2078,9 +2078,21 @@ body {
   box-shadow: 0 2px 6px -3px var(--bordeaux-shadow);
 }
 
-/* der Viewer: das Bild auf ruhigem Papier, transparente Stellen bleiben sichtbar */
-.gallery-viewer-body {
+/* das große Bild: die Leiste darüber auf Papier mit feiner Linie; sie liegt beim Rollen über dem Bild */
+.gallery-viewer-toolbar {
+  border-bottom: 1px solid var(--line);
   background: var(--paper);
+  box-shadow: 0 6px 14px -12px var(--bordeaux-shadow);
+}
+
+.gallery-viewer-heading {
+  color: var(--bordeaux-800);
+}
+
+/* die Zoom-Ansicht: ein ruhiger, etwas dunklerer Grund wie die Arbeitsfläche eines Grafikprogramms */
+.zoomable-image-box-zoomed {
+  background: var(--line);
+  scrollbar-color: var(--bordeaux-400) var(--canvas);
 }
 
 /* ==================================================================================================== Upload-Liste */
@@ -2351,4 +2363,111 @@ body {
 /* Zuschnitt eines Bildes (ImageCropper): Rahmen und Griffe neongelb, sie liegen auf der dunklen Maske */
 :root {
   --image-cropper-accent: var(--neon-400);
+}
+
+/* ================================================================================================ Wissensdatenbank */
+
+:root {
+  /* Die Schrift der Formeln und Skizzen: eine Serifenschrift mit guten Formelzeichen, je nachdem, was das System hat */
+  --math-font-family:
+    'STIX Two Math', 'STIX Two Text', 'Cambria Math', 'Latin Modern Math', 'Latin Modern Roman', 'Times New Roman', Times, serif;
+  --math-text-color: var(--ink);
+  /*
+   * Die Palette für hervorgehobene Größen einer Formel (MathHighlightKey FIRST bis FIFTH): fünf Töne, die auf hellem
+   * Papier lesbar und klar zu unterscheiden sind. Welche Größe welchen Platz bekommt, legt die Seite fest.
+   */
+  --math-highlight-first: #1d4ed8;
+  --math-highlight-second: #15803d;
+  --math-highlight-third: var(--bordeaux-500);
+  --math-highlight-fourth: #b45309;
+  --math-highlight-fifth: #7c3aed;
+  /* So lange wandert ein Term bei einer Umformung an seine neue Stelle, in Millisekunden; 0 schaltet das Wandern ab */
+  --math-flight-milliseconds: 1400;
+  --math-flight-ghost-bg: var(--paper);
+}
+
+.math {
+  font-family: var(--math-font-family);
+  color: var(--math-text-color);
+}
+
+/* Die Linie der Wurzel trägt die Farbe des Wurzelzeichens, der Radikand darunter steht wieder in der Schriftfarbe */
+.math-root-radicand {
+  color: var(--math-text-color);
+}
+
+/* Nach .math, damit die Farbe einer Hervorhebung auch am Element mit beiden Klassen gewinnt (die wandernde Kopie) */
+.math-highlight-first {
+  color: var(--math-highlight-first);
+}
+
+.math-highlight-second {
+  color: var(--math-highlight-second);
+}
+
+.math-highlight-third {
+  color: var(--math-highlight-third);
+}
+
+.math-highlight-fourth {
+  color: var(--math-highlight-fourth);
+}
+
+.math-highlight-fifth {
+  color: var(--math-highlight-fifth);
+}
+
+/* Die Kopie eines wandernden Terms: ein angehobenes Plättchen, damit man ihr mit dem Auge folgen kann */
+.math-flight-ghost {
+  border-radius: 0.3em;
+  background: var(--math-flight-ghost-bg);
+  box-shadow:
+    0 0 0 0.2em var(--math-flight-ghost-bg),
+    0 0.35em 0.9em 0.15em var(--bordeaux-shadow);
+}
+
+/* Herleitung: Umformung am Zeilenende, Erklärung und Stand gedämpft; die Größe in der Umformung behält ihre Farbe */
+.derivation-operation,
+.derivation-step-explanation,
+.derivation-progress {
+  color: var(--ink-muted);
+}
+
+/* Übersicht eines Kapitels: der Titel einer Seite kräftig, der Satz darunter gedämpft */
+.knowledge-page-entry-title {
+  color: var(--bordeaux-800);
+}
+
+.knowledge-page-entry-summary {
+  color: var(--ink-muted);
+}
+
+/* Skizze: Achsen und Hilfslinien gedämpft, der Punkt in Schriftfarbe, jede Größe in der Farbe ihrer Hervorhebung */
+.sketch text {
+  font-family: var(--math-font-family);
+}
+
+.sketch-axis,
+.sketch-helper-line {
+  stroke: var(--ink-muted);
+}
+
+.sketch-axis-arrow,
+.sketch-axis-label,
+.sketch-helper-dot {
+  fill: var(--ink-muted);
+}
+
+.sketch-quantity-line,
+.sketch-quantity-arc {
+  stroke: currentColor;
+}
+
+.sketch-quantity-label {
+  fill: currentColor;
+}
+
+.sketch-point,
+.sketch-point-label {
+  fill: var(--ink);
 }

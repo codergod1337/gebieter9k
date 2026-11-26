@@ -64,6 +64,11 @@ import { MarketStartTab } from './market/MarketStartTab.tsx'
 import { SolrManager } from './solrmanager/SolrManager.tsx'
 import { SolrManagerStartTab } from './solrmanager/SolrManagerStartTab.tsx'
 import { IconManager } from './iconmanager/IconManager.tsx'
+import { Knowledge } from './knowledge/Knowledge.tsx'
+import { KnowledgeChapterPage } from './knowledge/KnowledgeChapterPage.tsx'
+import { KnowledgePageContent } from './knowledge/KnowledgePageContent.tsx'
+import { KNOWLEDGE_PATH } from './knowledge/knowledgePaths.ts'
+import { KnowledgeStartPage } from './knowledge/KnowledgeStartPage.tsx'
 import { ScrollMemory } from './navigation/ScrollMemory.tsx'
 import { TikaTest } from './tikatest/TikaTest.tsx'
 
@@ -101,7 +106,7 @@ function AppLayout() {
 
 /**
  * Die Bestätigungsseite der 2FA geht immer, sie öffnet sich in einem neuen Fenster; ebenso die Besucherseite einer
- * Galerie-Freigabe (`/share/galerie/<token>`). Ohne Anmeldung gibt es sonst nur
+ * Galerie-Freigabe (`/share/galerie/<token>`) und die Wissensdatenbank (`/wissen/…`). Ohne Anmeldung gibt es sonst nur
  * Login und Registrierung, angemeldet die Module. Administration, SolrManager, Tika-Test und Icon-Manager stehen
  * zusätzlich hinter dem Admin-Wächter, ihre Tabs sind Routen.
  */
@@ -119,6 +124,12 @@ function AppRoutes() {
     <Routes>
       {/* Die Besucherseite einer Galerie-Freigabe: ohne Anmeldung, der Token im Link ist das Recht */}
       <Route path="/share/galerie/:shareToken" element={<GalleryShareVisitorPage />} />
+      {/* Die Wissensdatenbank: ohne Anmeldung. Kapitel und Seiten kommen aus knowledge/knowledgeChapters.ts */}
+      <Route path={KNOWLEDGE_PATH} element={<Knowledge />}>
+        <Route index element={<KnowledgeStartPage />} />
+        <Route path=":chapterPathSegment" element={<KnowledgeChapterPage />} />
+        <Route path=":chapterPathSegment/:pagePathSegment" element={<KnowledgePageContent />} />
+      </Route>
       {session === null && <Route path="*" element={<LoginPage />} />}
       {session !== null && <Route path="*" element={<LoggedInRoutes />} />}
     </Routes>

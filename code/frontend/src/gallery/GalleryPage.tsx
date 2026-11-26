@@ -26,7 +26,7 @@ import { useUsersAvatarsForClient } from '../users/useUsersAvatarForClient.ts'
 import { VISIBILITY_LABELS } from '../users/visibilityLabels.ts'
 import type { GalleryForClient } from './Gallery.ts'
 import { GalleryImageTile } from './GalleryImageTile.tsx'
-import { GalleryImageViewerPopup, type GalleryViewerImage } from './GalleryImageViewerPopup.tsx'
+import { GalleryImageViewer, type GalleryViewerImage } from './GalleryImageViewer.tsx'
 import { GalleryTagFilter } from './GalleryTagFilter.tsx'
 import { formatUrlTags, parseUrlTags } from './galleryTagUrlParam.ts'
 import { GALLERY_TEXTS } from './galleryTexts.ts'
@@ -88,7 +88,9 @@ function collectInvolvedUsersGuids(
 /**
  * Eine Galerie unter `/profile/<guid>/galleries/<id>` (Konzept `docu/konzept-galerie.md`), der Reiter „Bilder“: Titel,
  * Beschreibung und Sichtbarkeit, darunter die Bilder als Kacheln in ihrer Reihenfolge, seitenweise. Ein Klick öffnet
- * ein Bild groß. Seit 2026-11-20 (Nutzer):
+ * ein Bild groß: kein Popup, es steht dann anstelle der Kacheln unter dem Subheader ({@link GalleryImageViewer}, Nutzer
+ * 2026-11-26). Die Kacheln bleiben dabei unsichtbar bestehen, damit sie beim Zurückkommen nichts neu laden.
+ * Seit 2026-11-20 (Nutzer):
  * - Über den Kacheln stehen die Hashtags der Galerie als Schalter ({@link GalleryTagFilter}): Ein gewählter Hashtag
  *   zeigt nur seine Bilder, mehrere die Bilder mit mindestens einem davon, keiner alle.
  * - In der eigenen Galerie öffnet der Knopf „neue Bilder“ rechts im Kopf das Hochladen als Popup
@@ -352,78 +354,80 @@ export function GalleryPage() {
 
   return (
     <>
-      <ContentBox title={gallery.title} actions={newImagesButton} footer={<span className="small">{footerText}</span>}>
-        {gallery.description !== null && <RichTextView richText={gallery.description} className="gallery-description" />}
-        <GalleryTagFilter
-          galleryTagCounts={galleryTagCounts}
-          selectedTags={selectedTags}
-          onToggle={toggleTag}
-          onReset={resetSelectedTags}
-          disabled={filesHook.isLoading}
-        />
-        {sharedGallery && (
-          <UsersUploadFrameLegend
-            usersGuids={involvedUsersGuids}
-            label={getTextInCurrentLanguage(GALLERY_UPLOADER_TEXTS.legendLabel)}
-            originLabel={gallery.title}
+      <div hidden={openViewerImage !== null}>
+        <ContentBox title={gallery.title} actions={newImagesButton} footer={<span className="small">{footerText}</span>}>
+          {gallery.description !== null && <RichTextView richText={gallery.description} className="gallery-description" />}
+          <GalleryTagFilter
+            galleryTagCounts={galleryTagCounts}
+            selectedTags={selectedTags}
+            onToggle={toggleTag}
+            onReset={resetSelectedTags}
+            disabled={filesHook.isLoading}
           />
-        )}
-        {ownGallery && tagFilterActive && shownFiles.length > 1 && (
-          <p className="small text-body-secondary">{getTextInCurrentLanguage(GALLERY_TEXTS.sortingPausedWhileFiltered)}</p>
-        )}
-        <ErrorAlert message={sortErrorMessage} />
-        {galleryFilePage === null && <Spinner animation="border" />}
-        {galleryFilePage !== null && shownFiles.length === 0 && <p className="text-body-secondary mb-0">{noImagesText}</p>}
-        {shownFiles.length > 0 && (
-          <SortableArea items={shownFiles} itemKey={getFileDocumentId} onReorder={(changed) => void reorderFiles(changed)} layout="grid">
-            <div className="gallery-images">
-              {shownFiles.map((fileDocument) => {
-                const fileDocumentId = getFileDocumentId(fileDocument)
-                const fileName = getFileDocumentText(fileDocument, fileNameFieldName)
-                const heading = getFileDocumentHeading(fileDocument, nameSet)
-                const previewBase64Png = fileDocument[previewFieldName]
-                // Der Besitzer bearbeitet jedes Bild seiner Galerie, auch das eines anderen Uploaders
-                const changeableAsAuthorOrEditor = isFileDocumentChangeableByCurrentUsers(
-                  fileDocument,
-                  fileSolrFieldNameSet,
-                  currentUsersGuid,
-                  fileManagerOrAdmin,
-                  hasAccessRole,
-                )
-                const changeable = ownGallery || changeableAsAuthorOrEditor
-                const frameColor = getFrameColor(fileDocument)
-                return (
-                  <GalleryImageTile
-                    key={fileDocumentId}
-                    fileDocumentId={fileDocumentId}
-                    fileName={fileName}
-                    heading={heading}
-                    previewBase64Png={previewBase64Png}
-                    sortable={sortable}
-                    sortingDisabled={sortHook.isLoading}
-                    changeable={changeable}
-                    frameColor={frameColor}
-                    originState={imageOriginState}
-                    onOpen={openImage}
-                    commentCount={commentCountsByFileDocumentId[fileDocumentId]}
-                  />
-                )
-              })}
-            </div>
-          </SortableArea>
-        )}
-        {pageCount > 1 && (
-          <div className="gallery-pager">
-            <PageNavigation
-              page={page}
-              pageCount={pageCount}
-              disabled={filesHook.isLoading}
-              onPageChange={changePage}
-              ariaLabel="Seiten der Galerie"
+          {sharedGallery && (
+            <UsersUploadFrameLegend
+              usersGuids={involvedUsersGuids}
+              label={getTextInCurrentLanguage(GALLERY_UPLOADER_TEXTS.legendLabel)}
+              originLabel={gallery.title}
             />
-          </div>
-        )}
-      </ContentBox>
+          )}
+          {ownGallery && tagFilterActive && shownFiles.length > 1 && (
+            <p className="small text-body-secondary">{getTextInCurrentLanguage(GALLERY_TEXTS.sortingPausedWhileFiltered)}</p>
+          )}
+          <ErrorAlert message={sortErrorMessage} />
+          {galleryFilePage === null && <Spinner animation="border" />}
+          {galleryFilePage !== null && shownFiles.length === 0 && <p className="text-body-secondary mb-0">{noImagesText}</p>}
+          {shownFiles.length > 0 && (
+            <SortableArea items={shownFiles} itemKey={getFileDocumentId} onReorder={(changed) => void reorderFiles(changed)} layout="grid">
+              <div className="gallery-images">
+                {shownFiles.map((fileDocument) => {
+                  const fileDocumentId = getFileDocumentId(fileDocument)
+                  const fileName = getFileDocumentText(fileDocument, fileNameFieldName)
+                  const heading = getFileDocumentHeading(fileDocument, nameSet)
+                  const previewBase64Png = fileDocument[previewFieldName]
+                  // Der Besitzer bearbeitet jedes Bild seiner Galerie, auch das eines anderen Uploaders
+                  const changeableAsAuthorOrEditor = isFileDocumentChangeableByCurrentUsers(
+                    fileDocument,
+                    fileSolrFieldNameSet,
+                    currentUsersGuid,
+                    fileManagerOrAdmin,
+                    hasAccessRole,
+                  )
+                  const changeable = ownGallery || changeableAsAuthorOrEditor
+                  const frameColor = getFrameColor(fileDocument)
+                  return (
+                    <GalleryImageTile
+                      key={fileDocumentId}
+                      fileDocumentId={fileDocumentId}
+                      fileName={fileName}
+                      heading={heading}
+                      previewBase64Png={previewBase64Png}
+                      sortable={sortable}
+                      sortingDisabled={sortHook.isLoading}
+                      changeable={changeable}
+                      frameColor={frameColor}
+                      originState={imageOriginState}
+                      onOpen={openImage}
+                      commentCount={commentCountsByFileDocumentId[fileDocumentId]}
+                    />
+                  )
+                })}
+              </div>
+            </SortableArea>
+          )}
+          {pageCount > 1 && (
+            <div className="gallery-pager">
+              <PageNavigation
+                page={page}
+                pageCount={pageCount}
+                disabled={filesHook.isLoading}
+                onPageChange={changePage}
+                ariaLabel="Seiten der Galerie"
+              />
+            </div>
+          )}
+        </ContentBox>
+      </div>
       {uploadAllowed && uploadOpen && (
         <GalleryUploadPopup
           galleryId={gallery.id}
@@ -434,7 +438,7 @@ export function GalleryPage() {
         />
       )}
       {openViewerImage !== null && (
-        <GalleryImageViewerPopup
+        <GalleryImageViewer
           image={openViewerImage}
           previousImage={previousViewerImage}
           nextImage={nextViewerImage}

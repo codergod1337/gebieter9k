@@ -239,9 +239,18 @@
     }
   }
 
-  /* Ohne eigenen Abstand, damit der Subheader über die volle Breite reicht */
+  /*
+   * Ohne eigenen Abstand, damit der Subheader über die volle Breite reicht. --main-sticky-top: so weit unter dem oberen
+   * Fensterrand beginnt der Inhalt, wenn die Seite gerollt ist: unter dem Header, mit Subheader unter beiden. Wer im
+   * Inhalt selbst etwas stehen lässt (z. B. die Leiste über einem großen Bild), setzt es dorthin.
+   */
   .main {
+    --main-sticky-top: var(--header-height);
     flex: 1 0 auto;
+  }
+
+  .main:has(> .subheader) {
+    --main-sticky-top: calc(var(--header-height) + var(--subheader-height));
   }
 
   /*
@@ -3133,25 +3142,6 @@
     overflow: auto;
   }
 
-  .file-viewer-image-button {
-    padding: 0;
-    border: 0;
-    background: none;
-    cursor: zoom-in;
-  }
-
-  /* eingepasst: das ganze Bild auf einen Blick, unter Header und Subheader */
-  .file-viewer-image-fit {
-    max-width: 100%;
-    max-height: 75vh;
-    object-fit: contain;
-  }
-
-  .file-viewer-image-original {
-    max-width: none;
-    cursor: zoom-out;
-  }
-
   .file-viewer-video {
     width: 100%;
     max-height: 75vh;
@@ -4007,9 +3997,9 @@
     --gallery-tile-min-width: 12rem;
     --gallery-image-tile-min-width: 13.5rem;
     --gallery-tile-gap: 1rem;
-    --gallery-viewer-image-max-height: 75vh;
-    /* so breit ist die Spalte der Kommentare neben dem großen Bild */
-    --gallery-viewer-comments-width: 22rem;
+    /* das große Bild (GalleryImageViewer): Höhe der Leiste darüber, Breite der Kommentare darunter */
+    --gallery-viewer-toolbar-height: 3rem;
+    --gallery-viewer-comments-max-width: 50rem;
   }
 
   .gallery-tiles {
@@ -4281,52 +4271,50 @@
     margin-top: 1rem;
   }
 
-  /* der Viewer: das Bild eingepasst, unten Voriges, Herunterladen, Nächstes */
   /*
-   * Das große Bild: links das Bild, rechts daneben seine Kommentare in einer eigenen Spalte, die in sich rollt. Auf
-   * einem schmalen Bildschirm stehen die Kommentare unter dem Bild.
+   * Das große Bild einer Galerie (GalleryImageViewer): kein Popup, es steht anstelle der Kacheln direkt unter dem
+   * Subheader und hat die ganze Breite der Seite. Main nimmt dafür seinen Rand weg, sobald der Viewer darin steht.
    */
-  .gallery-viewer-body {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
+  .main-content:has(> .gallery-viewer) {
+    padding: 0;
   }
 
-  .gallery-viewer-picture {
+  /* Die Zoom-Ansicht des Bildes füllt das Fenster unter Header, Subheader und der Leiste des Viewers */
+  .gallery-viewer {
+    --zoomable-image-zoomed-height: calc(100vh - var(--main-sticky-top) - var(--gallery-viewer-toolbar-height));
+  }
+
+  /* Die Leiste über dem Bild bleibt beim Rollen unter dem Subheader stehen */
+  .gallery-viewer-toolbar {
+    position: sticky;
+    top: var(--main-sticky-top);
+    z-index: 1010;
     display: flex;
-    flex: 1 1 auto;
-    justify-content: center;
+    flex-wrap: wrap;
     align-items: center;
+    gap: 0.5rem;
+    min-height: var(--gallery-viewer-toolbar-height);
+    padding: 0.4rem 1rem;
+  }
+
+  .gallery-viewer-toolbar .btn {
+    white-space: nowrap;
+  }
+
+  /* Die Überschrift nimmt den Platz zwischen den Knöpfen; ist sie zu lang, endet sie mit Punkten */
+  .gallery-viewer-heading {
+    flex: 1 1 8rem;
     min-width: 0;
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .gallery-viewer-comments {
-    flex: 0 0 var(--gallery-viewer-comments-width);
-    max-height: var(--gallery-viewer-image-max-height);
-    min-width: 0;
-    overflow-y: auto;
-  }
-
-  @media (max-width: 991.98px) {
-    .gallery-viewer-body {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .gallery-viewer-comments {
-      flex-basis: auto;
-      max-height: none;
-    }
-  }
-
-  .gallery-viewer-image {
-    max-width: 100%;
-    max-height: var(--gallery-viewer-image-max-height);
-    object-fit: contain;
-  }
-
-  .gallery-viewer-footer {
-    justify-content: space-between;
+    max-width: var(--gallery-viewer-comments-max-width);
+    margin-inline: auto;
+    padding: var(--main-padding);
   }
 
   /* Besucherseite einer Galerie-Freigabe: die Zeile über den Kacheln (auswählen, Auswahl herunterladen) */
@@ -4342,5 +4330,348 @@
   .gallery-share-select {
     flex: none;
     margin: 0;
+  }
+
+  /*
+   * ===== ZoomableImage: DAS große Bild. Eingepasst steht es mittig in der Breite seines Platzes, nie größer als in
+   * Originalgröße. Die Zoom-Ansicht ist ein Bereich fester Höhe, der in sich rollt; das Bild trägt dort seine Maße in
+   * Pixeln (useImageZoom). Wie hoch der Bereich ist, gibt der Ort über --zoomable-image-zoomed-height vor. =====
+   */
+  .zoomable-image {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* flex + margin: auto zentriert ein kleines Bild und lässt ein großes trotzdem bis an jeden Rand rollen */
+  .zoomable-image-box {
+    display: flex;
+  }
+
+  .zoomable-image-picture {
+    display: block;
+    flex: none;
+    max-width: 100%;
+    height: auto;
+    margin: auto;
+  }
+
+  /* verkleinert dargestellt: die Lupe mit Plus, ein Klick zeigt die Originalgröße */
+  .zoomable-image-box-zoomable .zoomable-image-picture {
+    cursor: zoom-in;
+  }
+
+  .zoomable-image-box-zoomed {
+    height: var(--zoomable-image-zoomed-height, 75vh);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .zoomable-image-box-zoomed .zoomable-image-picture {
+    max-width: none;
+    cursor: zoom-out;
+  }
+
+  /* Verschieben mit gedrückter rechter Maustaste (usePanScroll) */
+  .zoomable-image-box-zoomed.panning,
+  .zoomable-image-box-zoomed.panning .zoomable-image-picture {
+    cursor: grabbing;
+    user-select: none;
+  }
+
+  /*
+   * ===== Formeln (knowledge/math): der Satz. Jeder Term ist ein eigenes Element (MathTermReactRenderer), deshalb lässt
+   * er sich einzeln färben und bewegen. Hier stehen nur Lage und Maße; Schrift und Farben setzt das Theme. =====
+   */
+  :root {
+    /* Schriftgröße einer Formel */
+    --math-font-size: 1.5rem;
+    /* Dicke von Bruchstrich, Wurzellinie und den Zeichen, die mit ihrem Inhalt wachsen */
+    --math-stroke-width: 0.06em;
+  }
+
+  .math {
+    display: inline-block;
+    font-size: var(--math-font-size);
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .math-symbol {
+    font-style: italic;
+  }
+
+  .math-operator {
+    margin-inline: 0.3em;
+  }
+
+  .math-relation {
+    margin-inline: 0.5em;
+  }
+
+  /* Bruch: Zähler über Nenner, der Strich ist die Oberkante des Nenners; die Mitte steht auf Höhe der Rechenzeichen */
+  .math-fraction {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    vertical-align: middle;
+    margin-inline: 0.12em;
+  }
+
+  .math-fraction-numerator {
+    padding: 0 0.3em 0.06em;
+  }
+
+  .math-fraction-denominator {
+    align-self: stretch;
+    padding: 0.06em 0.3em 0;
+    border-top: var(--math-stroke-width) solid currentColor;
+    text-align: center;
+  }
+
+  /* Exponent: Bootstrap stellt sup schon hoch, ohne die Zeile höher zu machen; hier nur Größe und Höhe */
+  .math-power-exponent {
+    top: -0.62em;
+    margin-left: 0.06em;
+    font-size: 0.68em;
+  }
+
+  /*
+   * Wurzel: links das Zeichen, daneben der Radikand in einer Hülle, deren Oberkante die Linie der Wurzel ist. Die Hülle
+   * gibt die Grundlinie der ganzen Wurzel vor (align-self: baseline), das Zeichen wird so hoch wie sie.
+   */
+  .math-root {
+    display: inline-flex;
+    align-items: stretch;
+    margin-inline: 0.1em;
+  }
+
+  .math-root-sign {
+    position: relative;
+    flex: none;
+    width: 0.62em;
+  }
+
+  .math-root-line {
+    align-self: baseline;
+    padding: 0.2em 0.14em 0 0.08em;
+    border-top: var(--math-stroke-width) solid currentColor;
+  }
+
+  /* Runde Klammern, die mit ihrem Inhalt wachsen; der Inhalt gibt die Grundlinie vor */
+  .math-group {
+    display: inline-flex;
+    align-items: stretch;
+  }
+
+  .math-group-sign {
+    position: relative;
+    flex: none;
+    width: 0.36em;
+  }
+
+  .math-group-content {
+    align-self: baseline;
+    padding-inline: 0.04em;
+  }
+
+  /* Wurzelzeichen und Klammern als SVG: füllen ihr Element; der Strich bleibt gleich dick, egal wie hoch gezogen */
+  .math-stretchy-sign {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: var(--math-stroke-width);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .math-stretchy-sign path {
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* Funktion: zwischen Name und Argument ein schmaler Abstand, vor einer Klammer fast keiner */
+  .math-function-argument {
+    margin-left: 0.16em;
+  }
+
+  .math-function-argument:has(> .math-group) {
+    margin-left: 0.04em;
+  }
+
+  /*
+   * ===== Herleitung (knowledge/derivation): die Schritte untereinander, die Gleichheitszeichen in einer Spalte (linke
+   * Seite, „=“, rechte Seite, Umformung). Der Bereich ist zugleich die Ebene, in der die wandernden Terme fliegen
+   * (TermFlightAnimator). =====
+   */
+  .derivation-steps {
+    position: relative;
+    display: grid;
+    grid-template-columns: max-content max-content max-content 1fr;
+    row-gap: 1.5rem;
+    padding-block: 0.5rem;
+    overflow-x: auto;
+  }
+
+  .derivation-step {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    align-items: center;
+  }
+
+  .derivation-step-left {
+    justify-self: end;
+  }
+
+  .derivation-step-operation {
+    margin-left: 2.5rem;
+  }
+
+  .derivation-operation {
+    font-size: calc(var(--math-font-size) * 0.8);
+  }
+
+  .derivation-operation-bar {
+    margin-right: 0.45em;
+  }
+
+  .derivation-operation-notation {
+    margin-right: 0.25em;
+  }
+
+  .derivation-step-explanation {
+    grid-column: 1 / -1;
+    max-width: 46rem;
+    margin: 0.6rem 0 0;
+    font-size: 0.95rem;
+  }
+
+  .derivation-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .derivation-controls .btn {
+    white-space: nowrap;
+  }
+
+  .derivation-progress {
+    margin-right: auto;
+  }
+
+  /* Die Kopie eines wandernden Terms: liegt über den Zeilen, Lage und Größe setzt der Animator */
+  .math-flight-ghost {
+    position: absolute;
+    z-index: 1;
+    display: block;
+    margin: 0;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  /* ===== Wissensdatenbank (knowledge): Übersicht eines Kapitels, Text neben Skizze, Zusammenfassung ===== */
+  .knowledge-page-entry-title {
+    font-weight: 600;
+  }
+
+  .knowledge-intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(14rem, 22rem);
+    align-items: center;
+    gap: 1.5rem 2.5rem;
+  }
+
+  @media (max-width: 767.98px) {
+    .knowledge-intro {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .knowledge-text {
+    max-width: 46rem;
+  }
+
+  .knowledge-text > p:last-child {
+    margin-bottom: 0;
+  }
+
+  .knowledge-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 1.5rem 2.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .knowledge-summary-heading {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .knowledge-summary-equation {
+    margin-bottom: 0.75rem;
+  }
+
+  .knowledge-hint {
+    margin-bottom: 0;
+  }
+
+  /* ===== Skizze (SVG) einer Seite der Wissensdatenbank: Strichstärken und Schriftgrößen in den Einheiten der Skizze ===== */
+  .sketch {
+    display: block;
+    width: 100%;
+    max-width: 22rem;
+    height: auto;
+    justify-self: center;
+    overflow: visible;
+  }
+
+  .sketch-axis,
+  .sketch-helper-line,
+  .sketch-quantity-line,
+  .sketch-quantity-arc {
+    fill: none;
+  }
+
+  .sketch-axis {
+    stroke-width: 1.5;
+  }
+
+  .sketch-helper-line {
+    stroke-width: 1.2;
+  }
+
+  .sketch-quantity-line {
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+
+  .sketch-quantity-arc {
+    stroke-width: 2.5;
+    stroke-linecap: round;
+  }
+
+  .sketch-quantity-label,
+  .sketch-axis-label {
+    text-anchor: middle;
+    font-style: italic;
+  }
+
+  .sketch-quantity-label {
+    font-size: 21px;
+    font-weight: 600;
+  }
+
+  .sketch-axis-label {
+    font-size: 15px;
+  }
+
+  .sketch-point-label {
+    font-size: 18px;
   }
 }
