@@ -25,6 +25,7 @@ export const KNOWLEDGE_TEXTS = {
   unreadableContent: { de: 'Der Inhalt dieser Seite lässt sich nicht anzeigen: {reason}' },
   /** Eine Seite in einer Fassung des Formats, die dieses Frontend noch nicht kennt. */
   unknownContentFormat: { de: 'Diese Seite ist in einem neueren Format geschrieben (Fassung {version}). Bitte die Anwendung neu laden.' },
+  unknownEquation: { de: 'Zu dieser Gleichung gibt es keine veröffentlichte Seite.' },
   outdatedContentFormat: {
     de: 'Diese Seite ist noch in einem älteren Format gespeichert (Fassung {version}) und muss neu geschrieben werden.',
   },

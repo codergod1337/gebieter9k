@@ -12,7 +12,6 @@ export const ANIMATION_TEXTS = {
     de: 'Eine Animation gehört zum Übergang von einer Gleichung zur nächsten. Links die Gleichung wählen, rechts festlegen, was mit ihren Teilen geschieht.',
   },
   popupClose: { de: 'Schließen' },
-  noEquations: { de: 'Der Inhalt hat noch keine Gleichung.' },
   equationsLabel: { de: 'Gleichungen' },
   hasAnimation: { de: 'hat eine Animation' },
   /** Der Übergang einer Gleichung. */

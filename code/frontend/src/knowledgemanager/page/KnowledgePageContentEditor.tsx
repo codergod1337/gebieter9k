@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import Button from 'react-bootstrap/Button'
 import { BlockContentEditor, formatBlockContentText, readBlockContentProblem } from '../../blockcontent/editor/BlockContentEditor.tsx'
 import { ErrorAlert } from '../../components/ErrorAlert.tsx'
+import { getKnowledgeEquationPath } from '../../knowledge/knowledgePaths.ts'
 import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguage.ts'
 import { getTextInCurrentLanguageWithValues } from '../../language/getTextInCurrentLanguageWithValues.ts'
 import { KNOWLEDGE_PAGE_TEXTS } from './knowledgePageTexts.ts'
@@ -75,7 +76,12 @@ export function KnowledgePageContentEditor({ savedContentText, isSaving, errorMe
   return (
     <section className="knowledge-editor-content main-wide" aria-label={getTextInCurrentLanguage(KNOWLEDGE_PAGE_TEXTS.contentTitle)}>
       <ErrorAlert message={errorMessage} />
-      <BlockContentEditor contentText={editedContentText} onContentTextChange={setEditedContentText} actions={actions} />
+      <BlockContentEditor
+        contentText={editedContentText}
+        onContentTextChange={setEditedContentText}
+        actions={actions}
+        getForeignEquationPath={getKnowledgeEquationPath}
+      />
     </section>
   )
 }

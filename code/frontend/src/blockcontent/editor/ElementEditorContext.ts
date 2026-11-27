@@ -1,15 +1,16 @@
 import { createContext, useContext } from 'react'
+import type { EquationJson } from '../elements/ElementJson.ts'
 
 /** Was jeder Teil des Editors über den ganzen Inhalt wissen darf, ohne ihn zu kennen. */
 export type ElementEditorContextValue = {
-  /** Eine feste Kennung, die es im Inhalt noch nicht gibt: Vorsilbe und die kleinste freie Zahl, z. B. `e3`. */
-  createFreeId: (prefix: string) => string
+  /** Alle Gleichungen des Inhalts in ihrer Reihenfolge; ihre Stelle + 1 ist ihre Nummer. */
+  equations: EquationJson[]
   /** Die laufende Nummer einer Gleichung im Inhalt; `null`, wenn es die Kennung nicht gibt. */
-  getEquationNumber: (equationId: string) => number | null
+  getEquationNumber: (equationGuid: string) => number | null
 }
 
 const NO_ELEMENT_EDITOR_CONTEXT: ElementEditorContextValue = {
-  createFreeId: (prefix) => prefix + '1',
+  equations: [],
   getEquationNumber: () => null,
 }
 

@@ -25,7 +25,7 @@ export class EquationAnimationReader {
 
   private readAnimation(animationValue: unknown, animationPath: string): EquationAnimation {
     const animationObject = requireObject(animationValue, animationPath)
-    const fromEquationId = requireText(animationObject.from, animationPath + '.from')
+    const fromEquationGuid = requireText(animationObject.from, animationPath + '.from')
     const note = readOptionalText(animationObject.note, animationPath + '.note')
     const actionValues = requireList(animationObject.actions, animationPath + '.actions')
     const actions: AnimationAction[] = []
@@ -33,7 +33,7 @@ export class EquationAnimationReader {
       const action = this.readAction(actionValue, animationPath + '.actions[' + actionIndex + ']')
       actions.push(action)
     })
-    return { fromEquationId, note, actions }
+    return { fromEquationGuid, note, actions }
   }
 
   private readAction(actionValue: unknown, actionPath: string): AnimationAction {

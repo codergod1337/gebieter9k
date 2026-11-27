@@ -29,7 +29,7 @@ export function ElementCardEditor({ element, onChange, onMoveUp, onMoveDown, onR
   const ElementEditorOfType = elementKind.Editor as ComponentType<ElementEditorProps<ElementType>>
   let kindLabel = getTextInCurrentLanguage(elementKind.label)
   if (element.type === 'EQUATION') {
-    const equationNumber = elementEditorContext.getEquationNumber(element.id)
+    const equationNumber = elementEditorContext.getEquationNumber(element.guid)
     if (equationNumber !== null) {
       const numberText = getTextInCurrentLanguageWithValues(BLOCK_CONTENT_EDITOR_TEXTS.equationNumber, { number: String(equationNumber) })
       kindLabel = kindLabel + ' ' + numberText

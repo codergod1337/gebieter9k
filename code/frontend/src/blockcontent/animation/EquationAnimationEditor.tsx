@@ -98,7 +98,7 @@ export function EquationAnimationEditor({ equation, equationNumber, nextEquation
         <FormulaField
           label={noteLabel}
           latex={note}
-          onLatexChange={(changedNote) => onAnimationChange(changeAnimationNote(animation, equation.id, changedNote))}
+          onLatexChange={(changedNote) => onAnimationChange(changeAnimationNote(animation, equation.guid, changedNote))}
         />
       </div>
 
@@ -121,7 +121,7 @@ export function EquationAnimationEditor({ equation, equationNumber, nextEquation
                 value={formatBehaviourValue(behaviour)}
                 onChange={(changeEvent) => {
                   const changedBehaviour = parseBehaviourValue(changeEvent.target.value)
-                  onAnimationChange(changeSourcePartBehaviour(animation, equation.id, formulaId, changedBehaviour))
+                  onAnimationChange(changeSourcePartBehaviour(animation, equation.guid, formulaId, changedBehaviour))
                 }}>
                 <option value={STAYS_VALUE}>{getTextInCurrentLanguage(ANIMATION_TEXTS.staysBehaviour)}</option>
                 <option value={CANCELLED_VALUE}>{getTextInCurrentLanguage(ANIMATION_TEXTS.cancelledBehaviour)}</option>
@@ -169,7 +169,7 @@ export function EquationAnimationEditor({ equation, equationNumber, nextEquation
                 value={targetValue}
                 onChange={(changeEvent) => {
                   const appearing = changeEvent.target.value === TARGET_APPEARS_VALUE
-                  onAnimationChange(changeTargetPartAppearing(animation, equation.id, formulaId, appearing))
+                  onAnimationChange(changeTargetPartAppearing(animation, equation.guid, formulaId, appearing))
                 }}>
                 <option value={TARGET_PLAIN_VALUE}>{getTextInCurrentLanguage(ANIMATION_TEXTS.targetPlainBehaviour)}</option>
                 <option value={TARGET_APPEARS_VALUE}>{getTextInCurrentLanguage(ANIMATION_TEXTS.targetAppearsBehaviour)}</option>

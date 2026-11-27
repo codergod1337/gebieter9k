@@ -25,6 +25,123 @@ Nach dem 2026-12-03 diesen Abschnitt löschen (ebenso die Regel `interruptions-u
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-27 16:06 – Gleichungen referenzieren und verlinken; Gleichung bekommt intern eine GUID
+
+- Ansage: „gleichungen referenzieren BENÖTIGEN WIR! ich möchte die auch verlinken. sprich eine gleichung bewkommt eine
+  guid intern und im frontened zählen wir einfach laufend je seite durch, oder etwas vergleichbares!“
+- Plan in Stücken (nach jedem läuft `npx tsc -b`):
+  1. Format: `EQUATION` und `COLLAPSIBLE` tragen `guid` (UUID, vom Editor vergeben) statt `id`; Animationen nennen in
+     `from` die GUID; überall im Code `guid` statt `id` (Naming-Regel: guid = UUID).
+  2. Verweis im Text: `[[equation:<guid>]]` wird zur Nummer der Gleichung als Link; im Editor ein Knopf in der
+     Textleiste, der die Gleichungen der Seite zur Wahl stellt.
+  3. Verlinken: jede Gleichung hat einen Anker (`#eq-<guid>`), ihre Nummer ist der Link dorthin; eine Adresse mit
+     Anker öffnet die Aufklapper um die Gleichung, rollt zu ihr und hebt sie hervor.
+  4. Die drei Seiten-Skripte auf GUIDs umstellen, auf der SRT-Seite Verweise benutzen; lokal prüfen; Doku, Regeln.
+  5. Nach dem Push: Pi (wie im Eintrag 15:50 geplant, jetzt mit diesem Stand).
+- Zwischenansage (während Stück 2): „ja stelle dann auch sicher dass eine seite also das solr doc ein eigenes
+  multivalued feld hat mit den gleichungs-guids dann können wir eine gleichung serverweit referenzieren. also für die
+  suche. sprich wenn ich eine gleichung habe, kann ich die seite mit der gleichungsguid auflösen und dann direkt zu der
+  jeweiligen gleichung springen, weisst du was ich meine? das bietet sich dann auch für code snippet sehr gut an“
+- Stück 1 fertig (zwischen 16:06 und 16:17, Uhrzeit nicht einzeln festgehalten): `guid` statt `id` an `EQUATION` und `COLLAPSIBLE` (Format, Leser prüft UUID, Editor vergibt
+  `crypto.randomUUID()`, Animationen, Adress-Parameter `open`); `tsc` grün.
+- Stücke 2 und 3 fertig (ebenso): `equationAnchor.ts`, `inline/EquationReferenceLink.tsx`, `InlineReferenceContext.ts`,
+  `elements/useEquationTarget.ts`, `EquationTargetContext.ts`, `EquationChoiceList.tsx` (auch im Popup „Animationen“),
+  `editor/EquationReferencePopup.tsx`, Knopf „#“ in der Textleiste; Nummer der Gleichung ist ihr Link.
+- Dazu (Zwischenansage) fertig (ebenso): Backend `KnowledgeContentReader`, Feld `equationGuids`
+  (`gebiter.knowledge.field.equation-guids`, `gebiter.knowledge.content.*`), `KnowledgePageResolveRequest.equationGuid`,
+  `./mvnw -o clean compile` grün; Frontend `/wissen/gleichung/<guid>` (`KnowledgeEquationPage.tsx`), Verweis auf
+  Gleichungen anderer Seiten als „(↗)“.
+- Stück 4 fertig (16:17): Seiten-Skript mit GUIDs (uuid5 aus Seiten-Key und Name, also stabil) und Verweisen; im Firefox
+  gegen das nachgestellte Backend: Verweise, Anker, Aufklappen über die Adresse, „Zurück“, Sprung zur anderen Seite,
+  `/wissen/gleichung/<guid>`, unbekannte GUID, Editor-Knopf. Doku (`blockcontent.md`, `KNOWLEDGE.md`, Konzept), Regel.
+- **Stand 16:17: lokal fertig, `tsc`, `build` und Backend-Kompilieren grün, vorgemerkt, NICHT committet (macht der
+  Nutzer). Als Nächstes Stück 5, sobald er gepusht hat, in DIESER Reihenfolge:** (a) Pi `git pull`, backend UND
+  frontend bauen, starten; (b) unter seinem Konto das Feld `equationGuids` im Kern KNOWLEDGE anlegen
+  (`POST /api/admin/solr-field`, nach dem Muster von `tags`: STRING, indexiert, gespeichert, mehrwertig, docValues,
+  „vom Client“ NEIN, „Wer liest“ ANY) und prüfen, dass der Abgleich es in Solr anlegt, BEVOR eine Seite geschrieben
+  wird; (c) Demoseite neu schreiben (PUT), Rubrik `PHYSIK` und Kapitel `SPEZIELLE_RELATIVITAETSTHEORIE` anlegen,
+  „Figuren (Testseite)“ und „Vierervektoren“ anlegen (POST); (d) prüfen: `equationGuids` im Dokument,
+  `POST /api/share/knowledge-page/resolve` mit `equationGuid`, `/wissen/gleichung/<guid>` im Browser.
+
+## 2026-11-27 15:50 – Element „Figur“ (JSXGraph) einbauen; Prüfstein: SRT-Seite mit schwieriger Herleitung
+
+- Ansage: „ja bau das mal ein, ich habe dir diese themen nur aufgelistet, weil ich befürchte dass dein modell noch
+  nciht ausreichend ist um komplizierte mathematische herleitungen darzustellen die wir in quantenmechanik
+  molekülphysik oder sonstigen fächern benötigen werden. da müssen wir ja noch integrieren und substituieren und was
+  weiss ich noch nicht alles! da glaube ich reicht dein modell noch nicht aus. du kannst sonst auch gerne mal eine
+  wissensseite zur SRT oder ART machen mit dem "G - mü nü" der ko und kontravariante scheiss! den so darstellen und
+  erklären dass ich ihn endlich verstehe. oder relativistische impulse! das will ich darstellen können und auch
+  editieren können mit unserem "editor"“
+- Plan in Stücken (nach jedem läuft `npx tsc -b`):
+  1. `jsxgraph` 1.14.3 ins Frontend; Element `FIGURE` (Text in JessieCode, Ausschnitt, Seitenverhältnis): Anzeige
+     `blockcontent/figure/`, Bearbeiten-Teil, Leser, CSS. Die alte Skizze (`SKETCH`, `sketch/`) fällt dafür weg (angekündigt
+     in der Antwort davor: ein Weg zu zeichnen); die Skizze der Demoseite wird eine Figur.
+  2. Drei Seiten als Skripte im Scratchpad: Demoseite (Skizze → Figur), Testseite mit den fünf Figuren, SRT-Seite
+     „Vierervektoren“ (ko-/kontravariant an einer Figur, Metrik, Minkowski, Viererimpuls, kinetische Energie mit
+     partieller Integration und Substitution). Lokal im Firefox gegen das nachgestellte Backend prüfen.
+  3. Doku, Regeln. Ehrlich festhalten, was an der SRT-Seite NICHT ging.
+  4. Nach dem Push: Pi bauen; Rubrik „Physik“ / Kapitel „Spezielle Relativitätstheorie“ anlegen; die drei Seiten
+     unter dem Konto des Nutzers schreiben.
+- Stück 1 fertig (15:56), `npx tsc -b` und `npm run build` grün: `jsxgraph` 1.14.3 in `package.json`; neu
+  `blockcontent/figure/` (`FigureView.tsx`, `JsxGraphFigureModule.ts`, `FigureBoundingBox.ts`, `figureTexts.ts`),
+  `elements/FigureElementView.tsx`, `editor/FigureElementEditor.tsx`, `editor/NumberField.tsx`,
+  `components/AutoSizeTextArea.tsx` (global, auch vom Code-Feld benutzt); Element `FIGURE` in Format, Leser, Listen;
+  gelöscht: `sketch/`, `SketchEditor`, Element `SKETCH`, ihr CSS. JSXGraph ist ein eigenes Stück (259 kB gepackt),
+  geladen erst mit der ersten Figur. Im Scratchpad geprüft: Die Sprache kann Regler, die von selbst laufen, Text mit
+  Rechnung, Winkel, Pfeile, Flächen unter Kurven; `document` und `window` sind darin nicht erreichbar.
+- Stück 2 fertig (16:02): Skript `…/scratchpad/tools/build_seiten_v3.py` schreibt drei Seiten nach `…/scratchpad/seiten/`:
+  `koordinatentransformation-v3.json` (Figur statt Skizze), `figuren-testseite.json` (5 Figuren),
+  `vierervektoren.json` (5 ContentBoxen, 27 Gleichungen, 2 Figuren, 7 Animationen). Im Firefox gegen das nachgestellte
+  Backend (`serve_manager_v3.py`): alle 8 Figuren gezeichnet, kein Formelfehler, Animation abgespielt; Editor der
+  SRT-Seite: Figur-Text ändern, kaputter Text, Ausschnitt, Formel mit Integral tippen, speichern. Die Achsen zeigen
+  die Null (Vorgabe des Nutzers zu Skizzen); die Koordinaten beim Zeigen auf einen Punkt kommen von der Bibliothek.
+- Stück 3 fertig (16:02): `docu/blockcontent.md` (Figuren; neuer Abschnitt „Was an der ersten schwierigen Seite gefehlt
+  hat“), `KNOWLEDGE.md`, Konzept; Regeln `frontend-structure`, `MEMORY.md`.
+- **Stand 16:02: lokal fertig, `tsc` und `build` grün, vorgemerkt, NICHT committet (macht der Nutzer). Als Nächstes Stück
+  4, sobald er gepusht hat:** Pi `git pull`, NUR frontend bauen und starten; DANN sofort (a) die Demoseite neu
+  schreiben (sie hat auf dem Pi noch `SKETCH` → „unbekanntes Element“), (b) Rubrik `PHYSIK` „Physik“ und Kapitel
+  `SPEZIELLE_RELATIVITAETSTHEORIE` „Spezielle Relativitätstheorie“ anlegen (`POST /api/admin/knowledge-section`),
+  (c) die Seiten „Figuren (Testseite)“ und „Vierervektoren“ anlegen (`POST /api/admin/knowledge-page`). Ist das
+  Scratchpad weg: die Seiten stehen dann nirgends sonst, Skript nach `docu/blockcontent.md` neu schreiben.
+
+## 2026-11-27 15:41 – Offene Fragen des Nutzers: Animationen anlegen/verdrahten, komplexere Skizzen und Plots (Bibliothek?)
+
+- Ansage: „ok ob wir damit arbeiten können kann ich noch nicht abschlißend sagen, da ich noch nicht genau weiss wie wir
+  die animationen anlegen und verdrahten und wie wir komplexere skizzen anlegen. vielleicht benötigen wir da auch noch
+  die einere oder andere biliothek. zum beispiel spektrallinien einzeichnen können oder die bolzmannverteilung plotten
+  oder der efeld in einem leiter oder die ortskurve eines pendels plotten, solche dinge müssen wir ja auch alles
+  darstellen und anlegen können. oder doppelspaltexperiment“
+- Plan: NICHTS im Projekt bauen. (1) Im Scratchpad eine fertige Bibliothek für Skizzen/Plots an seinen fünf Beispielen
+  ausprobieren (neueste Version, Lizenz, als Text definierbar); (2) kurz antworten: wie Animationen heute angelegt
+  werden (am Beispiel), was sie nicht können; ein Vorschlag für Skizzen mit Beleg; Frage nummeriert.
+- Schritt 1 fertig (15:43), nur im Scratchpad (`…/scratchpad/skizzencheck`), nichts im Projekt: JSXGraph 1.14.3 (neueste
+  Version laut npm, 2026-11-06, MIT oder LGPL, keine Abhängigkeiten, 996 kB, gepackt 259 kB). Eine Figur als TEXT in
+  der Sprache der Bibliothek (JessieCode, `board.jc.parse(text)`), im Firefox ohne Fenster gezeichnet, 0 Fehler:
+  Spektrallinien (Balmer, farbige Strecken auf einer Achse in nm), Maxwell-Boltzmann mit Regler T, E-Feld einer
+  Punktladung als Vektorfeld, Ortskurve eines Pendels mit Zeit-Regler, Doppelspalt-Intensität mit Reglern d und b.
+  Bild: `…/scratchpad/shots/600-skizzencheck.png` (links der Text, rechts die Figur). NICHT ausprobiert: Regler
+  bewegen im Test (mein Prüfskript griff daneben), Differentialgleichungen, 3D, bewegte Wellenbilder, Einbau in React.
+- Schritt 2 fertig (15:43): Antwort an den Nutzer: wie Animationen heute angelegt werden (ids in der Gleichung, Popup,
+  Übergang n → n+1) und was sie nicht können (nichts über mehrere Gleichungen, keine Verbindung zu Skizzen);
+  Vorschlag JSXGraph als Element „Figur“ (Text links, Figur rechts), Frage 1 ja/nein/anders.
+- **Stand 15:43: warte auf die Antwort. Im Projekt kein Code geändert.** Nicht committet: `docu/arbeitsprotokoll.md`,
+  `docu/blockcontent.md`.
+
+## 2026-11-27 15:32 – Push auf den Pi bringen: Editor in Zeilen, ContentBox (Stück 5 des Eintrags 15:23)
+
+- Ansage: „ist gepusht, musst du noch bauen oder hast du schon?“
+- Plan: (1) Stand prüfen; (2) Pi: `git pull`, nur frontend bauen und starten; (3) SOFORT die Seite mit `CONTENT_BOX`
+  neu schreiben (PUT nur `content`), abmelden; (4) von außen ansehen; (5) `setup.md`, Protokoll.
+- Schritt 1 fertig (15:32): lokal = `origin/main` = `cd569a8` („solrmapping5“), 35 Dateien seit `04098bd`, nur
+  Frontend und Doku.
+- Schritt 2 fertig (15:33): Pi auf `cd569a8`, `frontend` gebaut (8 s), gestartet 15:33:10, altes Image `:vorher`.
+- Schritt 3 fertig (15:33): Seite mit `CONTENT_BOX` neu geschrieben (8 441 Zeichen), abgemeldet 204, gegengelesen.
+- Schritt 4 fertig (15:35): von außen im Firefox: Seite, Abspielen; angemeldet nur angesehen: Editor in Zeilen,
+  nicht in einer ContentBox, kein eigener Scrollbereich, Ansicht JSON, Popup; abgemeldet 204. Keine Fehler.
+- Schritt 5 fertig (15:35): `setup.md`, `docu/blockcontent.md`; `/tmp` auf dem Pi leer, Verbindung zu.
+- **FERTIG 15:35. Der Nutzer sieht es sich an.** Nicht committet: `docu/arbeitsprotokoll.md`, `docu/blockcontent.md`.
+  Auf dem Pi NICHT ausprobiert: im Editor ändern und speichern.
+
 ## 2026-11-27 15:23 – Editor umbauen: je ContentBox links ihre Definition, rechts sie selbst; ein Scrollbalken; „Kasten“ heißt ContentBox
 
 - Ansage (nach dem Ansehen auf dem Pi): „darstellung viel besser ich will aber im editor kein inbox gescrolle! wir

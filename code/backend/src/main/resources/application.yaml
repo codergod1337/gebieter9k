@@ -479,6 +479,16 @@ gebiter:
       author-users-guid: authorUsersGuid
       created-at: createdAt
       last-changed-at: lastChangedAt
+      # Mehrwertig, setzt nur das Backend aus dem Inhalt: die GUIDs der Gleichungen der Seite. Damit lässt sich zu
+      # einer Gleichung ihre Seite auflösen (POST …/knowledge-page/resolve mit equationGuid).
+      equation-guids: equationGuids
+    # Wie die Stücke im JSON des Inhalts heißen, die das Backend selbst liest (KnowledgeContentReader); das Format
+    # steht in docu/blockcontent.md.
+    content:
+      elements-key: elements
+      type-key: type
+      guid-key: guid
+      equation-type: EQUATION
   file:
     # Der Solr-Kern der Dateien, er muss in gebiter.solr.core-keys stehen.
     solr-core-key: FILE

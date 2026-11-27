@@ -4,11 +4,11 @@ import { ContentBoxElementView } from './ContentBoxElementView.tsx'
 import type { ContentElement } from './ContentElement.ts'
 import type { ElementViewProps } from './ElementViewProps.ts'
 import { EquationElementView } from './EquationElementView.tsx'
+import { FigureElementView } from './FigureElementView.tsx'
 import { HeadingElementView } from './HeadingElementView.tsx'
 import { HintElementView } from './HintElementView.tsx'
 import { ListElementView } from './ListElementView.tsx'
 import { ParagraphElementView } from './ParagraphElementView.tsx'
-import { SketchElementView } from './SketchElementView.tsx'
 
 /** Je Art eines Elements seine Anzeige. */
 type ElementViews = {
@@ -27,5 +27,5 @@ export const ELEMENT_VIEWS: ElementViews = {
   HINT: HintElementView,
   LIST: ListElementView,
   EQUATION: EquationElementView,
-  SKETCH: SketchElementView,
+  FIGURE: FigureElementView,
 }

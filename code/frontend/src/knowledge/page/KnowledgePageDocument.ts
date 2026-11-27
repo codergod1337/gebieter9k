@@ -25,6 +25,8 @@ export type KnowledgeSolrFieldNameSet = {
   authorUsersGuid: string
   createdAt: string
   lastChangedAt: string
+  /** Mehrwertig: die GUIDs der Gleichungen im Inhalt der Seite; setzt das Backend. */
+  equationGuids: string
 }
 
 /** Exakte Sollwerte zum Auflösen von Seiten; ein Wert, der fehlt, filtert nicht. */
@@ -34,6 +36,8 @@ export type KnowledgePageResolveRequest = {
   chapterKey?: string
   subChapterKey?: string
   pageKey?: string
+  /** Die GUID einer Gleichung: die Seite, in deren Inhalt sie steht. */
+  equationGuid?: string
 }
 
 /** Die Texte eines mehrwertigen Feldes einer Seite, z. B. ihre Schlagwörter; leer, wenn das Dokument das Feld nicht hat. */

@@ -13,7 +13,7 @@ type EquationAnimationProviderProps = {
   /** Die Gleichungen des Inhalts in ihrer Reihenfolge: Die „nächste“ ist die mit der nächsten Nummer. */
   equations: EquationElement[]
   /** Die Kennungen der Gleichungen, die gerade zu sehen sind (nicht in einem geschlossenen Aufklapper). */
-  visibleEquationIds: string[]
+  visibleEquationGuids: string[]
   /** Der gezeichnete Inhalt. */
   children: ReactNode
 }
@@ -24,7 +24,7 @@ const NO_CANCELLED_FORMULA_IDS: string[] = []
 type PreparedAnimation = {
   equationAnimation: EquationAnimation
   /** Die Kennung der nächsten Gleichung im Inhalt. */
-  nextEquationId: string
+  nextEquationGuid: string
   /** Die ids der Teile, die die Animation durchstreicht: immer dieselbe Liste, solange sich der Inhalt nicht ändert. */
   cancelledFormulaIds: string[]
 }
@@ -35,46 +35,46 @@ type PreparedAnimation = {
  * ihren Zusatz: die Notiz mit dem Abspiel-Knopf und die Teile, die durchgestrichen stehen. Der Knopf steht nur da, wenn
  * die Gleichung UND die nächste zu sehen sind; sonst gäbe es nichts abzuspielen.
  */
-export function EquationAnimationProvider({ animations, equations, visibleEquationIds, children }: EquationAnimationProviderProps) {
+export function EquationAnimationProvider({ animations, equations, visibleEquationGuids, children }: EquationAnimationProviderProps) {
   const equationAnimationPlayer = useEquationAnimationPlayer()
 
-  const preparedAnimationsByEquationId = useMemo(() => {
+  const preparedAnimationsByEquationGuid = useMemo(() => {
     const preparedAnimations = new Map<string, PreparedAnimation>()
     for (const equationAnimation of animations) {
-      const fromEquationIndex = equations.findIndex((equation) => equation.id === equationAnimation.fromEquationId)
+      const fromEquationIndex = equations.findIndex((equation) => equation.guid === equationAnimation.fromEquationGuid)
       const nextEquationIndex = fromEquationIndex + 1
       const hasNextEquation = fromEquationIndex >= 0 && nextEquationIndex < equations.length
       if (!hasNextEquation) {
         continue
       }
-      const nextEquationId = equations[nextEquationIndex].id
+      const nextEquationGuid = equations[nextEquationIndex].guid
       const cancelledFormulaIds = getCancelledFormulaIds(equationAnimation)
-      preparedAnimations.set(equationAnimation.fromEquationId, { equationAnimation, nextEquationId, cancelledFormulaIds })
+      preparedAnimations.set(equationAnimation.fromEquationGuid, { equationAnimation, nextEquationGuid, cancelledFormulaIds })
     }
     return preparedAnimations
   }, [animations, equations])
 
   const equationAddition: EquationAddition = {
-    getCancelledFormulaIds: (equationId) => {
-      const preparedAnimation = preparedAnimationsByEquationId.get(equationId)
-      if (preparedAnimation === undefined || !equationAnimationPlayer.isCancellationShown(equationId)) {
+    getCancelledFormulaIds: (equationGuid) => {
+      const preparedAnimation = preparedAnimationsByEquationGuid.get(equationGuid)
+      if (preparedAnimation === undefined || !equationAnimationPlayer.isCancellationShown(equationGuid)) {
         return NO_CANCELLED_FORMULA_IDS
       }
       return preparedAnimation.cancelledFormulaIds
     },
     renderAddition: (equation) => {
-      const preparedAnimation = preparedAnimationsByEquationId.get(equation.id)
+      const preparedAnimation = preparedAnimationsByEquationGuid.get(equation.guid)
       if (preparedAnimation === undefined) {
         return null
       }
-      const bothVisible = visibleEquationIds.includes(equation.id) && visibleEquationIds.includes(preparedAnimation.nextEquationId)
+      const bothVisible = visibleEquationGuids.includes(equation.guid) && visibleEquationGuids.includes(preparedAnimation.nextEquationGuid)
       if (!bothVisible) {
         return null
       }
       return (
         <EquationAnimationNote
           equationAnimation={preparedAnimation.equationAnimation}
-          onPlay={() => equationAnimationPlayer.playAnimation(preparedAnimation.equationAnimation, preparedAnimation.nextEquationId)}
+          onPlay={() => equationAnimationPlayer.playAnimation(preparedAnimation.equationAnimation, preparedAnimation.nextEquationGuid)}
         />
       )
     },

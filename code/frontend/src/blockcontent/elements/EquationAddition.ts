@@ -8,7 +8,7 @@ import type { EquationElement } from './ContentElement.ts'
  */
 export type EquationAddition = {
   /** Die ids der Teile dieser Gleichung, die durchgestrichen stehen. */
-  getCancelledFormulaIds: (equationId: string) => string[]
+  getCancelledFormulaIds: (equationGuid: string) => string[]
   /** Was am Ende der Zeile dieser Gleichung zusätzlich steht; `null` ohne. */
   renderAddition: (equation: EquationElement) => ReactNode
 }

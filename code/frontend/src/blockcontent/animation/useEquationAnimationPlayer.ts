@@ -1,6 +1,6 @@
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { EQUATION_ID_ATTRIBUTE, EQUATION_SIDE_ATTRIBUTE } from '../elements/EquationElementView.tsx'
+import { EQUATION_GUID_ATTRIBUTE, EQUATION_SIDE_ATTRIBUTE } from '../elements/EquationElementView.tsx'
 import { findFormulaIdElement } from '../formula/formulaIds.ts'
 import type { EquationAnimation } from './EquationAnimation.ts'
 import { type Flight, FlightAnimator } from './FlightAnimator.ts'
@@ -10,9 +10,9 @@ export type EquationAnimationPlayer = {
   /** Für das Element, in dem alle Gleichungen des Inhalts stehen: die Ebene, in der die Teile wandern. */
   flightLayerRef: RefObject<HTMLDivElement | null>
   /** Ob in dieser Gleichung durchgestrichen steht, was ihre Animation kürzt: erst, nachdem sie abgespielt wurde. */
-  isCancellationShown: (equationId: string) => boolean
+  isCancellationShown: (equationGuid: string) => boolean
   /** Spielt die Animation ab: von ihrer Gleichung zur nächsten (deren Kennung der Aufrufer nennt). */
-  playAnimation: (equationAnimation: EquationAnimation, nextEquationId: string) => void
+  playAnimation: (equationAnimation: EquationAnimation, nextEquationGuid: string) => void
 }
 
 /** So findet man an einer Gleichung die Notiz ihrer Umformung und darin das Stück, aus dem neue Teile kommen. */
@@ -37,8 +37,8 @@ function readFlightDurationMilliseconds(flightLayer: HTMLElement): number {
 }
 
 /** Die Zeile einer Gleichung in der Ebene; `null`, wenn sie gerade nicht gezeichnet ist (z. B. in einem geschlossenen Aufklapper). */
-function findEquationRow(flightLayer: HTMLElement, equationId: string): HTMLElement | null {
-  const equationRowSelector = '[' + EQUATION_ID_ATTRIBUTE + '="' + CSS.escape(equationId) + '"]'
+function findEquationRow(flightLayer: HTMLElement, equationGuid: string): HTMLElement | null {
+  const equationRowSelector = '[' + EQUATION_GUID_ATTRIBUTE + '="' + CSS.escape(equationGuid) + '"]'
   return flightLayer.querySelector<HTMLElement>(equationRowSelector)
 }
 
@@ -79,7 +79,7 @@ function findCauseSourceElement(equationRow: HTMLElement): HTMLElement | null {
 export function useEquationAnimationPlayer(): EquationAnimationPlayer {
   const flightLayerRef = useRef<HTMLDivElement>(null)
   const runningAnimatorRef = useRef<FlightAnimator | null>(null)
-  const [cancellationShownEquationIds, setCancellationShownEquationIds] = useState<string[]>([])
+  const [cancellationShownEquationGuids, setCancellationShownEquationGuids] = useState<string[]>([])
 
   useEffect(() => {
     return () => {
@@ -90,20 +90,20 @@ export function useEquationAnimationPlayer(): EquationAnimationPlayer {
     }
   }, [])
 
-  function isCancellationShown(equationId: string) {
-    return cancellationShownEquationIds.includes(equationId)
+  function isCancellationShown(equationGuid: string) {
+    return cancellationShownEquationGuids.includes(equationGuid)
   }
 
-  function playAnimation(equationAnimation: EquationAnimation, nextEquationId: string) {
-    const fromEquationId = equationAnimation.fromEquationId
+  function playAnimation(equationAnimation: EquationAnimation, nextEquationGuid: string) {
+    const fromEquationGuid = equationAnimation.fromEquationGuid
     // sofort zeichnen: Die Gleichung zeigt ab jetzt, was gekürzt wird, die nächste steht wieder ohne Strich da; gleich
     // danach werden beide ausgemessen
     flushSync(() => {
-      setCancellationShownEquationIds((shownEquationIds) => {
-        const otherShownEquationIds = shownEquationIds.filter((shownEquationId) => {
-          return shownEquationId !== fromEquationId && shownEquationId !== nextEquationId
+      setCancellationShownEquationGuids((shownEquationGuids) => {
+        const otherShownEquationGuids = shownEquationGuids.filter((shownEquationGuid) => {
+          return shownEquationGuid !== fromEquationGuid && shownEquationGuid !== nextEquationGuid
         })
-        return [...otherShownEquationIds, fromEquationId]
+        return [...otherShownEquationGuids, fromEquationGuid]
       })
     })
 
@@ -119,8 +119,8 @@ export function useEquationAnimationPlayer(): EquationAnimationPlayer {
     if (durationMilliseconds <= 0) {
       return
     }
-    const sourceRow = findEquationRow(flightLayer, fromEquationId)
-    const targetRow = findEquationRow(flightLayer, nextEquationId)
+    const sourceRow = findEquationRow(flightLayer, fromEquationGuid)
+    const targetRow = findEquationRow(flightLayer, nextEquationGuid)
     if (sourceRow === null || targetRow === null) {
       return
     }

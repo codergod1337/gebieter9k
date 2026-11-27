@@ -5,6 +5,9 @@ const ESCAPE_SIGN = '\\'
 const BOLD_MARKER = '**'
 const ITALIC_MARKER = '*'
 const FORMULA_MARKER = '$'
+/** Ein Verweis auf eine Gleichung: `[[equation:<guid>]]`. */
+const EQUATION_REFERENCE_START = '[[equation:'
+const EQUATION_REFERENCE_END = ']]'
 
 /**
  * Liest die Auszeichnung in einem Text (Absatz, Hinweis, Punkt einer Liste), so wie man sie tippt:
@@ -12,6 +15,7 @@ const FORMULA_MARKER = '$'
  * - `**fett**`, `*kursiv*` (auch ineinander),
  * - `[Text](Adresse)` ein Link,
  * - `$r \cos\varphi$` eine Formel mitten im Satz, als LaTeX,
+ * - `[[equation:<guid>]]` ein Verweis auf eine Gleichung des Inhalts: Gezeigt wird ihre Nummer, z. B. „(3)“,
  * - `\` vor einem dieser Zeichen nimmt ihm die Bedeutung.
  *
  * Nachsichtig: Was nicht geschlossen ist (ein einzelner Stern, eine offene Klammer), bleibt einfach Text. So zeigt die
@@ -67,6 +71,17 @@ export class InlineMarkupParser {
           const italicText = text.slice(position + 1, italicEnd)
           nodes.push({ type: 'ITALIC', children: this.parse(italicText) })
           position = italicEnd + 1
+          continue
+        }
+      }
+      if (text.startsWith(EQUATION_REFERENCE_START, position)) {
+        const guidStart = position + EQUATION_REFERENCE_START.length
+        const guidEnd = text.indexOf(EQUATION_REFERENCE_END, guidStart)
+        if (guidEnd > guidStart) {
+          closePlainText()
+          const equationGuid = text.slice(guidStart, guidEnd).trim()
+          nodes.push({ type: 'EQUATION_REFERENCE', equationGuid })
+          position = guidEnd + EQUATION_REFERENCE_END.length
           continue
         }
       }

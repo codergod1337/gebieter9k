@@ -7,14 +7,11 @@ import { CollapsibleElementEditor } from './CollapsibleElementEditor.tsx'
 import { ContentBoxElementEditor } from './ContentBoxElementEditor.tsx'
 import type { ElementEditorProps } from './ElementEditorProps.ts'
 import { EquationElementEditor } from './EquationElementEditor.tsx'
+import { FigureElementEditor } from './FigureElementEditor.tsx'
 import { HeadingElementEditor } from './HeadingElementEditor.tsx'
 import { HintElementEditor } from './HintElementEditor.tsx'
 import { ListElementEditor } from './ListElementEditor.tsx'
 import { ParagraphElementEditor } from './ParagraphElementEditor.tsx'
-import { SketchElementEditor } from './SketchElementEditor.tsx'
-
-/** Liefert eine feste Kennung, die es im Inhalt noch nicht gibt, z. B. `e3` zur Vorsilbe `e`. */
-type FreeIdCreator = (prefix: string) => string
 
 /** Alles, was der Editor über EINE Art von Element wissen muss. */
 export type ElementKind<Type extends ElementType> = {
@@ -23,8 +20,8 @@ export type ElementKind<Type extends ElementType> = {
   label: MultilingualText
   /** Ob das Element nur auf oberster Ebene stehen darf (die ContentBox). */
   topLevelOnly: boolean
-  /** Ein neues, noch leeres Element dieser Art. */
-  createElement: (createFreeId: FreeIdCreator) => ElementJsonOfType<Type>
+  /** Ein neues, noch leeres Element dieser Art; eine Gleichung oder ein Aufklapper bekommt dabei seine feste Kennung (UUID). */
+  createElement: () => ElementJsonOfType<Type>
   /** Der Bearbeiten-Teil. */
   Editor: ComponentType<ElementEditorProps<Type>>
 }
@@ -32,10 +29,6 @@ export type ElementKind<Type extends ElementType> = {
 type ElementKinds = {
   [Type in ElementType]: ElementKind<Type>
 }
-
-/** Die Vorsilben der festen Kennungen: `e1`, `e2` … für Gleichungen, `c1` … für Aufklapper. */
-const EQUATION_ID_PREFIX = 'e'
-const COLLAPSIBLE_ID_PREFIX = 'c'
 
 /**
  * DIE Liste der Elemente im Editor: je Art genau ein Eintrag mit ihrem Namen, ihrem leeren Anfang und ihrem
@@ -85,9 +78,9 @@ export const ELEMENT_KINDS: ElementKinds = {
     type: 'EQUATION',
     label: BLOCK_CONTENT_EDITOR_TEXTS.equationLabel,
     topLevelOnly: false,
-    createElement: (createFreeId) => {
-      const id = createFreeId(EQUATION_ID_PREFIX)
-      return { type: 'EQUATION', id, latex: '' }
+    createElement: () => {
+      const guid = crypto.randomUUID()
+      return { type: 'EQUATION', guid, latex: '' }
     },
     Editor: EquationElementEditor,
   },
@@ -95,24 +88,26 @@ export const ELEMENT_KINDS: ElementKinds = {
     type: 'COLLAPSIBLE',
     label: BLOCK_CONTENT_EDITOR_TEXTS.collapsibleLabel,
     topLevelOnly: false,
-    createElement: (createFreeId) => {
-      const id = createFreeId(COLLAPSIBLE_ID_PREFIX)
+    createElement: () => {
+      const guid = crypto.randomUUID()
       const title = getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.newCollapsibleTitle)
-      return { type: 'COLLAPSIBLE', id, title, elements: [] }
+      return { type: 'COLLAPSIBLE', guid, title, elements: [] }
     },
     Editor: CollapsibleElementEditor,
   },
-  SKETCH: {
-    type: 'SKETCH',
-    label: BLOCK_CONTENT_EDITOR_TEXTS.sketchLabel,
+  FIGURE: {
+    type: 'FIGURE',
+    label: BLOCK_CONTENT_EDITOR_TEXTS.figureLabel,
     topLevelOnly: false,
     createElement: () => ({
-      type: 'SKETCH',
-      sketch: { width: 340, height: 280, originX: 52, originY: 228, unitLength: 48, axisMaxX: 5.6, axisMaxY: 4.3, description: '', elements: [] },
+      type: 'FIGURE',
+      boundingBox: [-6, 3, 6, -3],
+      aspectRatio: 2,
+      code: "axis([0, 0], [1, 0]);\naxis([0, 0], [0, 1]);\nfunctiongraph(function (x) { return sin(x); }) << strokeWidth: 2 >>;",
     }),
-    Editor: SketchElementEditor,
+    Editor: FigureElementEditor,
   },
 }
 
 /** In dieser Reihenfolge bietet der Editor die Arten zum Anlegen an. */
-export const ELEMENT_KIND_ORDER: ElementType[] = ['CONTENT_BOX', 'HEADING', 'PARAGRAPH', 'LIST', 'HINT', 'EQUATION', 'COLLAPSIBLE', 'SKETCH']
+export const ELEMENT_KIND_ORDER: ElementType[] = ['CONTENT_BOX', 'HEADING', 'PARAGRAPH', 'LIST', 'HINT', 'EQUATION', 'COLLAPSIBLE', 'FIGURE']

@@ -8,7 +8,7 @@ import type { ElementViewProps } from './ElementViewProps.ts'
  */
 export function CollapsibleElementView({ element, children }: ElementViewProps<'COLLAPSIBLE'>) {
   const collapsibleOpenState = useCollapsibleOpenState()
-  const open = collapsibleOpenState.openCollapsibleIds.includes(element.id)
+  const open = collapsibleOpenState.openCollapsibleGuids.includes(element.guid)
   let iconClassName = 'bi bi-chevron-right me-1'
   if (open) {
     iconClassName = 'bi bi-chevron-down me-1'
@@ -20,7 +20,7 @@ export function CollapsibleElementView({ element, children }: ElementViewProps<'
         variant="outline-secondary"
         className="blockcontent-collapsible-toggle"
         aria-expanded={open}
-        onClick={() => collapsibleOpenState.toggleCollapsible(element.id)}>
+        onClick={() => collapsibleOpenState.toggleCollapsible(element.guid)}>
         <i className={iconClassName} aria-hidden="true"></i>
         {element.title}
       </Button>

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { FormulaView } from '../formula/FormulaView.tsx'
+import { EquationReferenceLink } from './EquationReferenceLink.tsx'
 import type { InlineNode } from './InlineNode.ts'
 
 type InlineTextViewProps = {
@@ -15,7 +16,7 @@ const INTERNAL_ADDRESS_PREFIX = '/'
 const TRAILING_PUNCTUATION_PATTERN = /^[.,;:!?)]+/
 
 /**
- * Zeichnet einen Text mit Auszeichnung: fett, kursiv, Links und Formeln mitten im Satz. Kein HTML wird eingesetzt, jedes
+ * Zeichnet einen Text mit Auszeichnung: fett, kursiv, Links, Formeln mitten im Satz und Verweise auf Gleichungen. Kein HTML wird eingesetzt, jedes
  * Stück ist ein eigenes Element. Ein Link innerhalb der App bleibt in der App, ein Link nach außen öffnet ein neues
  * Fenster und gibt die Herkunft nicht weiter.
  */
@@ -54,6 +55,8 @@ export function InlineTextView({ nodes }: InlineTextViewProps) {
         }
         return <span key={nodeIndex}>{label}</span>
       }
+      case 'EQUATION_REFERENCE':
+        return <EquationReferenceLink key={nodeIndex} equationGuid={node.equationGuid} />
       case 'FORMULA': {
         let trailingPunctuation = ''
         const followingNode = nodeIndex + 1 < siblingNodes.length ? siblingNodes[nodeIndex + 1] : null

@@ -113,31 +113,6 @@
     }
   }
 
-  .equation-animation-popup-equations {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .equation-animation-popup-equation {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    width: 100%;
-    padding: 0.35rem 0.5rem;
-    overflow: auto hidden;
-    text-align: left;
-  }
-
-  .equation-animation-popup-number {
-    flex: 0 0 auto;
-    font-size: 0.85rem;
-  }
-
-  .equation-animation-popup-mark {
-    margin-left: auto;
-  }
-
   .equation-animation-editor {
     display: flex;
     flex-direction: column;
@@ -206,27 +181,10 @@
     color: var(--ink-muted);
   }
 
-  /* Popup „Animationen“: die Gleichungen als wählbare Zeilen, die gewählte in Bordeaux gefasst */
-  .equation-animation-popup-equation {
-    border: 1px solid var(--bs-border-color);
-    border-radius: var(--bs-border-radius);
-    background: var(--bs-body-bg);
-    color: inherit;
-  }
-
-  .equation-animation-popup-equation-selected {
-    border-color: var(--bordeaux-500);
-    background: var(--bs-tertiary-bg);
-  }
-
-  .equation-animation-popup-number,
   .equation-animation-editor-label,
   .equation-animation-editor-hint,
   .equation-animation-editor-fixed {
     color: var(--bs-secondary-color);
   }
 
-  .equation-animation-popup-mark {
-    color: var(--bordeaux-600);
-  }
 }

@@ -5,7 +5,7 @@ import Modal from 'react-bootstrap/Modal'
 import '../../styles/animation.css'
 import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguage.ts'
 import type { EquationJson } from '../elements/ElementJson.ts'
-import { FormulaView } from '../formula/FormulaView.tsx'
+import { EquationChoiceList } from '../elements/EquationChoiceList.tsx'
 import { ANIMATION_TEXTS } from './animationTexts.ts'
 import { findAnimationFrom, replaceAnimationFrom } from './equationAnimationChanges.ts'
 import { EquationAnimationEditor } from './EquationAnimationEditor.tsx'
@@ -22,16 +22,16 @@ type EquationAnimationPopupProps = {
 
 /**
  * Das Popup „Animationen“ (Nutzer 2026-11-27: „animationen stelle ich mir in einem popup vor“, „das hat aber nichts im
- * editor zu suchen“): links die Übersicht aller Gleichungen des Inhalts mit ihrer Nummer, rechts der Übergang der
+ * editor zu suchen“): links die Übersicht aller Gleichungen des Inhalts mit ihrer Nummer ({@link EquationChoiceList}), rechts der Übergang der
  * gewählten Gleichung zur nächsten ({@link EquationAnimationEditor}). Das Popup ändert nur den Teil `animations` des
  * Inhalts; die Elemente fasst es nicht an. Es hält den Fokus nicht fest: Die Tastatur und die Menüs des Formelfelds
  * liegen außerhalb.
  */
 export function EquationAnimationPopup({ equations, animations, onAnimationsChange, onClose }: EquationAnimationPopupProps) {
-  const [selectedEquationId, setSelectedEquationId] = useState<string | null>(null)
+  const [selectedEquationGuid, setSelectedEquationGuid] = useState<string | null>(null)
 
   // gewählt ist die angeklickte Gleichung; ohne Klick (oder wenn es sie nicht mehr gibt) die erste
-  let selectedEquationIndex = equations.findIndex((equation) => equation.id === selectedEquationId)
+  let selectedEquationIndex = equations.findIndex((equation) => equation.guid === selectedEquationGuid)
   if (selectedEquationIndex < 0 && equations.length > 0) {
     selectedEquationIndex = 0
   }
@@ -44,6 +44,7 @@ export function EquationAnimationPopup({ equations, animations, onAnimationsChan
       nextEquation = equations[nextEquationIndex]
     }
   }
+  const animatedEquationGuids = animations.map((animation) => animation.from)
 
   return (
     <Modal show onHide={onClose} size="xl" scrollable enforceFocus={false}>
@@ -52,46 +53,26 @@ export function EquationAnimationPopup({ equations, animations, onAnimationsChan
       </Modal.Header>
       <Modal.Body>
         <p className="equation-animation-editor-hint">{getTextInCurrentLanguage(ANIMATION_TEXTS.popupIntro)}</p>
-        {equations.length === 0 && <p>{getTextInCurrentLanguage(ANIMATION_TEXTS.noEquations)}</p>}
+        {equations.length === 0 && <EquationChoiceList label={getTextInCurrentLanguage(ANIMATION_TEXTS.equationsLabel)} equations={equations} onChoose={setSelectedEquationGuid} />}
         {selectedEquation !== null && (
           <div className="equation-animation-popup">
-            <div className="equation-animation-popup-equations" role="listbox" aria-label={getTextInCurrentLanguage(ANIMATION_TEXTS.equationsLabel)}>
-              {equations.map((equation, equationIndex) => {
-                const selected = equationIndex === selectedEquationIndex
-                const hasAnimation = findAnimationFrom(animations, equation.id) !== null
-                let rowClassName = 'equation-animation-popup-equation'
-                if (selected) {
-                  rowClassName = 'equation-animation-popup-equation equation-animation-popup-equation-selected'
-                }
-                return (
-                  <button
-                    key={equation.id}
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    className={rowClassName}
-                    onClick={() => setSelectedEquationId(equation.id)}>
-                    <span className="equation-animation-popup-number">({equationIndex + 1})</span>
-                    <FormulaView latex={equation.latex} displayMode="INLINE" />
-                    {hasAnimation && (
-                      <i
-                        className="bi bi-play-circle equation-animation-popup-mark"
-                        role="img"
-                        aria-label={getTextInCurrentLanguage(ANIMATION_TEXTS.hasAnimation)}></i>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
+            <EquationChoiceList
+              label={getTextInCurrentLanguage(ANIMATION_TEXTS.equationsLabel)}
+              equations={equations}
+              selectedEquationGuid={selectedEquation.guid}
+              markedEquationGuids={animatedEquationGuids}
+              markLabel={getTextInCurrentLanguage(ANIMATION_TEXTS.hasAnimation)}
+              onChoose={setSelectedEquationGuid}
+            />
             <EquationAnimationEditor
-              key={selectedEquation.id}
+              key={selectedEquation.guid}
               equation={selectedEquation}
               equationNumber={selectedEquationIndex + 1}
               nextEquation={nextEquation}
-              animation={findAnimationFrom(animations, selectedEquation.id)}
+              animation={findAnimationFrom(animations, selectedEquation.guid)}
               onAnimationChange={(changedAnimation) => {
-                const fromEquationId = equations[selectedEquationIndex].id
-                onAnimationsChange(replaceAnimationFrom(animations, fromEquationId, changedAnimation))
+                const fromEquationGuid = equations[selectedEquationIndex].guid
+                onAnimationsChange(replaceAnimationFrom(animations, fromEquationGuid, changedAnimation))
               }}
             />
           </div>

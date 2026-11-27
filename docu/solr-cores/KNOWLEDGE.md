@@ -19,7 +19,7 @@ Wie beim Kern FILE geht eine Seite als **Feld-Map** zum Client (jedes Feld unter
 
 ## Felder
 
-Stand 2026-11-27 (`solr_field` ids 44–61, dazu die Referenz `wtf`).
+Stand 2026-11-27 (`solr_field` ids 44–61, dazu die Referenz `wtf`; `equationGuids` kommt mit dem Bau vom 2026-11-27 dazu, angelegt über `POST /api/admin/solr-field`).
 
 | Pos. | Feld | Typ | indexiert | gespeichert | mehrwertig | docValues | Pflicht | Suggest | NGram | vom Client | Suchgewicht | lesen ab | Anzeigename | Beschreibung |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -34,7 +34,7 @@ Stand 2026-11-27 (`solr_field` ids 44–61, dazu die Referenz `wtf`).
 | 8 | `listingPosition` | LONG | ja | ja |  | ja |  |  |  |  | -1 | ANY | Platz | Reihenfolge der Seiten in ihrem Kapitel. Setzt das Backend. |
 | 9 | `title` | TEXT_EDGE | ja | ja |  |  | ja |  | ja | ja | 5 | ANY | Titel | Überschrift der Seite, wird beim Tippen gefunden. |
 | 10 | `summary` | TEXT_SUCHE | ja | ja |  |  |  |  |  | ja | 3 | ANY | Zusammenfassung | Ein Satz für die Übersicht des Kapitels und für Treffer der Suche. |
-| 11 | `content` | STRING |  | ja |  |  | ja |  |  | ja | -1 | ANY | Inhalt | Die ganze Seite als ein langer JSON-Text: Elemente (ContentBoxen, Text, Gleichungen, Skizzen) und Animationen. Nur gespeichert, wird nie durchsucht. |
+| 11 | `content` | STRING |  | ja |  |  | ja |  |  | ja | -1 | ANY | Inhalt | Die ganze Seite als ein langer JSON-Text: Elemente (ContentBoxen, Text, Gleichungen, Figuren) und Animationen. Nur gespeichert, wird nie durchsucht. |
 | 12 | `contentFormatVersion` | LONG | ja | ja |  | ja |  |  |  |  | -1 | ANY | Format-Fassung | In welcher Fassung des Formats der Inhalt geschrieben ist. Setzt das Backend. |
 | 13 | `tags` | STRING | ja | ja | ja | ja |  | ja |  | ja | 4 | ANY | Tags | Schlagwörter von Hand, ohne Raute, je Tag ein Wert. |
 | 14 | `status` | STRING | ja | ja |  | ja | ja |  |  | ja | -1 | ADMIN | Status | DRAFT (Entwurf, nur der Admin sieht die Seite), PUBLISHED (veröffentlicht, alle sehen sie) oder DELETED (weich gelöscht). |
@@ -42,6 +42,7 @@ Stand 2026-11-27 (`solr_field` ids 44–61, dazu die Referenz `wtf`).
 | 16 | `authorUsersGuid` | STRING | ja | ja |  | ja |  |  |  |  | -1 | ADMIN | Autor | GUID des Users, der die Seite angelegt hat. Setzt das Backend. |
 | 17 | `createdAt` | DATE | ja | ja |  | ja |  |  |  |  | -1 | ANY | Angelegt am | Zeitpunkt des Anlegens. Setzt das Backend. |
 | 18 | `lastChangedAt` | DATE | ja | ja |  | ja |  |  |  |  | -1 | ANY | Zuletzt geändert | Zeitpunkt der letzten Änderung. Setzt das Backend. |
+| 19 | `equationGuids` | STRING | ja | ja | ja | ja |  |  |  |  | -1 | ANY | Gleichungen | Die GUIDs der Gleichungen im Inhalt der Seite, je Gleichung ein Wert. Setzt das Backend aus dem Inhalt, bei jedem Anlegen und bei jeder Änderung des Inhalts. Damit löst man zu einer Gleichung ihre Seite auf. |
 
 Später, eigener Gang (Nutzer): die aus `content` aufbereiteten Schlagwörter für die Suche als eigenes Feld, das nur das Backend setzt.
 
@@ -79,6 +80,15 @@ So liefert `GET /api/share/knowledge-page/{id}` die Seite an einen Besucher ohne
 - **Ändern:** nur die genannten Felder, ein leerer Wert nimmt das Feld heraus; geprüft wird der Stand, der sich ergibt. Wechselt die Seite das Kapitel, kommt sie dort ans Ende. Mit dem Inhalt wird `contentFormatVersion` neu gesetzt.
 - **Keys sind änderbar:** Ändert sich der Key einer Rubrik, eines Kapitels oder eines Unterkapitels (`KnowledgeSectionService.changeKnowledgeSectionKey`), bekommen ZUERST alle Seiten darunter den neuen Key (Cursor durch den Kern, Pakete von `gebiter.knowledge.key-change-batch-size`), Postgres zuletzt. Bricht es ab, zieht derselbe Aufruf den Rest nach.
 
+## Gleichungen serverweit finden (`equationGuids`)
+
+Vorgabe des Nutzers (2026-11-27): „stelle dann auch sicher dass eine seite also das solr doc ein eigenes multivalued feld hat mit den gleichungs-guids dann können wir eine gleichung serverweit referenzieren. also für die suche. sprich wenn ich eine gleichung habe, kann ich die seite mit der gleichungsguid auflösen und dann direkt zu der jeweiligen gleichung springen […] das bietet sich dann auch für code snippet sehr gut an“.
+
+- Das Backend liest beim Anlegen und bei jeder Änderung des Inhalts die GUIDs aller Elemente der Art `EQUATION` aus dem JSON, auch aus ContentBoxen und Aufklappern ([`KnowledgeContentReader`](../../code/backend/src/main/java/de/gebiter/knowledge/KnowledgeContentReader.java); wie die Stücke im JSON heißen, steht in `gebiter.knowledge.content.*`), und schreibt sie in `equationGuids`. Hat der Inhalt keine Gleichung, fehlt das Feld. Der Client kann das Feld nicht setzen.
+- Auflösen: `POST /api/share/knowledge-page/resolve` (bzw. `/api/admin/…`) mit `{"equationGuid": "<guid>"}` liefert die Seite(n), in deren Inhalt die Gleichung steht; ein Wert, der keine GUID ist, wird abgelehnt (400).
+- Frontend: `/wissen/gleichung/<guid>` ([`KnowledgeEquationPage.tsx`](../../code/frontend/src/knowledge/KnowledgeEquationPage.tsx)) löst so auf und geht zur Seite mit dem Anker `#eq-<guid>`; dort klappt auf, was die Gleichung verbirgt. Ein Verweis im Text auf eine Gleichung einer anderen Seite führt über diese Adresse.
+- Für Code-Schnipsel (später) ist derselbe Weg gedacht: eigene GUID je Schnipsel, eigenes mehrwertiges Feld.
+
 ## Endpunkte
 
 | Methode | Pfad | Controller | überträgt |
@@ -91,7 +101,7 @@ So liefert `GET /api/share/knowledge-page/{id}` die Seite an einen Besucher ohne
 | GET | `/api/share/knowledge-page/{knowledgePageId}` | `KnowledgePageShareController.getPublishedKnowledgePage` | eine veröffentlichte Seite samt Inhalt |
 | POST | `/api/share/knowledge-page/resolve` | `KnowledgePageShareController.resolvePublishedKnowledgePages` | `KnowledgePageResolveRequest`, Liste der veröffentlichten Seiten ohne Inhalt |
 
-`/api/admin/**` nur für ADMIN, `/api/share/**` ohne Token. Auflösen: exakte Sollwerte (`language`, `rubricKey`, `chapterKey`, `subChapterKey`, `pageKey`), ein fehlender Wert filtert nicht; sortiert nach `listingPosition`, höchstens `gebiter.knowledge.resolve-max-rows`. Antworten bei Fehlern: fehlender oder unpassender Wert, unbekanntes Kapitel, kein JSON 400; unbekannte id bzw. für Besucher nicht veröffentlicht 404; `pageKey` im Kapitel vergeben 409; Solr nicht erreichbar 503.
+`/api/admin/**` nur für ADMIN, `/api/share/**` ohne Token. Auflösen: exakte Sollwerte (`language`, `rubricKey`, `chapterKey`, `subChapterKey`, `pageKey`, `equationGuid`), ein fehlender Wert filtert nicht; sortiert nach `listingPosition`, höchstens `gebiter.knowledge.resolve-max-rows`. Antworten bei Fehlern: fehlender oder unpassender Wert, unbekanntes Kapitel, kein JSON 400; unbekannte id bzw. für Besucher nicht veröffentlicht 404; `pageKey` im Kapitel vergeben 409; Solr nicht erreichbar 503.
 
 Beispiele: Anlegen `{"fieldValuesByFieldName": {"language": "de", "rubricKey": "MATHE", "chapterKey": "GRUNDLAGEN", "pageKey": "KOORDINATENTRANSFORMATION", "title": "Koordinatentransformation", "content": "{\"blocks\":[]}", "status": "PUBLISHED"}}`. Veröffentlichen `{"id": "…_de", "fieldValuesByFieldName": {"status": "PUBLISHED"}}`. Weich löschen `{"status": "DELETED"}`. Zusammenfassung herausnehmen `{"summary": ""}`. Alle Seiten eines Kapitels auflösen `{"language": "de", "rubricKey": "MATHE", "chapterKey": "GRUNDLAGEN"}`.
 
@@ -118,7 +128,7 @@ Beispiele: Anlegen `{"fieldValuesByFieldName": {"language": "de", "rubricKey": "
 
 ## Format des Inhalts (`content`, Fassung 2)
 
-Der Inhalt ist das allgemeine Format der Plattform für Inhalte aus Elementen (nicht nur für Wissensseiten): `elements` (ContentBoxen, Abschnitte dazwischen, Absätze, nummerierte Gleichungen als LaTeX, Aufklapper, Skizzen) und getrennt davon `animations` (je Gleichung der Übergang zur nächsten). Format, Formeln, Animationen und Editor stehen in [`docu/blockcontent.md`](../blockcontent.md). `contentFormatVersion` trägt das Backend beim Anlegen und bei jeder Änderung des Inhalts ein (`gebiter.knowledge.content-format-version`, seit 2026-11-27 `2`); eine Seite mit einer älteren Fassung zeigt statt ihres Inhalts den Hinweis, dass sie neu geschrieben werden muss.
+Der Inhalt ist das allgemeine Format der Plattform für Inhalte aus Elementen (nicht nur für Wissensseiten): `elements` (ContentBoxen, Abschnitte dazwischen, Absätze, nummerierte Gleichungen als LaTeX, Aufklapper, Figuren) und getrennt davon `animations` (je Gleichung der Übergang zur nächsten). Format, Formeln, Animationen und Editor stehen in [`docu/blockcontent.md`](../blockcontent.md). `contentFormatVersion` trägt das Backend beim Anlegen und bei jeder Änderung des Inhalts ein (`gebiter.knowledge.content-format-version`, seit 2026-11-27 `2`); eine Seite mit einer älteren Fassung zeigt statt ihres Inhalts den Hinweis, dass sie neu geschrieben werden muss.
 
 ## Getestet
 

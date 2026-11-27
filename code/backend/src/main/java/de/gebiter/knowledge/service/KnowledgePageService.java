@@ -21,6 +21,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import de.gebiter.knowledge.KnowledgeContentReader;
 import de.gebiter.knowledge.KnowledgeSolrFieldNames;
 import de.gebiter.knowledge.dto.KnowledgePageResolveRequest;
 import de.gebiter.knowledge.dto.KnowledgeSolrFieldNameSet;
@@ -47,7 +48,9 @@ import tools.jackson.databind.ObjectMapper;
  * <p>
  * Dieser Service kennt nur die Felder, an denen Regeln hängen: Platz in der Gliederung
  * ({@link KnowledgeSectionService}), {@code pageKey} (eindeutig je Kapitel und Sprache), Titel, Inhalt (ein JSON-Objekt,
- * das nie durchsucht wird), Status, Schlagwörter, Verweise und was das Backend selbst setzt.
+ * das nie durchsucht wird), Status, Schlagwörter, Verweise und was das Backend selbst setzt. Dazu gehört
+ * {@code equationGuids}: die GUIDs der Gleichungen im Inhalt ({@link KnowledgeContentReader}), damit sich zu einer
+ * Gleichung ihre Seite auflösen lässt.
  * <p>
  * Doku: {@code docu/solr-cores/KNOWLEDGE.md}.
  */
@@ -59,6 +62,8 @@ public class KnowledgePageService {
 	private final SolrDocumentFieldService solrDocumentFieldService;
 
 	private final KnowledgeSolrFieldNames knowledgeSolrFieldNames;
+
+	private final KnowledgeContentReader knowledgeContentReader;
 
 	private final KnowledgeSectionService knowledgeSectionService;
 
@@ -80,7 +85,7 @@ public class KnowledgePageService {
 
 	public KnowledgePageService(SolrDocumentService solrDocumentService,
 			SolrDocumentFieldService solrDocumentFieldService, KnowledgeSolrFieldNames knowledgeSolrFieldNames,
-			KnowledgeSectionService knowledgeSectionService, CurrentUsersProvider currentUsersProvider,
+			KnowledgeContentReader knowledgeContentReader, KnowledgeSectionService knowledgeSectionService, CurrentUsersProvider currentUsersProvider,
 			ObjectMapper objectMapper, @Value("${gebiter.knowledge.solr-core-key}") String solrCoreKey,
 			@Value("${gebiter.knowledge.content-format-version}") long contentFormatVersion,
 			@Value("${gebiter.knowledge.content-max-characters}") int contentMaxCharacters,
@@ -89,6 +94,7 @@ public class KnowledgePageService {
 		this.solrDocumentService = solrDocumentService;
 		this.solrDocumentFieldService = solrDocumentFieldService;
 		this.knowledgeSolrFieldNames = knowledgeSolrFieldNames;
+		this.knowledgeContentReader = knowledgeContentReader;
 		this.knowledgeSectionService = knowledgeSectionService;
 		this.currentUsersProvider = currentUsersProvider;
 		this.objectMapper = objectMapper;
@@ -151,6 +157,13 @@ public class KnowledgePageService {
 		fieldValuesByFieldName.put(authorUsersGuidFieldName, authorUsersGuidText);
 		fieldValuesByFieldName.put(createdAtFieldName, now);
 		fieldValuesByFieldName.put(lastChangedAtFieldName, now);
+		String contentFieldName = knowledgeSolrFieldNames.getContent();
+		String content = readText(checkedFieldValues, contentFieldName);
+		List<String> equationGuids = knowledgeContentReader.readEquationGuids(content);
+		if (!equationGuids.isEmpty()) {
+			String equationGuidsFieldName = knowledgeSolrFieldNames.getEquationGuids();
+			fieldValuesByFieldName.put(equationGuidsFieldName, equationGuids);
+		}
 		solrDocumentService.createSolrDocument(solrCoreKey, fieldValuesByFieldName);
 
 		SolrDocument createdSolrDocument = doGetSolrDocument(id);
@@ -199,7 +212,8 @@ public class KnowledgePageService {
 	}
 
 	/**
-	 * READ: Löst Seiten auf: alle, die auf die genannten Werte passen, in jedem Status, nach ihrem Platz sortiert, mit
+	 * READ: Löst Seiten auf: alle, die auf die genannten Werte passen (auch: in deren Inhalt die Gleichung mit der
+	 * genannten GUID steht), in jedem Status, nach ihrem Platz sortiert, mit
 	 * den Feldern, die der Admin lesen darf, aber ohne den Inhalt. Für die Liste im Wissensmanager.
 	 *
 	 * @throws IllegalArgumentException wenn ein genannter Wert kein Key bzw. keine aktive Sprache ist
@@ -296,6 +310,15 @@ public class KnowledgePageService {
 		if (contentChanged) {
 			String contentFormatVersionFieldName = knowledgeSolrFieldNames.getContentFormatVersion();
 			newValuesByFieldName.put(contentFormatVersionFieldName, contentFormatVersion);
+			// die Gleichungen des neuen Inhalts; hat er keine mehr, fällt das Feld weg (ein Wert null nimmt es heraus)
+			String changedContent = readText(checkedFieldValues, contentFieldName);
+			List<String> equationGuids = knowledgeContentReader.readEquationGuids(changedContent);
+			String equationGuidsFieldName = knowledgeSolrFieldNames.getEquationGuids();
+			if (equationGuids.isEmpty()) {
+				newValuesByFieldName.put(equationGuidsFieldName, null);
+			} else {
+				newValuesByFieldName.put(equationGuidsFieldName, equationGuids);
+			}
 		}
 		Date now = new Date();
 		String lastChangedAtFieldName = knowledgeSolrFieldNames.getLastChangedAt();
@@ -316,6 +339,7 @@ public class KnowledgePageService {
 		String authorUsersGuidFieldName = knowledgeSolrFieldNames.getAuthorUsersGuid();
 		String createdAtFieldName = knowledgeSolrFieldNames.getCreatedAt();
 		String lastChangedAtFieldName = knowledgeSolrFieldNames.getLastChangedAt();
+		String equationGuidsFieldName = knowledgeSolrFieldNames.getEquationGuids();
 		Set<String> backendOwnedFieldNames = new LinkedHashSet<>();
 		backendOwnedFieldNames.add(idFieldName);
 		backendOwnedFieldNames.add(pageGuidFieldName);
@@ -324,6 +348,7 @@ public class KnowledgePageService {
 		backendOwnedFieldNames.add(authorUsersGuidFieldName);
 		backendOwnedFieldNames.add(createdAtFieldName);
 		backendOwnedFieldNames.add(lastChangedAtFieldName);
+		backendOwnedFieldNames.add(equationGuidsFieldName);
 		return backendOwnedFieldNames;
 	}
 
@@ -583,6 +608,13 @@ public class KnowledgePageService {
 		addKeyFilterQuery(queryParams, chapterKeyFieldName, chapterKey);
 		addKeyFilterQuery(queryParams, subChapterKeyFieldName, subChapterKey);
 		addKeyFilterQuery(queryParams, pageKeyFieldName, pageKey);
+		String equationGuid = resolveRequest.equationGuid();
+		if (equationGuid != null) {
+			requireGuid(equationGuid, "equationGuid");
+			String equationGuidsFieldName = knowledgeSolrFieldNames.getEquationGuids();
+			String equationGuidFilterQuery = createTermFilterQuery(equationGuidsFieldName, equationGuid);
+			queryParams.add(CommonParams.FQ, equationGuidFilterQuery);
+		}
 		if (publishedOnly) {
 			String statusFieldName = knowledgeSolrFieldNames.getStatus();
 			String publishedStatusName = KnowledgePageStatus.PUBLISHED.name();
@@ -614,6 +646,15 @@ public class KnowledgePageService {
 			foundKnowledgePages.add(foundKnowledgePage);
 		}
 		return foundKnowledgePages;
+	}
+
+	/** Der Text muss eine GUID sein; sonst lehnt das Backend die Anfrage ab, statt mit Unsinn zu suchen. */
+	private void requireGuid(String text, String name) {
+		try {
+			UUID.fromString(text);
+		} catch (IllegalArgumentException illegalArgumentException) {
+			throw new IllegalArgumentException(name + " ist keine GUID.");
+		}
 	}
 
 	/** Nimmt einen Filter auf einen Key in die Abfrage, wenn der Key genannt ist. */

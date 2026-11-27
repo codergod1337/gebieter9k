@@ -2367,44 +2367,54 @@ body {
 
 /* ================================================================================================ Wissensdatenbank */
 
-:root {
-  /* Die Schrift in Skizzen: eine Serifenschrift mit guten Formelzeichen, je nachdem, was das System hat */
-  --sketch-font-family:
-    'STIX Two Math', 'STIX Two Text', 'Cambria Math', 'Latin Modern Math', 'Latin Modern Roman', 'Times New Roman', Times, serif;
-  /*
-   * Die Palette für hervorgehobene Strecken und Winkel einer Skizze (SketchHighlightKey FIRST bis FIFTH): fünf Töne,
-   * die auf hellem Papier lesbar und klar zu unterscheiden sind.
-   */
-  --sketch-highlight-first: #1d4ed8;
-  --sketch-highlight-second: #15803d;
-  --sketch-highlight-third: var(--bordeaux-500);
-  --sketch-highlight-fourth: #b45309;
-  --sketch-highlight-fifth: #7c3aed;
-}
-
-.sketch-highlight-first {
-  color: var(--sketch-highlight-first);
-}
-
-.sketch-highlight-second {
-  color: var(--sketch-highlight-second);
-}
-
-.sketch-highlight-third {
-  color: var(--sketch-highlight-third);
-}
-
-.sketch-highlight-fourth {
-  color: var(--sketch-highlight-fourth);
-}
-
-.sketch-highlight-fifth {
-  color: var(--sketch-highlight-fifth);
-}
-
-/* Gleichung: ihre Nummer gedämpft */
+/* Gleichung: ihre Nummer gedämpft; als Link auf die Gleichung beim Zeigen in Bordeaux */
 .blockcontent-equation-number {
   color: var(--ink-muted);
+}
+
+.blockcontent-equation-number:hover,
+.blockcontent-equation-number:focus-visible {
+  color: var(--bordeaux-600);
+  text-decoration: underline;
+}
+
+/* die Gleichung, zu der die Adresse gesprungen ist: zart unterlegt mit einer Linie in Bordeaux am Rand */
+.blockcontent-equation-targeted {
+  border-left: 3px solid var(--bordeaux-500);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-tertiary-bg);
+}
+
+/* ein Verweis auf eine Gleichung, die es nicht mehr gibt: als Fehler erkennbar */
+.blockcontent-equation-reference-missing {
+  color: var(--bs-danger-text-emphasis);
+  cursor: help;
+}
+
+/* Gleichungen zur Wahl: wählbare Zeilen, die gewählte in Bordeaux gefasst */
+.equation-choice {
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-body-bg);
+  color: inherit;
+}
+
+.equation-choice:hover {
+  border-color: var(--bordeaux-300);
+}
+
+.equation-choice-selected {
+  border-color: var(--bordeaux-500);
+  background: var(--bs-tertiary-bg);
+}
+
+.equation-choice-number,
+.equation-choice-empty {
+  color: var(--bs-secondary-color);
+}
+
+.equation-choice-mark {
+  color: var(--bordeaux-600);
 }
 
 /* ein Aufklapper: sein Inhalt mit einer zarten Linie am Rand als zusammengehörig erkennbar */
@@ -2474,93 +2484,28 @@ body {
   color: var(--ink-muted);
 }
 
-/* Skizze: Raster ganz zart, Achsen und Hilfslinien gedämpft, Punkte in Schriftfarbe, jede Größe in ihrer Farbe */
-.sketch text {
-  font-family: var(--sketch-font-family);
+/* Figur: ihr Feld als helle Fläche mit zartem Rahmen; ein Fehler im Text der Figur in der Fehlerfarbe */
+.figure-board {
+  border: 1px solid var(--line);
+  border-radius: var(--bs-border-radius);
+  background: var(--paper);
 }
 
-.sketch-grid-line {
-  stroke: var(--line);
+.figure-problem {
+  color: var(--bs-danger-text-emphasis);
 }
 
-.sketch-axis,
-.sketch-axis-tick,
-.sketch-helper-line {
-  stroke: var(--ink-muted);
-}
-
-.sketch-axis-arrow,
-.sketch-axis-name,
-.sketch-axis-number,
-.sketch-helper-dot {
-  fill: var(--ink-muted);
-}
-
-.sketch-quantity-line,
-.sketch-quantity-arc {
-  stroke: currentColor;
-}
-
-.sketch-quantity-label {
-  fill: currentColor;
-}
-
-.sketch-point-dot,
-.sketch-point-label {
-  fill: var(--ink);
-}
-
-.sketch-point-dot {
-  stroke: var(--paper);
-  stroke-width: 1.5;
-  transition:
-    transform 0.15s ease,
-    fill 0.15s ease;
-}
-
-/* Ein Punkt unter dem Zeiger (oder mit der Tastatur erreicht): größer und in Bordeaux */
-.sketch-point:hover .sketch-point-dot,
-.sketch-point:focus-visible .sketch-point-dot {
-  fill: var(--bordeaux-600);
-  transform: scale(1.5);
-}
-
-.sketch-point:focus-visible,
-.sketch-angle-sector:focus-visible {
-  outline: 0;
-}
-
-/* Ein Winkel unter dem Zeiger: Seine beiden Schenkel leuchten in seiner Farbe auf, alles andere tritt zurück */
-.sketch-angle-leg {
-  stroke: currentColor;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-.sketch-angle:hover .sketch-angle-leg,
-.sketch-angle:focus-within .sketch-angle-leg {
-  opacity: 0.4;
-}
-
-.sketch-quantity,
-.sketch-point {
-  transition: opacity 0.15s ease;
-}
-
-.sketch:has(.sketch-angle:hover) .sketch-quantity,
-.sketch:has(.sketch-angle:focus-within) .sketch-quantity,
-.sketch:has(.sketch-angle:hover) .sketch-point,
-.sketch:has(.sketch-angle:focus-within) .sketch-point {
-  opacity: 0.35;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sketch-point-dot,
-  .sketch-angle-leg,
-  .sketch-quantity,
-  .sketch-point {
-    transition: none;
-  }
+/*
+ * Figur: die Koordinaten, die beim Zeigen auf einen Punkt erscheinen (die Anzeige der Zeichenbibliothek), im Aussehen
+ * des Hoverlays. Die Bibliothek setzt Farbe und Größe am Element selbst, deshalb hier mit Vorrang.
+ */
+.figure-board .JXGinfobox {
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgb(233 255 59 / 0.4) !important;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, var(--bordeaux-900) 0%, var(--bordeaux-600) 100%) !important;
+  color: #fff3f6 !important;
+  font-size: 0.8125rem !important;
 }
 
 /* Login-Seite: die Zeile über den Kacheln für Besucher ohne Konto, gedämpft */
@@ -2618,12 +2563,6 @@ body {
 .blockcontent-editor-card-kind,
 .blockcontent-editor-help {
   color: var(--bs-secondary-color);
-}
-
-/* Skizze im Editor: ihre Elemente als zart getrennte Zeilen, die Namen der Felder zurückgenommen */
-.blockcontent-editor-sketch-element {
-  padding-top: 0.35rem;
-  border-top: 1px dashed var(--bs-border-color);
 }
 
 .blockcontent-editor-position-label {

@@ -30,6 +30,8 @@ type BlockContentEditorProps = {
   onContentTextChange: (changedContentText: string) => void
   /** Rechts in der Leiste des Editors: was der Aufrufer dazutut, z. B. der Stand und „Speichern“. */
   actions?: ReactNode
+  /** Optional: die Adresse, die zu einer Gleichung auf einer anderen Seite springt ({@link BlockContentFrame}). */
+  getForeignEquationPath?: (equationGuid: string) => string
 }
 
 /** Was aus dem Text geworden ist: der Inhalt zum Zeichnen oder der Grund, warum er sich nicht lesen ließ. */
@@ -111,7 +113,7 @@ function findAnimationsJsonProblem(parsedValue: unknown): string | null {
  * über den Zeilen die Stelle im JSON und rechts nichts; ob dann gespeichert werden darf, entscheidet der Aufrufer
  * ({@link readBlockContentProblem}).
  */
-export function BlockContentEditor({ contentText, onContentTextChange, actions }: BlockContentEditorProps) {
+export function BlockContentEditor({ contentText, onContentTextChange, actions, getForeignEquationPath }: BlockContentEditorProps) {
   const viewUrlParam = useUrlParam(VIEW_URL_PARAM)
   const jsonViewShown = viewUrlParam.value === VIEW_JSON
   const [animationPopupShown, setAnimationPopupShown] = useState(false)
@@ -153,8 +155,8 @@ export function BlockContentEditor({ contentText, onContentTextChange, actions }
       return
     }
     const remainingEquations = collectEquationJsons(changedElements)
-    const remainingEquationIds = remainingEquations.map((equation) => equation.id)
-    const remainingAnimations = removeAnimationsOfMissingEquations(animations, remainingEquationIds)
+    const remainingEquationGuids = remainingEquations.map((equation) => equation.guid)
+    const remainingAnimations = removeAnimationsOfMissingEquations(animations, remainingEquationGuids)
     const changedContentJson: BlockContentJson = { ...contentJson, elements: changedElements, animations: remainingAnimations }
     onContentTextChange(formatBlockContentText(changedContentJson))
   }
@@ -246,7 +248,11 @@ export function BlockContentEditor({ contentText, onContentTextChange, actions }
     pairs = renderPairs(contentJson.elements)
     // Formeln und Animationen brauchen den Rahmen eines lesbaren Inhalts
     if (frameContent !== null) {
-      pairs = <BlockContentFrame content={frameContent}>{pairs}</BlockContentFrame>
+      pairs = (
+        <BlockContentFrame content={frameContent} getForeignEquationPath={getForeignEquationPath}>
+          {pairs}
+        </BlockContentFrame>
+      )
     }
   }
 
@@ -282,7 +288,7 @@ export function BlockContentEditor({ contentText, onContentTextChange, actions }
           <p className="blockcontent-editor-problem">{getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.contentUnavailable)}</p>
           <Form.Control
             as="textarea"
-            className="blockcontent-editor-json-text"
+            className="blockcontent-editor-code"
             rows={20}
             spellCheck={false}
             aria-label={getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.jsonInputLabel)}

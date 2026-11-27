@@ -4,9 +4,9 @@ import type { ContentElement } from './ContentElement.ts'
 /** Rückmeldung von {@link useCollapsibleOpenState}. */
 export type CollapsibleOpenState = {
   /** Die Kennungen der Aufklapper, die gerade offen sind. */
-  openCollapsibleIds: string[]
+  openCollapsibleGuids: string[]
   /** Öffnet einen geschlossenen Aufklapper und schließt einen offenen. */
-  toggleCollapsible: (collapsibleId: string) => void
+  toggleCollapsible: (collapsibleGuid: string) => void
 }
 
 /** In der Adresse: die offenen Aufklapper, ihre Kennungen mit Komma getrennt, z. B. `open=c1,c3`. */
@@ -20,39 +20,77 @@ const ID_SEPARATOR = ','
  */
 export function useCollapsibleOpenState(): CollapsibleOpenState {
   const openUrlParam = useUrlParam(OPEN_URL_PARAM)
-  let openCollapsibleIds: string[] = []
+  let openCollapsibleGuids: string[] = []
   if (openUrlParam.value !== null && openUrlParam.value !== '') {
-    openCollapsibleIds = openUrlParam.value.split(ID_SEPARATOR)
+    openCollapsibleGuids = openUrlParam.value.split(ID_SEPARATOR)
   }
 
-  function toggleCollapsible(collapsibleId: string) {
-    let changedOpenIds = [...openCollapsibleIds, collapsibleId]
-    if (openCollapsibleIds.includes(collapsibleId)) {
-      changedOpenIds = openCollapsibleIds.filter((openCollapsibleId) => openCollapsibleId !== collapsibleId)
+  function toggleCollapsible(collapsibleGuid: string) {
+    let changedOpenGuids = [...openCollapsibleGuids, collapsibleGuid]
+    if (openCollapsibleGuids.includes(collapsibleGuid)) {
+      changedOpenGuids = openCollapsibleGuids.filter((openCollapsibleGuid) => openCollapsibleGuid !== collapsibleGuid)
     }
     let changedUrlValue: string | null = null
-    if (changedOpenIds.length > 0) {
-      changedUrlValue = changedOpenIds.join(ID_SEPARATOR)
+    if (changedOpenGuids.length > 0) {
+      changedUrlValue = changedOpenGuids.join(ID_SEPARATOR)
     }
     openUrlParam.changeValue(changedUrlValue, 'REPLACE')
   }
 
-  return { openCollapsibleIds, toggleCollapsible }
+  return { openCollapsibleGuids, toggleCollapsible }
+}
+
+/** Die Suchparameter einer Adresse, in denen genau diese Aufklapper offen sind; alle anderen Parameter bleiben. */
+export function createSearchWithOpenCollapsibles(search: string, openCollapsibleGuids: string[]): string {
+  const searchParams = new URLSearchParams(search)
+  if (openCollapsibleGuids.length === 0) {
+    searchParams.delete(OPEN_URL_PARAM)
+  } else {
+    searchParams.set(OPEN_URL_PARAM, openCollapsibleGuids.join(ID_SEPARATOR))
+  }
+  const searchText = searchParams.toString()
+  if (searchText === '') {
+    return ''
+  }
+  return '?' + searchText
+}
+
+/**
+ * Die Kennungen der Aufklapper, in denen eine Gleichung steckt, von außen nach innen; leer, wenn sie in keinem steckt,
+ * `null`, wenn es die Gleichung in diesen Elementen nicht gibt.
+ */
+export function findCollapsibleGuidsAroundEquation(elements: ContentElement[], equationGuid: string): string[] | null {
+  for (const element of elements) {
+    if (element.type === 'EQUATION' && element.guid === equationGuid) {
+      return []
+    }
+    if (element.type === 'CONTENT_BOX' || element.type === 'COLLAPSIBLE') {
+      const collapsibleGuidsInside = findCollapsibleGuidsAroundEquation(element.elements, equationGuid)
+      if (collapsibleGuidsInside === null) {
+        continue
+      }
+      if (element.type === 'COLLAPSIBLE') {
+        return [element.guid, ...collapsibleGuidsInside]
+      }
+      return collapsibleGuidsInside
+    }
+  }
+  return null
 }
 
 /** Die Kennungen der Gleichungen, die gerade zu sehen sind: alle außer denen in einem geschlossenen Aufklapper. */
-export function getVisibleEquationIds(elements: ContentElement[], openCollapsibleIds: string[]): string[] {
-  const visibleEquationIds: string[] = []
+export function getVisibleEquationGuids(elements: ContentElement[], openCollapsibleGuids: string[]): string[] {
+  const visibleEquationGuids: string[] = []
   for (const element of elements) {
     if (element.type === 'EQUATION') {
-      visibleEquationIds.push(element.id)
+      visibleEquationGuids.push(element.guid)
     } else if (element.type === 'CONTENT_BOX') {
-      const nestedEquationIds = getVisibleEquationIds(element.elements, openCollapsibleIds)
-      visibleEquationIds.push(...nestedEquationIds)
-    } else if (element.type === 'COLLAPSIBLE' && openCollapsibleIds.includes(element.id)) {
-      const nestedEquationIds = getVisibleEquationIds(element.elements, openCollapsibleIds)
-      visibleEquationIds.push(...nestedEquationIds)
+      const nestedEquationGuids = getVisibleEquationGuids(element.elements, openCollapsibleGuids)
+      visibleEquationGuids.push(...nestedEquationGuids)
+    } else if (element.type === 'COLLAPSIBLE' && openCollapsibleGuids.includes(element.guid)) {
+      const nestedEquationGuids = getVisibleEquationGuids(element.elements, openCollapsibleGuids)
+      visibleEquationGuids.push(...nestedEquationGuids)
     }
   }
-  return visibleEquationIds
+  return visibleEquationGuids
 }

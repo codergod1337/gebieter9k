@@ -14,7 +14,7 @@ import { BlockContentReader } from '../blockcontent/BlockContentReader.ts'
 import { BlockContentView } from '../blockcontent/BlockContentView.tsx'
 import { useKnowledgeContext } from './Knowledge.tsx'
 import { getKnowledgePagesOfChapter } from './KnowledgeBase.ts'
-import { findKnowledgeChapter, findKnowledgeRubric, getKnowledgePathSegment } from './knowledgePaths.ts'
+import { findKnowledgeChapter, findKnowledgeRubric, getKnowledgeEquationPath, getKnowledgePathSegment } from './knowledgePaths.ts'
 import { KNOWLEDGE_TEXTS } from './knowledgeTexts.ts'
 import { getKnowledgePageText, type KnowledgePageDocument } from './page/KnowledgePageDocument.ts'
 import { useKnowledgePage } from './page/useKnowledgePage.ts'
@@ -180,7 +180,7 @@ export function KnowledgePageView() {
   return (
     <>
       {pageActions}
-      <BlockContentView content={readKnowledgeContent.content} />
+      <BlockContentView content={readKnowledgeContent.content} getForeignEquationPath={getKnowledgeEquationPath} />
     </>
   )
 }

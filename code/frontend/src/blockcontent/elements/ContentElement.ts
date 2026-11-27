@@ -1,5 +1,5 @@
 import type { InlineNode } from '../inline/InlineNode.ts'
-import type { SketchContent } from '../sketch/SketchContent.ts'
+import type { FigureBoundingBox } from '../figure/FigureBoundingBox.ts'
 
 /** Eine ContentBox mit Titel: ihre Elemente untereinander. */
 export type ContentBoxElement = {
@@ -11,8 +11,8 @@ export type ContentBoxElement = {
 /** Ein Aufklapper: sein Titel als Knopf, sein Inhalt erst nach einem Klick. */
 export type CollapsibleElement = {
   type: 'COLLAPSIBLE'
-  /** Die feste Kennung: Unter ihr steht in der Adresse, ob er offen ist. */
-  id: string
+  /** Die feste Kennung (UUID): Unter ihr steht in der Adresse, ob er offen ist. */
+  guid: string
   title: string
   elements: ContentElement[]
 }
@@ -49,17 +49,21 @@ export type ListElement = {
 /** Eine Gleichung in ihrer eigenen Zeile. */
 export type EquationElement = {
   type: 'EQUATION'
-  /** Die feste Kennung; sie bleibt, auch wenn sich die Nummer verschiebt. */
-  id: string
+  /** Die feste Kennung (UUID); sie bleibt, auch wenn sich die Nummer verschiebt. */
+  guid: string
   /** Die laufende Nummer im Inhalt, ab 1. */
   number: number
   latex: string
 }
 
-/** Eine Skizze. */
-export type SketchContentElement = {
-  type: 'SKETCH'
-  sketch: SketchContent
+/** Eine Figur: eine Skizze oder ein Plot, gezeichnet aus ihrem Text. */
+export type FigureElement = {
+  type: 'FIGURE'
+  /** Die Figur als Text in der Sprache der Zeichenbibliothek. */
+  code: string
+  boundingBox: FigureBoundingBox
+  /** Breite geteilt durch Höhe des Felds. */
+  aspectRatio: number
 }
 
 /** Ein Element eines Inhalts, fertig zum Zeichnen. Es entsteht aus seinem JSON ({@link ElementReader}). */
@@ -71,7 +75,7 @@ export type ContentElement =
   | HintElement
   | ListElement
   | EquationElement
-  | SketchContentElement
+  | FigureElement
 
 /** Ein Element dieser Art, z. B. `ContentElementOfType<'EQUATION'>`. */
 export type ContentElementOfType<Type extends ContentElement['type']> = Extract<ContentElement, { type: Type }>

@@ -1,5 +1,5 @@
-import { useLayoutEffect, useRef, useState } from 'react'
-import Form from 'react-bootstrap/Form'
+import { useState } from 'react'
+import { AutoSizeTextArea } from '../../components/AutoSizeTextArea.tsx'
 import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguage.ts'
 import { BLOCK_CONTENT_EDITOR_TEXTS } from './blockContentEditorTexts.ts'
 
@@ -33,7 +33,7 @@ function describesSameValue(text: string, value: unknown): boolean {
 
 /**
  * Ein Stück des Inhalts als JSON zum Bearbeiten (der „Code“ eines Elements oder der Animationen): ein Textfeld, das so
- * hoch ist wie sein Text, also ohne eigenen Scrollbalken. Solange das Getippte kein gültiges JSON ist oder nicht an die
+ * hoch ist wie sein Text ({@link AutoSizeTextArea}), also ohne eigenen Scrollbalken. Solange das Getippte kein gültiges JSON ist oder nicht an die
  * Stelle passt, steht der Grund darunter und der Inhalt bleibt, wie er war; sobald es passt, geht der Wert hinaus.
  * Ändert sich der Wert von außen (z. B. „Änderungen verwerfen“), zeigt das Feld wieder ihn.
  */
@@ -42,7 +42,6 @@ export function JsonValueEditor({ label, value, findProblem, onChange }: JsonVal
   const [text, setText] = useState(formattedValue)
   const [shownFormattedValue, setShownFormattedValue] = useState(formattedValue)
   const [problem, setProblem] = useState<string | null>(null)
-  const textAreaRef = useRef<HTMLTextAreaElement>(null)
 
   // der Wert hat sich geändert: Stammt die Änderung nicht aus diesem Feld, zeigt es den neuen Wert
   if (formattedValue !== shownFormattedValue) {
@@ -52,16 +51,6 @@ export function JsonValueEditor({ label, value, findProblem, onChange }: JsonVal
       setProblem(null)
     }
   }
-
-  // das Feld ist immer so hoch wie sein Text
-  useLayoutEffect(() => {
-    const textArea = textAreaRef.current
-    if (textArea === null) {
-      return
-    }
-    textArea.style.height = 'auto'
-    textArea.style.height = textArea.scrollHeight + 'px'
-  }, [text])
 
   function handleTextChange(changedText: string) {
     setText(changedText)
@@ -81,16 +70,7 @@ export function JsonValueEditor({ label, value, findProblem, onChange }: JsonVal
 
   return (
     <div className="blockcontent-editor-json">
-      <Form.Control
-        as="textarea"
-        ref={textAreaRef}
-        className="blockcontent-editor-json-text"
-        spellCheck={false}
-        aria-label={label}
-        isInvalid={problem !== null}
-        value={text}
-        onChange={(changeEvent) => handleTextChange(changeEvent.target.value)}
-      />
+      <AutoSizeTextArea label={label} className="blockcontent-editor-code" isInvalid={problem !== null} value={text} onChange={handleTextChange} />
       {problem !== null && <span className="blockcontent-editor-json-problem">{problem}</span>}
     </div>
   )

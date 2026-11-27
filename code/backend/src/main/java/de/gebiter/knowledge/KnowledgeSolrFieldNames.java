@@ -51,6 +51,9 @@ public class KnowledgeSolrFieldNames {
 
 	private final String lastChangedAt;
 
+	/** Mehrwertig: die GUIDs der Gleichungen im Inhalt der Seite; setzt das Backend aus dem Inhalt. */
+	private final String equationGuids;
+
 	public KnowledgeSolrFieldNames(@Value("${gebiter.knowledge.field.id}") String id,
 			@Value("${gebiter.knowledge.field.page-guid}") String pageGuid,
 			@Value("${gebiter.knowledge.field.language}") String language,
@@ -68,7 +71,8 @@ public class KnowledgeSolrFieldNames {
 			@Value("${gebiter.knowledge.field.related-page-guids}") String relatedPageGuids,
 			@Value("${gebiter.knowledge.field.author-users-guid}") String authorUsersGuid,
 			@Value("${gebiter.knowledge.field.created-at}") String createdAt,
-			@Value("${gebiter.knowledge.field.last-changed-at}") String lastChangedAt) {
+			@Value("${gebiter.knowledge.field.last-changed-at}") String lastChangedAt,
+			@Value("${gebiter.knowledge.field.equation-guids}") String equationGuids) {
 		this.id = id;
 		this.pageGuid = pageGuid;
 		this.language = language;
@@ -87,13 +91,14 @@ public class KnowledgeSolrFieldNames {
 		this.authorUsersGuid = authorUsersGuid;
 		this.createdAt = createdAt;
 		this.lastChangedAt = lastChangedAt;
+		this.equationGuids = equationGuids;
 	}
 
 	/** Die Namen der Felder für das Frontend. */
 	public KnowledgeSolrFieldNameSet toKnowledgeSolrFieldNameSet() {
 		return new KnowledgeSolrFieldNameSet(id, pageGuid, language, rubricKey, chapterKey, subChapterKey, pageKey,
 				listingPosition, title, summary, content, contentFormatVersion, tags, status, relatedPageGuids,
-				authorUsersGuid, createdAt, lastChangedAt);
+				authorUsersGuid, createdAt, lastChangedAt, equationGuids);
 	}
 
 	public String getId() {
@@ -166,5 +171,9 @@ public class KnowledgeSolrFieldNames {
 
 	public String getLastChangedAt() {
 		return lastChangedAt;
+	}
+
+	public String getEquationGuids() {
+		return equationGuids;
 	}
 }

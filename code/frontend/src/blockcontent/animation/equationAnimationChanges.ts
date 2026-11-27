@@ -8,8 +8,8 @@ import type { AnimationActionJson, EquationAnimationJson } from './EquationAnima
 export type SourcePartBehaviour = { does: 'STAYS' } | { does: 'CANCELLED' } | { does: 'MOVES_TO'; target: string }
 
 /** Die Animation des Übergangs, der von dieser Gleichung ausgeht; `null`, wenn es keine gibt. */
-export function findAnimationFrom(animations: EquationAnimationJson[], fromEquationId: string): EquationAnimationJson | null {
-  const animation = animations.find((candidate) => candidate.from === fromEquationId)
+export function findAnimationFrom(animations: EquationAnimationJson[], fromEquationGuid: string): EquationAnimationJson | null {
+  const animation = animations.find((candidate) => candidate.from === fromEquationGuid)
   if (animation === undefined) {
     return null
   }
@@ -17,11 +17,11 @@ export function findAnimationFrom(animations: EquationAnimationJson[], fromEquat
 }
 
 /** Die Animation zum Ändern: die vorhandene oder eine neue, noch leere für diesen Übergang. */
-function getAnimationToChange(animation: EquationAnimationJson | null, fromEquationId: string): EquationAnimationJson {
+function getAnimationToChange(animation: EquationAnimationJson | null, fromEquationGuid: string): EquationAnimationJson {
   if (animation !== null) {
     return animation
   }
-  return { from: fromEquationId, note: null, actions: [] }
+  return { from: fromEquationGuid, note: null, actions: [] }
 }
 
 /** Was die Animation mit diesem Teil der Ausgangs-Gleichung tut. */
@@ -46,11 +46,11 @@ export function getSourcePartBehaviour(animation: EquationAnimationJson | null, 
 /** Die Animation, in der dieser Teil der Ausgangs-Gleichung sich so verhält. */
 export function changeSourcePartBehaviour(
   animation: EquationAnimationJson | null,
-  fromEquationId: string,
+  fromEquationGuid: string,
   formulaId: string,
   behaviour: SourcePartBehaviour,
 ): EquationAnimationJson {
-  const animationToChange = getAnimationToChange(animation, fromEquationId)
+  const animationToChange = getAnimationToChange(animation, fromEquationGuid)
   // was bisher für diesen Teil galt, fällt weg (APPEARS meint einen Teil der NÄCHSTEN Gleichung und bleibt)
   const otherActions = animationToChange.actions.filter((action) => action.does === 'APPEARS' || action.id !== formulaId)
   if (behaviour.does === 'STAYS') {
@@ -87,11 +87,11 @@ export function findSourceOfTargetPart(animation: EquationAnimationJson | null, 
 /** Die Animation, in der dieser Teil der NÄCHSTEN Gleichung aus der Notiz kommt oder einfach dasteht. */
 export function changeTargetPartAppearing(
   animation: EquationAnimationJson | null,
-  fromEquationId: string,
+  fromEquationGuid: string,
   formulaId: string,
   appearing: boolean,
 ): EquationAnimationJson {
-  const animationToChange = getAnimationToChange(animation, fromEquationId)
+  const animationToChange = getAnimationToChange(animation, fromEquationGuid)
   const otherActions = animationToChange.actions.filter((action) => !(action.does === 'APPEARS' && action.id === formulaId))
   if (!appearing) {
     return { ...animationToChange, actions: otherActions }
@@ -100,8 +100,8 @@ export function changeTargetPartAppearing(
 }
 
 /** Die Animation mit dieser Notiz; ein leerer Text heißt: keine Notiz. */
-export function changeAnimationNote(animation: EquationAnimationJson | null, fromEquationId: string, note: string): EquationAnimationJson {
-  const animationToChange = getAnimationToChange(animation, fromEquationId)
+export function changeAnimationNote(animation: EquationAnimationJson | null, fromEquationGuid: string, note: string): EquationAnimationJson {
+  const animationToChange = getAnimationToChange(animation, fromEquationGuid)
   let changedNote: string | null = note
   if (note.trim() === '') {
     changedNote = null
@@ -121,14 +121,14 @@ function isEmptyAnimation(animation: EquationAnimationJson): boolean {
  */
 export function replaceAnimationFrom(
   animations: EquationAnimationJson[],
-  fromEquationId: string,
+  fromEquationGuid: string,
   changedAnimation: EquationAnimationJson | null,
 ): EquationAnimationJson[] {
-  const otherAnimations = animations.filter((animation) => animation.from !== fromEquationId)
+  const otherAnimations = animations.filter((animation) => animation.from !== fromEquationGuid)
   if (changedAnimation === null || isEmptyAnimation(changedAnimation)) {
     return otherAnimations
   }
-  const existingIndex = animations.findIndex((animation) => animation.from === fromEquationId)
+  const existingIndex = animations.findIndex((animation) => animation.from === fromEquationGuid)
   if (existingIndex < 0) {
     return [...animations, changedAnimation]
   }
@@ -141,6 +141,6 @@ export function replaceAnimationFrom(
  * Die Animationen ohne die, deren Gleichung es nicht mehr gibt: Wird im Editor eine Gleichung entfernt, verschwindet
  * die Animation, die von ihr ausging.
  */
-export function removeAnimationsOfMissingEquations(animations: EquationAnimationJson[], equationIds: string[]): EquationAnimationJson[] {
-  return animations.filter((animation) => equationIds.includes(animation.from))
+export function removeAnimationsOfMissingEquations(animations: EquationAnimationJson[], equationGuids: string[]): EquationAnimationJson[] {
+  return animations.filter((animation) => equationGuids.includes(animation.from))
 }

@@ -11,7 +11,9 @@ package de.gebiter.knowledge.dto;
  * @param chapterKey das Kapitel
  * @param subChapterKey das Unterkapitel
  * @param pageKey die Seite in ihrer Adresse
+ * @param equationGuid die GUID einer Gleichung: die Seite(n), in deren Inhalt diese Gleichung steht, z. B.
+ *        {@code {"equationGuid": "3f2b8c1e-5d4a-4b6f-9a7e-1c2d3e4f5a6b"}}
  */
 public record KnowledgePageResolveRequest(String language, String rubricKey, String chapterKey, String subChapterKey,
-		String pageKey) {
+		String pageKey, String equationGuid) {
 }

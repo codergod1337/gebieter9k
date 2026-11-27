@@ -66,3 +66,14 @@ export function findKnowledgeChapter(
   }
   return foundChapter
 }
+
+/**
+ * Das feste Stück der Adresse für den Sprung zu einer Gleichung. Es steht dort, wo sonst eine Rubrik steht; eine Rubrik
+ * mit dem Key `GLEICHUNG` wäre deshalb nicht erreichbar.
+ */
+export const KNOWLEDGE_EQUATION_PATH_SEGMENT = 'gleichung'
+
+/** Die Adresse, die zu einer Gleichung springt, auf welcher Seite der Wissensdatenbank sie auch steht: `/wissen/gleichung/<guid>`. */
+export function getKnowledgeEquationPath(equationGuid: string): string {
+  return KNOWLEDGE_PATH + '/' + KNOWLEDGE_EQUATION_PATH_SEGMENT + '/' + equationGuid
+}

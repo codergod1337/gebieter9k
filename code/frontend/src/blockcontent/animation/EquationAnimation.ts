@@ -7,7 +7,7 @@ export type AnimationAction =
 /** Die Animation eines Übergangs: von einer Gleichung zur nächsten im Inhalt. */
 export type EquationAnimation = {
   /** Die feste Kennung der Gleichung, von der der Übergang ausgeht. */
-  fromEquationId: string
+  fromEquationGuid: string
   /** Die Notiz der Umformung als LaTeX; `null` ohne. */
   note: string | null
   actions: AnimationAction[]
