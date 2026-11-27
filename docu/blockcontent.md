@@ -133,4 +133,6 @@ Angezeigt wird eine Animation am Ende der Zeile ihrer Gleichung: die Notiz hinte
 - Popup „Animationen“: 19 Gleichungen, 10 markiert; Übergang (1) → (2) zeigt Notiz und je id das Verhalten; bei (15) „links: wird gestrichen“ gewählt und die Notiz `-x` mit echten Tasten getippt → Animation 11, in der Vorschau ein Abspiel-Knopf mehr.
 - JSON-Ansicht 14 811 Zeichen mit `elements` und `animations`; Speichern schickt den Inhalt (PUT), danach „Gespeichert“. Keine Fehler in der Konsole.
 
+2026-11-27, 15:15, auf dem Pi (Stand `04098bd`, Seite um 15:09 in Fassung 2 geschrieben), Firefox ohne Fenster von außen: ohne Anmeldung 6 Kästen, Nummern (1) … (18), 56 Formeln ohne Fehler, Aufklapper geöffnet, „mal r“ und „kürzen“ abgespielt; angemeldet unter dem Konto des Nutzers, nur angesehen: Editor mit 42 Karten und 18 Formelfeldern (MathLive geladen), „Animationen (10 von 17)“, Popup mit 18 Gleichungen. Ändern und Speichern im Browser auf dem Pi nicht ausprobiert.
+
 NICHT geprüft: die Bildschirmtastatur und das Menü des Formelfelds mit der Maus (auch im Popup), ein Handy, Chrome.

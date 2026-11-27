@@ -25,6 +25,26 @@ Nach dem 2026-12-03 diesen Abschnitt löschen (ebenso die Regel `interruptions-u
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-27 15:07 – Push auf den Pi bringen: Inhalt Fassung 2 (Stück 5 des Eintrags 14:30)
+
+- Ansage: „ist gepusht bau fertig dann schau ich mir deinen pfusch an“
+- Plan: (1) Stand prüfen (lokal = origin, was sich seit `d1abbf5` geändert hat); (2) Pi: `git pull`, backend und
+  frontend bauen, dann starten (abgekoppelt, alte Images als `:vorher`); (3) SOFORT danach die Seite
+  „Koordinatentransformation“ unter dem Konto des Nutzers in Fassung 2 schreiben (PUT nur `content`), abmelden;
+  (4) von außen im Firefox ansehen; (5) `setup.md`, Doku, Protokoll.
+- Schritt 1 fertig (15:07): lokal = `origin/main` = `04098bd` („solrmapping3“), 128 Dateien seit `d1abbf5`, außerhalb
+  von Frontend und Doku nur `application.yaml`.
+- Schritt 2 fertig (15:08): Pi auf `04098bd`, Backend 23 s, Frontend 20 s gebaut, gestartet, Backend oben 15:08:51,
+  0 ERROR, 0 WARN; alte Images `:vorher`.
+- Schritt 3 fertig (15:09): Seite auf dem Pi in Fassung 2 (8 393 Zeichen, `elements` + `animations`, Fassung 2 vom
+  Backend eingetragen), abgemeldet 204, ohne Anmeldung gegengelesen.
+- Schritt 4 fertig (15:15): von außen im Firefox: Seite, Aufklappen, Abspielen; angemeldet nur angesehen: Editor mit
+  18 Formelfeldern, Popup; abgemeldet 204. Keine Fehler.
+- Schritt 5 fertig (15:15): `setup.md`, `docu/blockcontent.md` (Test auf dem Pi), Regel `knowledge-base-module`; `/tmp`
+  auf dem Pi leer, Verbindung zu.
+- **FERTIG 15:15. Der Nutzer sieht es sich jetzt an; ob der Vorschlag brauchbar ist, sagt er danach.** Nicht committet:
+  `docu/arbeitsprotokoll.md`, `docu/blockcontent.md`. Auf dem Pi NICHT ausprobiert: im Editor ändern und speichern.
+
 ## 2026-11-27 14:30 – BAUEN: Inhalt Fassung 2 (Elemente, Formeln über MathLive, Animationen als eigenes Modul)
 
 - Ansage: „ja bau es endlich, wir haben lang und breit übefr die anforderungen geredet, und deinen dreck sehe ich erst
