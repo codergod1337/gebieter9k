@@ -19,6 +19,16 @@ export const KNOWLEDGE_PAGE_TEXTS = {
   columnLastChanged: { de: 'Geändert' },
   columnLastChangedHint: { de: 'Wann die Seite zuletzt geändert wurde.' },
   openEditor: { de: '{title} bearbeiten' },
+  /** Eine neue Seite anlegen, geführt. */
+  newPage: { de: 'neue Seite' },
+  newPagePopupTitle: { de: 'Neue Seite' },
+  newPageRubric: { de: 'Rubrik' },
+  newPageChapter: { de: 'Kapitel' },
+  newPageSubChapter: { de: 'Unterkapitel' },
+  newPageChoose: { de: 'bitte wählen' },
+  newPageNoSubChapter: { de: 'direkt im Kapitel' },
+  newPageNoChapter: { de: 'Diese Rubrik hat noch kein Kapitel. Kapitel legt man im Reiter „Gliederung“ an.' },
+  newPageKeyHint: { de: 'Vorschlag aus dem Titel. Der Key steht klein geschrieben in der Adresse der Seite. Die Seite entsteht als Entwurf ohne Inhalt, danach öffnet sich ihr Editor.' },
   /** Die drei Status in Worten. */
   statusDraft: { de: 'Entwurf' },
   statusPublished: { de: 'veröffentlicht' },
@@ -28,6 +38,8 @@ export const KNOWLEDGE_PAGE_TEXTS = {
   unknownPage: { de: 'Diese Seite gibt es nicht.' },
   fieldsTitle: { de: 'Seite' },
   viewPage: { de: 'Seite ansehen' },
+  /** Wie der Editor heißt, wenn man von ihm aus die Seite ansieht: „Zurück zu Editor“. */
+  editorOriginLabel: { de: 'Editor' },
   notPublishedHint: { de: 'Besucher sehen die Seite erst, wenn sie veröffentlicht ist.' },
   noSummary: { de: 'keine Zusammenfassung' },
   noTags: { de: 'keine Schlagwörter' },
@@ -51,13 +63,10 @@ export const KNOWLEDGE_PAGE_TEXTS = {
   editTagsHint: { de: 'Mehrere mit Komma trennen, ohne Raute. Leer nimmt alle heraus.' },
   /** Der Editor: der Inhalt. */
   contentTitle: { de: 'Inhalt' },
-  contentInputLabel: { de: 'Inhalt als JSON (Format in docu/solr-cores/KNOWLEDGE.md)' },
-  contentPreviewLabel: { de: 'Vorschau' },
   contentSave: { de: 'Inhalt speichern' },
   contentReset: { de: 'Änderungen verwerfen' },
   contentUnchanged: { de: 'Gespeichert, {characterCount} Zeichen' },
   contentChanged: { de: 'Geändert, noch nicht gespeichert' },
-  contentUnreadable: { de: 'So lässt sich der Inhalt nicht anzeigen und nicht speichern: {reason}' },
   contentSavedToastTitle: { de: 'Inhalt gespeichert' },
   contentSavedToastText: { de: 'Die Seite „{title}“ zeigt jetzt den neuen Inhalt.' },
 } satisfies Record<string, MultilingualText>

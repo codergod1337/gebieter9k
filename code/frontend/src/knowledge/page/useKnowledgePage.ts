@@ -16,6 +16,7 @@ export type KnowledgePageHook = ApiHookState & {
   getKnowledgePage: (knowledgePageId: string) => Promise<KnowledgePageDocument | null>
   resolveKnowledgePages: (resolveRequest: KnowledgePageResolveRequest) => Promise<KnowledgePageDocument[] | null>
   changeKnowledgePage: (knowledgePageId: string, fieldValuesByFieldName: KnowledgePageDocument) => Promise<KnowledgePageDocument | null>
+  createKnowledgePage: (fieldValuesByFieldName: KnowledgePageDocument) => Promise<KnowledgePageDocument | null>
 }
 
 /** Die Seiten der Wissensdatenbank zum Lesen, die Requests gehen über das API-Modul. */
@@ -41,6 +42,12 @@ export function useKnowledgePage(): KnowledgePageHook {
       path: '/api/share/knowledge-page/resolve',
       body: resolveRequest,
     })
+  }, [sendForData])
+
+  /** CREATE (ADMIN): Legt eine Seite am Ende ihres Kapitels an und liefert sie; ohne Status ist sie ein Entwurf. */
+  const createKnowledgePage = useCallback((fieldValuesByFieldName: KnowledgePageDocument) => {
+    const newKnowledgePage = { fieldValuesByFieldName }
+    return sendForData<KnowledgePageDocument>({ method: 'POST', path: '/api/admin/knowledge-page', body: newKnowledgePage })
   }, [sendForData])
 
   /** READ (ADMIN): Eine Seite samt Inhalt über ihre id, in jedem Status. */
@@ -80,5 +87,6 @@ export function useKnowledgePage(): KnowledgePageHook {
     getKnowledgePage,
     resolveKnowledgePages,
     changeKnowledgePage,
+    createKnowledgePage,
   }
 }

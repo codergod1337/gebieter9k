@@ -10,7 +10,7 @@ type SketchProps = {
 }
 
 /**
- * Der Rahmen jeder Skizze der Wissensdatenbank: ein SVG mit festem Feld, in das die Bausteine gezeichnet werden
+ * Der Rahmen jeder Skizze in einem Inhalt aus Bausteinen: ein SVG mit festem Feld, in das die Bausteine gezeichnet werden
  * ({@link SketchAxes}, {@link SketchPoint}, {@link SketchSegment}, {@link SketchAngle}). Lage und Maße in base.css
  * (`.sketch`), Farben im Theme.
  */

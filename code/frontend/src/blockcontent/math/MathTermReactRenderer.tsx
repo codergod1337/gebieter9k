@@ -7,6 +7,7 @@ import type { MarkedTerm } from './MarkedTerm.ts'
 import { MathStretchySign } from './MathStretchySign.tsx'
 import type { MathTerm } from './MathTerm.ts'
 import type { MathTermVisitor } from './MathTermVisitor.ts'
+import { NegativeTerm } from './NegativeTerm.ts'
 import type { NumberTerm } from './NumberTerm.ts'
 import type { PowerTerm } from './PowerTerm.ts'
 import type { ProductTerm } from './ProductTerm.ts'
@@ -18,6 +19,9 @@ import type { TermRoles } from './TermRoles.ts'
 
 /** Die Attribute am Element eines Terms: seine Klassen und, mit Marke, was die Herleitung über ihn wissen muss. */
 type MarkAttributes = Record<string, string | undefined>
+
+/** Das Minuszeichen im Satz der Formeln (das echte, nicht der Bindestrich). */
+const MINUS_SIGN = '−'
 
 /**
  * Zeichnet den Baum einer Formel als HTML: je Art von Term eine Methode, jeder Term wird ein eigenes Element. Den Satz
@@ -46,8 +50,40 @@ export class MathTermReactRenderer implements MathTermVisitor<ReactNode> {
     return <span className="math-number">{numberTerm.numberText}</span>
   }
 
+  /** Eine Summe; vor einem negativen Summanden steht ein Minuszeichen statt „+ −“ (`a − b`). */
   visitSumTerm(sumTerm: SumTerm): ReactNode {
-    return this.renderJoinedTerms(sumTerm.summands, '+')
+    const renderedParts: ReactNode[] = []
+    sumTerm.summands.forEach((summand, summandIndex) => {
+      let termToRender: MathTerm = summand
+      if (summandIndex > 0) {
+        let operatorSign = '+'
+        if (summand instanceof NegativeTerm) {
+          operatorSign = MINUS_SIGN
+          termToRender = summand.term
+        }
+        const operatorKey = 'operator' + summandIndex
+        renderedParts.push(
+          <span key={operatorKey} className="math-operator">
+            {operatorSign}
+          </span>,
+        )
+      }
+      const renderedTerm = termToRender.accept(this)
+      const termKey = 'term' + summandIndex
+      renderedParts.push(<Fragment key={termKey}>{renderedTerm}</Fragment>)
+    })
+    return <>{renderedParts}</>
+  }
+
+  /** Ein Term mit Minus davor, wo er nicht als Summand hinter einem anderen steht: `−b`, `x^−1`. */
+  visitNegativeTerm(negativeTerm: NegativeTerm): ReactNode {
+    const renderedTerm = negativeTerm.term.accept(this)
+    return (
+      <span className="math-negative">
+        <span className="math-sign-unary">{MINUS_SIGN}</span>
+        {renderedTerm}
+      </span>
+    )
   }
 
   visitProductTerm(productTerm: ProductTerm): ReactNode {

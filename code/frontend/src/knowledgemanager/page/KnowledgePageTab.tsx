@@ -1,10 +1,11 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useLoadedData } from '../../api/useLoadedData.ts'
 import { ContentBox } from '../../components/ContentBox.tsx'
 import { DateTimeText } from '../../components/DateTimeText.tsx'
 import { EditButton } from '../../components/EditButton.tsx'
 import { LoadStatus } from '../../components/LoadStatus.tsx'
+import { NewEntityButton } from '../../components/NewEntityButton.tsx'
 import { StatusMark } from '../../components/StatusMark.tsx'
 import { Table } from '../../components/Table.tsx'
 import type { TableColumn } from '../../components/TableColumn.ts'
@@ -18,15 +19,19 @@ import { getKnowledgePageEditorPath } from '../knowledgeManagerPaths.ts'
 import { describeKnowledgePagePlace } from './describeKnowledgePagePlace.ts'
 import { getKnowledgePageStatusLook } from './knowledgePageStatusLooks.ts'
 import { KNOWLEDGE_PAGE_TEXTS } from './knowledgePageTexts.ts'
+import { NewKnowledgePagePopup } from './NewKnowledgePagePopup.tsx'
 
 /**
  * Der Reiter „Seiten“ im Wissensmanager (Nutzer 2026-11-27: „mini wikipedia“, nur der Admin schreibt): alle Seiten der
  * Wissensdatenbank in einer Tabelle, in jedem Status. Ein Klick auf den Titel oder den Stift öffnet den Editor der
- * Seite; der Reiter geht als Origin mit („Zurück zu Seiten“).
+ * Seite; der Reiter geht als Origin mit („Zurück zu Seiten“). „neue Seite“ legt geführt eine Seite an
+ * ({@link NewKnowledgePagePopup}) und öffnet danach gleich ihren Editor.
  */
 export function KnowledgePageTab() {
   const knowledgePageHook = useKnowledgePage()
+  const createKnowledgePageHook = useKnowledgePage()
   const masterData = useMasterData()
+  const [newKnowledgePageOpen, setNewKnowledgePageOpen] = useState(false)
   const originNavigation = useOrigin()
   const navigate = useNavigate()
   const resolveKnowledgePages = knowledgePageHook.resolveKnowledgePages
@@ -64,6 +69,16 @@ export function KnowledgePageTab() {
 
   function getId(knowledgePage: KnowledgePageDocument): string {
     return getKnowledgePageText(knowledgePage, idFieldName) ?? ''
+  }
+
+  /** Legt die Seite an; bei Erfolg geht es gleich in ihren Editor. Ein Fehler bleibt im Popup stehen. */
+  async function handleCreateKnowledgePage(fieldValuesByFieldName: KnowledgePageDocument) {
+    const createdKnowledgePage = await createKnowledgePageHook.createKnowledgePage(fieldValuesByFieldName)
+    if (createdKnowledgePage === null) {
+      return
+    }
+    setNewKnowledgePageOpen(false)
+    openEditor(createdKnowledgePage)
   }
 
   function openEditor(knowledgePage: KnowledgePageDocument) {
@@ -130,13 +145,20 @@ export function KnowledgePageTab() {
     },
   ]
 
+  const newKnowledgePageButton = (
+    <NewEntityButton label={getTextInCurrentLanguage(KNOWLEDGE_PAGE_TEXTS.newPage)} onClick={() => setNewKnowledgePageOpen(true)} />
+  )
+  let createErrorMessage: string | null = null
+  if (createKnowledgePageHook.error !== null) {
+    createErrorMessage = createKnowledgePageHook.error.detail
+  }
   const pageCount = knowledgePages.length
   let pageCountText = getTextInCurrentLanguageWithValues(KNOWLEDGE_PAGE_TEXTS.pageCountMany, { pageCount: String(pageCount) })
   if (pageCount === 1) {
     pageCountText = getTextInCurrentLanguage(KNOWLEDGE_PAGE_TEXTS.pageCountOne)
   }
   return (
-    <ContentBox title={getTextInCurrentLanguage(KNOWLEDGE_PAGE_TEXTS.listTitle)} footer={pageCountText}>
+    <ContentBox title={getTextInCurrentLanguage(KNOWLEDGE_PAGE_TEXTS.listTitle)} footer={pageCountText} actions={newKnowledgePageButton}>
       <Table
         columns={columns}
         rows={knowledgePages}
@@ -152,6 +174,16 @@ export function KnowledgePageTab() {
           return <EditButton label={editLabel} onClick={() => openEditor(knowledgePage)} />
         }}
       />
+      {newKnowledgePageOpen && (
+        <NewKnowledgePagePopup
+          knowledgeSections={knowledgeSections}
+          fieldNames={fieldNames}
+          isSaving={createKnowledgePageHook.isLoading}
+          errorMessage={createErrorMessage}
+          onCreate={(fieldValuesByFieldName) => void handleCreateKnowledgePage(fieldValuesByFieldName)}
+          onClose={() => setNewKnowledgePageOpen(false)}
+        />
+      )}
     </ContentBox>
   )
 }

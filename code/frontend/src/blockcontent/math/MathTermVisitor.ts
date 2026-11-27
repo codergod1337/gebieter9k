@@ -2,6 +2,7 @@ import type { FractionTerm } from './FractionTerm.ts'
 import type { FunctionTerm } from './FunctionTerm.ts'
 import type { GroupTerm } from './GroupTerm.ts'
 import type { MarkedTerm } from './MarkedTerm.ts'
+import type { NegativeTerm } from './NegativeTerm.ts'
 import type { NumberTerm } from './NumberTerm.ts'
 import type { PowerTerm } from './PowerTerm.ts'
 import type { ProductTerm } from './ProductTerm.ts'
@@ -23,5 +24,6 @@ export type MathTermVisitor<Result> = {
   visitRootTerm(rootTerm: RootTerm): Result
   visitFunctionTerm(functionTerm: FunctionTerm): Result
   visitGroupTerm(groupTerm: GroupTerm): Result
+  visitNegativeTerm(negativeTerm: NegativeTerm): Result
   visitMarkedTerm(markedTerm: MarkedTerm): Result
 }

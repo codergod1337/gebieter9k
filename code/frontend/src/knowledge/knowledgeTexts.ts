@@ -19,6 +19,8 @@ export const KNOWLEDGE_TEXTS = {
   /** Fuß eines Kapitels: wie viele Seiten es hat. */
   pageCountOne: { de: '1 Seite' },
   pageCountMany: { de: '{pageCount} Seiten' },
+  /** Nur für den Admin, oben auf jeder Seite: führt in den Editor der Seite im Wissensmanager. */
+  editPage: { de: 'Seite bearbeiten' },
   /** Der Inhalt einer Seite ließ sich nicht lesen; dahinter steht die Stelle im Inhalt. */
   unreadableContent: { de: 'Der Inhalt dieser Seite lässt sich nicht anzeigen: {reason}' },
   /** Eine Seite in einer Fassung des Formats, die dieses Frontend noch nicht kennt. */

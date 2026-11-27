@@ -88,11 +88,11 @@ Zeigen seine beiden Schenkel hervor, alles andere tritt zurück, und das Hoverla
 |---|---|
 | `knowledge/` | Das Modul: `Knowledge.tsx` (Subheader, je Rubrik ein Reiter; lädt Gliederung, Feldnamen und die Liste der Seiten), `KnowledgeBase.ts`, `KnowledgeStartPage`, `KnowledgeRubricPage`, `KnowledgeChapterPage`, `KnowledgeChapterBox` (ein Kapitel mit seinen Seiten), `KnowledgePageView` (holt die Seite zur Adresse und zeichnet sie), `knowledgePaths.ts`, `knowledgeTexts.ts`, `knowledgeIcon.ts`. |
 | `knowledge/page/` | Die Seiten vom Backend: `KnowledgePageDocument.ts` (die Feld-Map eines Dokuments, die Feldnamen), `useKnowledgePage.ts`. |
-| `knowledge/content/` | Der Inhalt einer Seite: `KnowledgeContentReader` (JSON-Text → Bausteine, mit der Stelle im JSON bei einem Fehler), das Modell `KnowledgeContent`/`KnowledgeSketch`, die Anzeige `KnowledgeContentView`, `KnowledgeBoxBlockView`, `KnowledgeSketchView`. |
+| `blockcontent/` (global, NICHT mehr unter `knowledge/`, seit 2026-11-27) | Der Inhalt einer Seite ist ein „Inhalt aus Bausteinen“: Format, Leser, Anzeige, Formeln (`math/`), Rechnungen (`derivation/`), Skizzen (`sketch/`), getippte Formeln (`formulatext/`) und der Editor (`editor/`). Alles dazu in [`blockcontent.md`](blockcontent.md). |
 | `knowledge/section/` | Die Gliederung: Typ, Hook, `knowledgeSectionTree.ts`. |
-| `knowledge/math/` | Eine Formel als Baum aus Termen, je Klasse eine Datei, ohne React: `MathTerm` (Basis), `SymbolTerm`, `NumberTerm`, `SumTerm`, `ProductTerm`, `FractionTerm`, `PowerTerm`, `RootTerm`, `FunctionTerm`, `GroupTerm`, `MarkedTerm`, dazu `TermMark` (Kennung + Farbe), `TermRoles` (welche Terme einer Zeile gekürzt bzw. von der Umformung gebracht sind), `Equation`. Gezeichnet wird über den Visitor `MathTermReactRenderer` (`MathTermView`, `EquationView`); Wurzelzeichen und Klammern sind kleine SVGs, die mit dem Inhalt wachsen (`MathStretchySign`). |
-| `knowledge/derivation/` | Eine Rechnung: `Derivation`, `DerivationStep`, `DerivationOperation` (das „\| · r“ am Zeilenende samt dem, was die Umformung bringt und kürzt). Anzeige: `DerivationBox`, `DerivationStepRow`, `DerivationOperationNote`. Ob der Rechenweg eingeblendet ist: `useDerivationPathVisibility`; welche Zeile zeigt, was gekürzt wird: `useDerivationCancellations`; das Abspielen einer Umformung: `useDerivationFlight` mit `TermFlightAnimator` (reines DOM). |
-| `knowledge/sketch/` | Die Bausteine jeder Skizze: `SketchCoordinateSystem` (Nullpunkt und Maßstab), `Sketch` (Rahmen), `SketchAxes`, `SketchPoint`, `SketchSegment`, `SketchAngle`, `SketchRightAngle`, `formatSketchNumber`, `SketchPosition`. |
+| `blockcontent/math/` | Eine Formel als Baum aus Termen, je Klasse eine Datei, ohne React: `MathTerm` (Basis), `SymbolTerm`, `NumberTerm`, `SumTerm`, `ProductTerm`, `FractionTerm`, `PowerTerm`, `RootTerm`, `FunctionTerm`, `GroupTerm`, `MarkedTerm`, dazu `TermMark` (Kennung + Farbe), `TermRoles` (welche Terme einer Zeile gekürzt bzw. von der Umformung gebracht sind), `Equation`. Gezeichnet wird über den Visitor `MathTermReactRenderer` (`MathTermView`, `EquationView`); Wurzelzeichen und Klammern sind kleine SVGs, die mit dem Inhalt wachsen (`MathStretchySign`). |
+| `blockcontent/derivation/` | Eine Rechnung: `Derivation`, `DerivationStep`, `DerivationOperation` (das „\| · r“ am Zeilenende samt dem, was die Umformung bringt und kürzt). Anzeige: `DerivationBox`, `DerivationStepRow`, `DerivationOperationNote`. Ob der Rechenweg eingeblendet ist: `useDerivationPathVisibility`; welche Zeile zeigt, was gekürzt wird: `useDerivationCancellations`; das Abspielen einer Umformung: `useDerivationFlight` mit `TermFlightAnimator` (reines DOM). |
+| `blockcontent/sketch/` | Die Bausteine jeder Skizze: `SketchCoordinateSystem` (Nullpunkt und Maßstab), `Sketch` (Rahmen), `SketchAxes`, `SketchPoint`, `SketchSegment`, `SketchAngle`, `SketchRightAngle`, `formatSketchNumber`, `SketchPosition`. |
 
 Global dazugekommen: `components/PlayButton` (der Abspiel-Knopf).
 
@@ -268,11 +268,13 @@ Später, eigener Gang (Nutzer): die aus `content` aufbereiteten Schlagwörter f�
 
 1. Erledigt am 2026-11-27: der Kern, die Seiten aus dem Kern statt aus dem Code.
 2. Der Nutzer sieht sich die Seite aus dem Kern an; daran wird besprochen, was noch anders soll.
-3. Gebaut am 2026-11-27 (lokal, wartet auf Commit und Push): Wissensmanager, Reiter „Seiten“ mit der Liste und dem
+3. Gebaut am 2026-11-27: der allgemeine Editor für Inhalte aus Bausteinen (Karten mit Feldern, Formeln getippt, JSON als
+   zweite Ansicht; Wunsch des Nutzers: „als allgemeinen richtext editor nutzen“), siehe [`blockcontent.md`](blockcontent.md).
+   Davor am selben Tag: Wissensmanager, Reiter „Seiten“ mit der Liste und dem
    Editor einer Seite (Felder per Klick, der Inhalt als JSON-Text mit Vorschau daneben). Anlass (Nutzer): „ausserdem
    hast du noch keinen editor für die einzelne wissensdatenbank seite, ich muss ja sehen was du da … gebaut hast“.
-   Noch offen: eine neue Seite im Browser anlegen (geführt), eine Seite verschieben, und ob der JSON-Editor reicht
-   oder Formulare je Baustein kommen sollen (erst zeigen, dann besprechen).
+   Am selben Tag dazu: Text mit fett, kursiv, Links, Listen und Formeln im Satz, Minus in Formeln, die Skizze als
+   Elementliste, „neue Seite“ geführt im Reiter „Seiten“. Noch offen: eine Seite verschieben, Reihenfolge der Seiten.
 4. Die Suche über die Seiten (Titel, Zusammenfassung, Schlagwörter; später aufbereitete Schlagwörter aus dem Inhalt).
 5. Danach: die Bewegung (ein Punkt im Achsenkreuz, Slider, Umschalter kartesisch/polar), weitere Kapitel,
    Stern-Gerlach, Statistik.

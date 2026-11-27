@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
+import { adminAccessRoleKey } from '../auth/access/adminAccessRoleKey.ts'
+import { useCurrentSession } from '../auth/login/useCurrentSession.ts'
 import { LoadStatus } from '../components/LoadStatus.tsx'
+import { getKnowledgePageEditorPath } from '../knowledgemanager/knowledgeManagerPaths.ts'
 import { getTextInCurrentLanguage } from '../language/getTextInCurrentLanguage.ts'
 import { getTextInCurrentLanguageWithValues } from '../language/getTextInCurrentLanguageWithValues.ts'
-import type { KnowledgeContent } from './content/KnowledgeContent.ts'
-import { KnowledgeContentError } from './content/KnowledgeContentError.ts'
-import { KNOWLEDGE_CONTENT_FORMAT_VERSION } from './content/knowledgeContentFormat.ts'
-import { KnowledgeContentReader } from './content/KnowledgeContentReader.ts'
-import { KnowledgeContentView } from './content/KnowledgeContentView.tsx'
+import { useOrigin } from '../navigation/useOrigin.ts'
+import type { BlockContent } from '../blockcontent/BlockContent.ts'
+import { BlockContentError } from '../blockcontent/BlockContentError.ts'
+import { BLOCK_CONTENT_FORMAT_VERSION } from '../blockcontent/blockContentFormat.ts'
+import { BlockContentReader } from '../blockcontent/BlockContentReader.ts'
+import { BlockContentView } from '../blockcontent/BlockContentView.tsx'
 import { useKnowledgeContext } from './Knowledge.tsx'
 import { getKnowledgePagesOfChapter } from './KnowledgeBase.ts'
 import { findKnowledgeChapter, findKnowledgeRubric, getKnowledgePathSegment } from './knowledgePaths.ts'
@@ -23,7 +27,7 @@ type LoadedKnowledgePage = {
 
 /** Was aus dem Inhalt einer Seite geworden ist: die Bausteine zum Zeichnen oder der Grund, warum er sich nicht lesen ließ. */
 type ReadKnowledgeContent = {
-  content: KnowledgeContent | null
+  content: BlockContent | null
   problem: string | null
 }
 
@@ -32,11 +36,17 @@ type ReadKnowledgeContent = {
  * `/wissen/mathe/grundlagen/koordinatentransformation`. Die Adresse nennt die Keys; welche Seite das ist, steht in der
  * Liste, die das Modul geladen hat. Den Inhalt holt die Seite selbst (ein Dokument des Solr-Kerns `KNOWLEDGE`) und
  * zeichnet ihn aus seinen Bausteinen. Gibt es Rubrik, Kapitel oder Seite nicht, steht dort ein Hinweis.
+ *
+ * Der Admin sieht über dem Inhalt „Seite bearbeiten“ (Nutzer 2026-11-27: „auf jeder seite will ich die verlinkt
+ * haben“): Der Link führt in den Editor der Seite im Wissensmanager; die Seite geht als Origin mit („Zurück zu
+ * Koordinatentransformation“). Besucher und andere User sehen ihn nicht.
  */
 export function KnowledgePageView() {
   const { rubricPathSegment, chapterPathSegment, pagePathSegment } = useParams()
   const knowledgeContext = useKnowledgeContext()
   const knowledgePageHook = useKnowledgePage()
+  const currentSession = useCurrentSession()
+  const originNavigation = useOrigin()
   const getPublishedKnowledgePage = knowledgePageHook.getPublishedKnowledgePage
   const knowledgeBase = knowledgeContext.knowledgeBase
   const [loadedKnowledgePage, setLoadedKnowledgePage] = useState<LoadedKnowledgePage | null>(null)
@@ -97,20 +107,20 @@ export function KnowledgePageView() {
       return null
     }
     const contentFormatVersion = shownKnowledgePageDocument[contentFormatVersionFieldName]
-    if (typeof contentFormatVersion === 'number' && contentFormatVersion > KNOWLEDGE_CONTENT_FORMAT_VERSION) {
+    if (typeof contentFormatVersion === 'number' && contentFormatVersion > BLOCK_CONTENT_FORMAT_VERSION) {
       const problem = getTextInCurrentLanguageWithValues(KNOWLEDGE_TEXTS.unknownContentFormat, {
         version: String(contentFormatVersion),
       })
       return { content: null, problem }
     }
     const contentText = getKnowledgePageText(shownKnowledgePageDocument, contentFieldName) ?? ''
-    const knowledgeContentReader = new KnowledgeContentReader()
+    const knowledgeContentReader = new BlockContentReader()
     try {
       const content = knowledgeContentReader.readContent(contentText)
       return { content, problem: null }
     } catch (caughtError) {
       let reason = String(caughtError)
-      if (caughtError instanceof KnowledgeContentError) {
+      if (caughtError instanceof BlockContentError) {
         reason = caughtError.message
       }
       const problem = getTextInCurrentLanguageWithValues(KNOWLEDGE_TEXTS.unreadableContent, { reason })
@@ -137,8 +147,34 @@ export function KnowledgePageView() {
     }
     return <LoadStatus errorMessage={pageErrorMessage} isLoading={pageErrorMessage === null} />
   }
-  if (readKnowledgeContent.content === null) {
-    return <p className="text-danger">{readKnowledgeContent.problem}</p>
+  // der Weg in den Editor, nur für den Admin; auch dann, wenn sich der Inhalt nicht lesen lässt (gerade dann)
+  const isAdmin = currentSession.hasAccessRole(adminAccessRoleKey)
+  let pageTitle = ''
+  if (shownKnowledgePageDocument !== null) {
+    pageTitle = getKnowledgePageText(shownKnowledgePageDocument, knowledgeBase.fieldNames.title) ?? ''
   }
-  return <KnowledgeContentView content={readKnowledgeContent.content} />
+  const editorPath = getKnowledgePageEditorPath(knowledgePageId)
+  const originState = originNavigation.createOriginStateHere(pageTitle)
+  const pageActions = isAdmin && (
+    <div className="knowledge-page-actions">
+      <Link to={editorPath} state={originState} className="btn btn-sm btn-outline-secondary">
+        <i className="bi bi-pencil me-1" aria-hidden="true"></i>
+        {getTextInCurrentLanguage(KNOWLEDGE_TEXTS.editPage)}
+      </Link>
+    </div>
+  )
+  if (readKnowledgeContent.content === null) {
+    return (
+      <>
+        {pageActions}
+        <p className="text-danger">{readKnowledgeContent.problem}</p>
+      </>
+    )
+  }
+  return (
+    <>
+      {pageActions}
+      <BlockContentView content={readKnowledgeContent.content} />
+    </>
+  )
 }

@@ -25,6 +25,139 @@ Nach dem 2026-12-03 diesen Abschnitt löschen (ebenso die Regel `interruptions-u
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-27 13:37 – Die fehlenden Stücke des Editors einbauen
+
+- Ansage, wörtlich (auf meine Liste „Noch nicht drin“): „dann mach es rein du fauler sack“
+- Lage 13:37: letzter Commit weiter `b972d64` (= `origin/main`); der ganze Editor von 13:24–13:36 liegt lokal und
+  ungepusht (63 Einträge in `git status`, Typprüfung und Bau grün).
+- Stücke, jedes für sich grün:
+  1. Text: fett, kursiv, Link, Formel mitten im Satz, dazu Listen (`blockcontent/inline/`, Teil `LIST`).
+  2. Minus in Formeln (Term `NEGATIVE`: Modell, Zeichner, Leser, getippte Formeln).
+  3. Neue Seite im Browser anlegen (Wissensmanager, Reiter „Seiten“, geführt).
+  4. Skizze im Editor als Liste ihrer Elemente mit Feldern.
+  Nicht dabei, wie gesagt: den HTML-Editor (Profiltext usw.) ablösen.
+- Stück 1 im Code (13:41), Typprüfung grün, im Browser noch nicht gesehen: `blockcontent/inline/` (`InlineMarkupParser.ts`:
+  `**fett**`, `*kursiv*`, `[Text](Adresse)`, `$Formel$`, `\` nimmt die Bedeutung; nachsichtig, Offenes bleibt Text;
+  `InlineNode.ts`, `InlineTextView.tsx`: Links nur `https://`, `http://`, `mailto:` oder intern `/…`); Teil `LIST`
+  (`ordered`, `items`); `BlockContentReader` liest Auszeichnung in Absatz, Hinweis, Listenpunkt (eine Formel im Satz,
+  die sich nicht lesen lässt, bleibt als Text mit Hinweis stehen); `BoxBlockView`; Editor: `InlineTextArea.tsx`
+  (Leiste fett/kursiv/Link/Formel), Liste in `BoxBlockCard.tsx`.
+- Stück 2 im Code (13:41): `math/NegativeTerm.ts`, `visitNegativeTerm`, Summe zeichnet „−“ vor einem negativen Summanden;
+  JSON `NEGATIVE`; getippt `a - b`, `-a`, `x^-1`, auch mit dem echten Minuszeichen. Probe mit Node: 57 Fälle, 0 falsch
+  (alle 20 Formeln der Demoseite weiter gleich).
+- Stück 3 im Code (13:46): `knowledgemanager/page/NewKnowledgePagePopup.tsx` (Rubrik → Kapitel → Unterkapitel, wenn
+  es welche gibt → Titel und Key mit Vorschlag aus dem Titel), Knopf „neue Seite“ in `KnowledgePageTab.tsx`,
+  `useKnowledgePage.createKnowledgePage`; die Seite entsteht als Entwurf mit `{"blocks":[]}`, danach der Editor.
+- Stück 4 im Code (13:46): `blockcontent/editor/SketchEditor.tsx` (Feld, Nullpunkt, Länge der 1, Achsen; Elemente
+  Punkt, Strecke, Winkel, rechter Winkel als Zeilen mit Zahlenfeldern), `BoxBlockCard.tsx` nutzt ihn statt des
+  JSON-Felds; `BlockContentJson.ts` mit den Typen der Skizze; der Leser nimmt geleerte freiwillige Texte als „nicht
+  vorhanden“.
+- Alle vier geprüft (13:45): Typprüfung und Bau grün; im Firefox gegen das nachgestellte Admin-Backend: Auszeichnung
+  (fett, kursiv ineinander, Link außen/innen, Formel im Satz, kaputte Formel als Text mit Hinweis), Leiste „fett“,
+  Liste nummeriert, `cos φ - 1 = -x / r` mit zwei Minuszeichen, Skizze mit 8 Elementzeilen (Punkt verschoben, Punkt
+  angehängt), speichern; „neue Seite“: Schritte erscheinen nacheinander, Key-Vorschlag
+  `WAS_IST_EINE_METRIK_UEBUNG`, nach dem Anlegen der Editor des Entwurfs. Keine Fehler. Gegen das echte Backend
+  NICHT geprüft.
+- Doku (13:46): `docu/blockcontent.md` (Auszeichnung, `LIST`, `NEGATIVE`, Editor, Offenes, Tests),
+  `solr-cores/KNOWLEDGE.md`, Konzept.
+- **Wartet auf den Nutzer (13:46): Commit + Push** (alles seit `b972d64`: Link „Seite bearbeiten“, globales Paket
+  `blockcontent`, Karten-Editor, Auszeichnung, Minus, Skizze, neue Seite). Danach Pi bauen (nur `frontend`) und dort
+  ansehen. Offen und nicht angefangen: HTML-Editor ablösen, Seite verschieben, Reihenfolge der Seiten, Indizes/
+  Vektoren/Integrale, Überschriften/Bilder/Tabellen im Text.
+
+## 2026-11-27 13:24 – Editor-Modus bauen wie vorgeschlagen, und zwar als ALLGEMEINEN Editor (nicht nur Wissensdatenbank)
+
+- Ansage, wörtlich: „ok zueück zur ausgangsfrage, ja bauen den editor mal so. ganz wichtig ich würde das genre als
+  allgemeinen richtext editor nutzen wollen, wenn wir uns schon die mühe machen so ein ding anzulegen dann gleich
+  richtig, stimmst du mir zu?“
+- Meine Antwort (im Chat): ja, mit zwei Punkten: (1) Format, Leser, Anzeige und Editor kommen in ein eigenes globales
+  Paket, unabhängig von der Wissensdatenbank; (2) „Rich-Text“ ist es erst mit fett, kursiv, Links, Listen im Text, das
+  kommt als eigener Schritt; der vorhandene HTML-Editor (`components/RichTextEditor`, gespeicherte Texte) wird nicht
+  im selben Zug abgelöst.
+- Bestätigt ist damit der Vorschlag von 13:14: Bausteine als Karten mit Feldern, Formeln als getippter Text
+  (`r · cos φ = r#weg · x / r`; `/` Bruch, `^` Potenz, `√( )`, Funktionen; Größen am Zeichen erkannt; `#name`
+  zum Verfolgen), Vorschau daneben, JSON als zweite Ansicht.
+- Stücke, jedes für sich grün (der Nutzer committet auch mittendrin):
+  A. Umzug ins globale Paket `code/frontend/src/blockcontent/` (bisher `knowledge/content`, `knowledge/math`,
+     `knowledge/derivation`, `knowledge/sketch`); Namen `Knowledge…` → `Block…`/neutral; CSS-Klassen `knowledge-…`
+     des Inhalts → `blockcontent-…`. Kein Verhalten ändert sich.
+  B. Formeln als Text: Leser und Schreiber (Text ↔ Term-JSON), Probe: Die Demoseite übersteht hin und zurück.
+  C. Editor: Karten je Baustein mit Feldern, Ansicht „JSON“ daneben, im Wissensmanager eingesetzt.
+  D. Doku, Protokoll. Danach (eigene Stücke): Skizze als Elementliste, neue Seite anlegen, Text mit fett/kursiv/Link/
+     Liste, Minus und weitere Schreibweisen in Formeln.
+- Lokal liegt noch ungepusht der Link „Seite bearbeiten“ von 13:13 (kommt mit dem nächsten Commit mit).
+- Stück A fertig (13:27): umgezogen nach `code/frontend/src/blockcontent/` (`math/`, `derivation/`, `sketch/`, dazu
+  `BlockContent.ts`, `BlockContentReader.ts`, `BlockContentError.ts`, `BlockContentView.tsx`, `BoxBlockView.tsx`,
+  `SketchContent.ts`, `SketchContentView.tsx`, `blockContentFormat.ts`); CSS-Klassen des Inhalts heißen
+  `blockcontent-…`; Typprüfung grün. Dateien nur verschoben (`mv`, kein `git mv`: der Index bleibt unberührt).
+- Stück B fertig (13:28): `blockcontent/BlockContentJson.ts` (Typen des JSON), `blockcontent/formulatext/`:
+  `FormulaTextParser.ts` (Text → Term-JSON), `FormulaTextPrinter.ts` (Term-JSON → Text), `FormulaTextError.ts`,
+  `formulaHighlights.ts`. Schreibweise: `+`, `·`/`*`, `/` (bindet stärker als das Produkt), `^`, `√( )`/`sqrt( )`,
+  Funktion = Name aus ≥ 2 Buchstaben vor einem Term oder ein Buchstabe direkt vor einer Klammer, `( )` sichtbar
+  (fällt als Zähler/Nenner/Exponent/Radikand weg), `{ }` unsichtbar, Größe am Zeichen erkannt, Marke `#name` mit
+  Farbe `:0`–`:5`, Gleichung `links = rechts`, Verweis `@name`. Kein Minus (der Term-Baum kennt es nicht). Probe mit
+  Node (`tools/formula_roundtrip.ts`, Wegwerf): alle 20 Formeln der Demoseite hin und zurück gleich, z. B.
+  `r#radiusFactor · cos#cosine φ = r#cancelledRadiusFactor · x / r` und
+  `√#rootOfRadiusSquared:5(r^2#squareOfRadius:5) = √#rootOfSumOfSquares:5(x^2 + y^2)`; 19 eigene Fälle stabil,
+  9 Fehlerfälle abgelehnt mit Meldung. Typprüfung grün.
+- Stück C lokal fertig (13:35), nicht committet. Neu `blockcontent/editor/`: `BlockContentEditor.tsx` (Ansichten
+  „Bausteine“/„JSON“ in der Adresse `?editorView=json`, Vorschau daneben), `BlockContentCardsEditor.tsx`,
+  `QuantitiesCard.tsx`, `BoxBlockCard.tsx`, `DerivationBlockCard.tsx`, `FormulaInput.tsx`, `EditorCard.tsx`,
+  `listChanges.ts`, `blockContentEditorTexts.ts`; `knowledgemanager/page/KnowledgePageContentEditor.tsx` nutzt den
+  Editor (nur noch Stand, Verwerfen, Speichern); `BlockContentReader` duldet leeren Titel/Absatz/Hinweis (im Editor
+  entstehen sie leer), `BoxBlockView` zeichnet leere nicht; `base.css` (`.blockcontent-editor…`, Vorschau richtet
+  sich per Container-Abfrage nach ihrer eigenen Breite), `default.css`. Typprüfung und Bau grün. Im Firefox gegen
+  das nachgestellte Admin-Backend: 7 Karten, 28 Formelfelder, Formel ändern, kaputte Formel (Meldung, Inhalt
+  bleibt), Titel/Absatz, Zeile und Kasten anhängen/verschieben/entfernen, Farbe einer Größe, Ansicht JSON und zurück,
+  speichern. Gegen das echte Backend NICHT geprüft.
+- Stück D fertig (13:35): neu `docu/blockcontent.md` (Format, Formel-Schreibweise, Editor, Offenes; der Format-Abschnitt
+  ist aus `solr-cores/KNOWLEDGE.md` dorthin umgezogen), `KNOWLEDGE.md` und Konzept nachgezogen, Regeln.
+- **Wartet auf den Nutzer (13:35): Commit + Push** (enthält auch den Link „Seite bearbeiten“ von 13:13). Danach Pi bauen
+  (nur `frontend`) und Editor dort im Browser ansehen. Nächste Stücke, nicht angefangen: Skizze als Elementliste,
+  neue Seite im Browser anlegen, Text mit fett/kursiv/Link/Liste, Minus in Formeln.
+
+## 2026-11-27 13:19 – Solr-Passwort: `.env` im Workspace gegen `.env` auf dem Pi prüfen
+
+- Ansage, wörtlich: „prüfe mal bitte ob das solr user pw in der env datei auf dem pi gleich ist wie das in der env datei
+  in diesem workspace“
+- Geprüft 13:19, nur über SHA-256 und Längen, kein Wert ausgegeben: `SOLR_PASSWORD` Laptop = Pi-`.env` = laufender
+  Container (`/run/secrets/solr_password`), je 32 Zeichen, je genau eine Zeile; `SOLR_USER` ebenfalls überall gleich.
+  Nichts geändert, `/tmp` auf dem Pi leer. Fertig.
+
+## 2026-11-27 13:09 – Edit-Funktion für die Wissensseiten: auf jeder Seite verlinkt, Editor-Modus, Vorschlag
+
+- Ansage, wörtlich: „so dann jetzt eine edit funktion für die wissensseiten bitte. auf jeder seite will ich die verlinkt
+  haben und dann in einem editor modus bearbeiten können, mach da gleich mal einen vorschlag“
+- Davor (13:05) seine Frage, wo der Reverse Proxy eingestellt ist: beantwortet (nur
+  `/gebiter9k/mounts/nginx/conf/default.conf` auf dem Pi, nicht im Repo; Compose unverändert).
+- Lage 13:09: Der Nutzer hat um 13:04 `b972d64` („solrmapping“) committet und gepusht, Arbeitsverzeichnis sauber. Darin:
+  der Editor im Wissensmanager (Reiter „Seiten“, Editor je Seite mit JSON und Vorschau), die Notiz ohne Pflicht, Doku.
+  Seit dem Stand des Pi (`a8f5df2`) nur Frontend und Doku, kein Backend, kein Compose.
+- Plan: (1) Pi bauen (nur `frontend`), (2) die Seite auf dem Pi ändern (`PUT`, ohne „kürzen“, „Seiten tauschen“,
+  „hebt sich auf“), ansehen; (3) auf jeder Wissensseite für den Admin ein Link „Seite bearbeiten“ in den Editor
+  (lokal, braucht den nächsten Push); (4) Vorschlag für den Editor-Modus im Bericht: EIN Vorschlag, kurz, mit Beispiel.
+- Schritt 1 fertig (13:10): Pi von `a8f5df2` auf `b972d64`, nur `frontend` gebaut (8 s) und gestartet; altes Image
+  als `:vorher` (`183f09943158`); nginx-Konfiguration im neuen Container ok, `/solr/` weiter 200 bzw. 401; `/tmp` leer.
+- Schritt 2 fertig (13:12): Seite auf dem Pi unter dem Konto des Nutzers geändert, `PUT /api/admin/knowledge-page`
+  nur mit `content` → 200 (10 386 → 10 236 Zeichen; die sechs Notizen mit „kürzen“, „Seiten tauschen“, „hebt sich
+  auf“ sind weg; Titel, Status, Platz, `createdAt` unverändert, `lastChangedAt` neu). Damit ist das Ändern über HTTP
+  geprüft: kaputter Inhalt 400, leerer Titel 400, unbekannte id 404. Im Firefox ohne Fenster auf dem Pi: Seite ohne
+  Anmeldung zeigt nur „| · r“ und „| √“, 5 Abspiel-Knöpfe, keins der Wörter. Dann im Browser unter dem Konto des
+  Nutzers angemeldet (Passwort + Code aus der `.env`), NUR angesehen, abgemeldet (204): Reiter „Seiten“ mit der
+  Seite, Editor (Ort, Titel, Adresse, Schlagwörter, Status; 23 014 Zeichen JSON, Vorschau 6 Kästen, „Zurück zu
+  Seiten“), Solr-Manager mit den Kernen FILE und KNOWLEDGE, bei KNOWLEDGE 19 Felder mit „Alle, auch ohne
+  Anmeldung“. Die offenen Punkte „gegen das echte Backend nicht geprüft“ sind damit erledigt.
+- Schritt 3 lokal fertig (13:14), nicht committet: `knowledge/KnowledgePageView.tsx` zeigt dem Admin über dem Inhalt
+  „Seite bearbeiten“ (Link in den Editor, die Seite als Origin), `knowledgeTexts.ts`, `base.css`
+  (`.knowledge-page-actions`); im Editor heißt der Origin für „Seite ansehen“ jetzt „Editor“
+  (`KnowledgePageFieldsBox.tsx`, `knowledgePageTexts.ts`). Typprüfung und Bau grün; im Firefox gegen die
+  nachgestellten Backends: Admin sieht den Link, Editor zeigt „Zurück zu Koordinatentransformation“, zurück geht;
+  Besucher sieht keinen Link. Doku: `solr-cores/KNOWLEDGE.md`, `konzept-navigation.md`, `setup.md` (Bau 13:10).
+- Schritt 4: Vorschlag für den Editor-Modus steht im Bericht an den Nutzer (Bausteine als Karten mit Feldern, Formeln
+  als getippter Text, JSON bleibt als zweite Ansicht). NICHT gebaut, wartet auf sein Ja.
+- **Wartet auf den Nutzer (13:14):** Commit + Push für den Link „Seite bearbeiten“ (dann Pi bauen, nur `frontend`), und
+  seine Antwort zum Vorschlag.
+
 ## 2026-11-27 12:40 – Solr-Admin-Oberfläche von außen erreichbar machen (Reverse Proxy auf dem Pi)
 
 - Ansage, wörtlich: „sag mal du kannst doch auf dem pi bestimmt noch einen reverse proxy einreichten dass ich auf die

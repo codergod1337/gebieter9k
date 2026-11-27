@@ -4379,7 +4379,7 @@
   }
 
   /*
-   * ===== Formeln (knowledge/math): der Satz. Jeder Term ist ein eigenes Element (MathTermReactRenderer), deshalb lässt
+   * ===== Formeln (blockcontent/math): der Satz. Jeder Term ist ein eigenes Element (MathTermReactRenderer), deshalb lässt
    * er sich einzeln färben und bewegen. Hier stehen nur Lage und Maße; Schrift und Farben setzt das Theme. =====
    */
   :root {
@@ -4504,7 +4504,7 @@
   }
 
   /*
-   * ===== Herleitung (knowledge/derivation): die Schritte untereinander, die Gleichheitszeichen in einer Spalte
+   * ===== Herleitung (blockcontent/derivation): die Schritte untereinander, die Gleichheitszeichen in einer Spalte
    * (Beschriftung, linke Seite, „=“, rechte Seite, Umformung). Der Bereich ist zugleich die Ebene, in der die
    * wandernden Terme fliegen (TermFlightAnimator). =====
    */
@@ -4662,6 +4662,13 @@
     font-weight: 600;
   }
 
+  /* über dem Inhalt einer Seite, rechts: der Weg in ihren Editor (nur für den Admin) */
+  .knowledge-page-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.75rem;
+  }
+
   /* ein Unterkapitel in der Übersicht eines Kapitels: sein Name über seinen Seiten */
   .knowledge-sub-chapter {
     margin-top: 1rem;
@@ -4673,7 +4680,7 @@
     font-weight: 600;
   }
 
-  .knowledge-intro {
+  .blockcontent-box-with-sketch {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(14rem, 22rem);
     align-items: center;
@@ -4681,7 +4688,7 @@
   }
 
   @media (max-width: 767.98px) {
-    .knowledge-intro {
+    .blockcontent-box-with-sketch {
       grid-template-columns: minmax(0, 1fr);
     }
   }
@@ -4713,45 +4720,252 @@
     font-size: 0.85rem;
   }
 
-  .knowledge-editor {
+  /*
+   * ===== Editor für Inhalte aus Bausteinen (blockcontent/editor), allgemein: links bearbeiten (Karten oder JSON), rechts
+   * die Vorschau; beide Hälften gleich hoch, jede rollt für sich. Auf schmalen Schirmen untereinander. =====
+   */
+  .blockcontent-editor {
+    --blockcontent-editor-pane-height: 72vh;
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: start;
     gap: 1.5rem;
   }
 
   @media (max-width: 1199.98px) {
-    .knowledge-editor {
+    .blockcontent-editor {
       grid-template-columns: minmax(0, 1fr);
     }
   }
 
-  /*
-   * JSON-Text und Vorschau sind gleich hoch und rollen jeder für sich: So bleibt der Text stehen, während man durch die
-   * Vorschau blättert, und umgekehrt.
-   */
-  .knowledge-editor {
-    --knowledge-editor-pane-height: 70vh;
+  .blockcontent-editor-source,
+  .blockcontent-editor-preview {
+    min-width: 0;
   }
 
-  .knowledge-editor-textarea {
-    height: var(--knowledge-editor-pane-height);
+  .blockcontent-editor-views {
+    margin-bottom: 0.75rem;
+  }
+
+  /* die Zeile über der Vorschau ist so hoch wie die Reiter links: So beginnen beide Hälften auf derselben Höhe */
+  .blockcontent-editor-preview-label {
+    display: flex;
+    align-items: flex-end;
+    min-height: 2.6rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.4rem;
+    font-weight: 600;
+  }
+
+  .blockcontent-editor-pane {
+    height: var(--blockcontent-editor-pane-height);
+    overflow-y: auto;
+    padding-right: 0.5rem;
+    /* die Vorschau richtet sich nach IHRER Breite, nicht nach der des Fensters (Text neben Skizze, siehe unten) */
+    container-type: inline-size;
+  }
+
+  /* in einer schmalen Hälfte steht die Skizze unter dem Text statt daneben */
+  @container (max-width: 44rem) {
+    .blockcontent-box-with-sketch {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .blockcontent-editor-textarea {
+    height: 100%;
     font-family: var(--bs-font-monospace);
     font-size: 0.8rem;
     line-height: 1.35;
     white-space: pre;
     overflow: auto;
-    resize: vertical;
+    resize: none;
   }
 
-  .knowledge-editor-preview {
+  .blockcontent-editor-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .blockcontent-editor-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .blockcontent-editor-card-kind {
+    flex: 0 0 auto;
+    min-width: 5.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .blockcontent-editor-card-head {
+    display: flex;
+    flex: 1 1 auto;
+    gap: 0.5rem;
     min-width: 0;
   }
 
-  .knowledge-editor-preview-pane {
-    height: var(--knowledge-editor-pane-height);
-    overflow-y: auto;
-    padding-right: 0.5rem;
+  .blockcontent-editor-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.6rem;
+  }
+
+  .blockcontent-editor-part {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .blockcontent-editor-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .blockcontent-editor-row-top {
+    align-items: flex-start;
+  }
+
+  /* eingerückt unter die Art des Teils, damit die Felder einer Gruppe untereinander stehen */
+  .blockcontent-editor-row-indented {
+    padding-left: 6rem;
+  }
+
+  .blockcontent-editor-part-kind {
+    flex: 0 0 5.5rem;
+    font-size: 0.8rem;
+  }
+
+  .blockcontent-editor-row-buttons {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0.25rem;
+  }
+
+  .blockcontent-editor-formula {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .blockcontent-editor-formula-input,
+  .blockcontent-editor-code {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.85rem;
+  }
+
+  .blockcontent-editor-short-input {
+    flex: 0 0 6.5rem;
+    width: 6.5rem;
+  }
+
+  .blockcontent-editor-key-input {
+    flex: 0 0 9rem;
+    width: 9rem;
+    font-family: var(--bs-font-monospace);
+  }
+
+  .blockcontent-editor-quantity-key {
+    flex: 0 0 9rem;
+  }
+
+  .blockcontent-editor-quantity-sample {
+    flex: 0 0 2rem;
+    font-size: 1.2rem;
+    text-align: center;
+  }
+
+  .blockcontent-editor-problem {
+    font-size: 0.8rem;
+  }
+
+  /* Skizze im Editor: Zahlenfelder klein, je Ort ein Paar mit seinem Namen davor; lange Zeilen brechen um */
+  .blockcontent-editor-row-wrap {
+    flex-wrap: wrap;
+  }
+
+  .blockcontent-editor-number-input {
+    flex: 0 0 4.2rem;
+    width: 4.2rem;
+    padding-right: 0.25rem;
+    padding-left: 0.35rem;
+  }
+
+  .blockcontent-editor-position {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .blockcontent-editor-position-label {
+    font-size: 0.8rem;
+  }
+
+  .blockcontent-editor-sketch-kind {
+    flex: 0 0 6.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .blockcontent-editor-sketch-text {
+    flex: 1 1 7rem;
+    width: auto;
+    min-width: 6rem;
+  }
+
+  /* Textfeld mit seiner Leiste (fett, kursiv, Link, Formel) darüber */
+  .blockcontent-editor-inline-text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .blockcontent-editor-inline-toolbar {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .blockcontent-editor-check {
+    flex: 1 1 auto;
+    margin: 0;
+    font-size: 0.85rem;
+  }
+
+  /* ein Minus direkt vor seinem Term (−b, x^−1): ohne den Abstand eines Rechenzeichens */
+  .math-sign-unary {
+    margin-right: 0.05em;
+  }
+
+  /* eine Formel mitten im Satz: auf der Zeile, in der Größe des Texts */
+  .blockcontent-inline-formula {
+    display: inline-block;
+    margin: 0 0.15em;
+    font-size: 1.05em;
+    vertical-align: middle;
+  }
+
+  .blockcontent-text > ul:last-child,
+  .blockcontent-text > ol:last-child {
+    margin-bottom: 0;
+  }
+
+  .blockcontent-editor-help {
+    margin: 0;
+    font-size: 0.8rem;
+  }
+
+  .blockcontent-editor-add {
+    flex: 0 0 auto;
   }
 
   .knowledge-editor-controls {
@@ -4767,43 +4981,43 @@
   }
 
   /* die Teile eines Kastens untereinander (Textblöcke, Gleichungsgruppen, Hinweise), mit Abstand dazwischen */
-  .knowledge-parts {
+  .blockcontent-parts {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
     min-width: 0;
   }
 
-  .knowledge-text {
+  .blockcontent-text {
     max-width: 46rem;
   }
 
-  .knowledge-text > p:last-child {
+  .blockcontent-text > p:last-child {
     margin-bottom: 0;
   }
 
-  .knowledge-summary {
+  .blockcontent-equations {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
     gap: 1.5rem 2.5rem;
   }
 
-  .knowledge-summary-heading {
+  .blockcontent-equations-heading {
     margin: 0 0 0.75rem;
     font-size: 1rem;
     font-weight: 600;
   }
 
-  .knowledge-summary-equation {
+  .blockcontent-equation {
     margin-bottom: 0.75rem;
   }
 
-  .knowledge-hint {
+  .blockcontent-hint {
     margin-bottom: 0;
   }
 
   /*
-   * ===== Skizze (knowledge/sketch): ein SVG aus Bausteinen (Achsen, Punkte, Strecken, Winkel). Strichstärken und
+   * ===== Skizze (blockcontent/sketch): ein SVG aus Bausteinen (Achsen, Punkte, Strecken, Winkel). Strichstärken und
    * Schriftgrößen in den Einheiten der Skizze; Farben und das Hervorheben beim Zeigen macht das Theme. =====
    */
   .sketch {

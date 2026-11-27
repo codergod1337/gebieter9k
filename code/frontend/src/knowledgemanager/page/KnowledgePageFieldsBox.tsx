@@ -72,7 +72,8 @@ export function KnowledgePageFieldsBox({
   if (rubricKey !== null && chapterKey !== null) {
     pagePath = getKnowledgePagePath(rubricKey, chapterKey, pageKey)
   }
-  const originState = originNavigation.createOriginStateHere(title)
+  const editorOriginLabel = getTextInCurrentLanguage(KNOWLEDGE_PAGE_TEXTS.editorOriginLabel)
+  const originState = originNavigation.createOriginStateHere(editorOriginLabel)
 
   async function saveField(fieldName: string, fieldValue: unknown) {
     const saved = await onSaveFields({ [fieldName]: fieldValue })

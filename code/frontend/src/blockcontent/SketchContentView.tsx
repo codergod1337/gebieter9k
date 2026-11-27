@@ -1,26 +1,26 @@
 import type { ReactNode } from 'react'
-import { getMathHighlightClassName } from '../math/getMathHighlightClassName.ts'
-import { Sketch } from '../sketch/Sketch.tsx'
-import { SketchAngle } from '../sketch/SketchAngle.tsx'
-import { SketchAxes } from '../sketch/SketchAxes.tsx'
-import { SketchPoint } from '../sketch/SketchPoint.tsx'
-import { SketchRightAngle } from '../sketch/SketchRightAngle.tsx'
-import { SketchSegment } from '../sketch/SketchSegment.tsx'
-import type { KnowledgeSketch, KnowledgeSketchElement } from './KnowledgeSketch.ts'
+import { getMathHighlightClassName } from './math/getMathHighlightClassName.ts'
+import { Sketch } from './sketch/Sketch.tsx'
+import { SketchAngle } from './sketch/SketchAngle.tsx'
+import { SketchAxes } from './sketch/SketchAxes.tsx'
+import { SketchPoint } from './sketch/SketchPoint.tsx'
+import { SketchRightAngle } from './sketch/SketchRightAngle.tsx'
+import { SketchSegment } from './sketch/SketchSegment.tsx'
+import type { SketchContent, SketchElement } from './SketchContent.ts'
 
-type KnowledgeSketchViewProps = {
-  sketch: KnowledgeSketch
+type SketchContentViewProps = {
+  sketch: SketchContent
 }
 
 /**
- * Zeichnet die Skizze einer Seite aus ihren Bausteinen (`knowledge/sketch/`): das Achsenkreuz mit Raster, Nullpunkt und
+ * Zeichnet die Skizze einer Seite aus ihren Bausteinen (`blockcontent/sketch/`): das Achsenkreuz mit Raster, Nullpunkt und
  * der 1 an beiden Achsen, darüber die Elemente in ihrer Reihenfolge. Jede Größe trägt die Farbe ihrer Marke, dieselbe
  * wie in den Formeln der Seite.
  */
-export function KnowledgeSketchView({ sketch }: KnowledgeSketchViewProps) {
+export function SketchContentView({ sketch }: SketchContentViewProps) {
   const coordinateSystem = sketch.coordinateSystem
 
-  function renderElement(element: KnowledgeSketchElement, elementIndex: number): ReactNode {
+  function renderElement(element: SketchElement, elementIndex: number): ReactNode {
     if (element.type === 'POINT') {
       let hintDetail: string | undefined = undefined
       if (element.hintDetail !== null) {
