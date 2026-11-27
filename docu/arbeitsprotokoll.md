@@ -25,6 +25,127 @@ Nach dem 2026-12-03 diesen Abschnitt löschen (ebenso die Regel `interruptions-u
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-27 11:10 – Rubrik „Mathe“ mit „Grundlagen“ anlegen und eine Seite „Koordinatentransformation“ erstellen
+
+- Ansage, wörtlich: „ich hoffe du hast den 2fa so berechnet, dass der code zuvor auch noch gültig ist? dann lege mir
+  doch nun die grundlagen rubrik in mathe an und erstelle eine koordinaten transformationsseite, ich will das prüfen“
+- Zur 2FA-Frage, am Code belegt: Ich habe nichts neu eingerichtet (`secondFactor` war `TOTP_CODE`, kein Aufruf von
+  `…/totp-setup`); gerechnet aus dem Schlüssel in der `.env` für den LAUFENDEN 30-Sekunden-Schritt. Seine App zeigt
+  dieselben Codes weiter. Einzige Wirkung: Ein Schritt gilt nur einmal (`TotpService.findMatchingTimeStep`, Schritte
+  bis `lastUsedTimeStep` zählen nicht). Meldet er sich in denselben 30 Sekunden mit demselben Code an, wird der einmal
+  abgelehnt (zählt als ein falscher Code; Sperre erst nach 5 je Anmeldung bzw. 20 am Stück), der nächste Code geht.
+- Lage: Die Gliederung (Rubrik, Kapitel, Unterkapitel) ist gebaut und auf dem Pi. Eine SEITE gibt es noch nirgends:
+  Seiten sind Dokumente im Kern `KNOWLEDGE`, der ist nicht gebaut (Konzept 3c, Felder bestätigt).
+- Plan, jedes Stück für sich:
+  1. Auf dem Pi unter dem Konto des Nutzers über die echten Endpunkte anlegen: Rubrik `MATHE` („Mathe“), darin Kapitel
+     `GRUNDLAGEN` („Grundlagen“). Kein Unterkapitel als Platzhalter für die Seite (Löschen ist nicht gebaut).
+  2. Die Seite: Kern `KNOWLEDGE` und das Schreiben/Lesen einer Seite bauen (Stücke werden hier einzeln eingetragen),
+     lokal prüfen. Auf den Pi kommt das erst nach Commit und Push des Nutzers; danach lege ich die Seite an.
+- 11:23: erster Versuch von Stück 1 gescheitert, die Leitung war weg (TLS-Timeout beim ersten Lesen). Nichts angelegt.
+- **Zweite Ansage (11:25), wörtlich:** „und dann bitte die bisherige demoseite aus einem solr dokument laden, wie wir es
+  besprochen haben, dazu müssen wir meine ich alles geklärt haben, oder sind noch fragen offen? was mir noch
+  eingefallen ist bei den animationen, füge da schritte ein! nicht alle in einer animation machen, zum beispiel erst
+  wurzelziehen über beide seiten, und erst danach kürzen. und nicht ausformulieren. also wenn die äquivalenzumformung
+  ist mit 1/r durchmultiplizieren ist das als anzeige genug. beim integrieren mit grenzen oder sonstigen
+  komplizierteren dingen bedarf es dann wohl eher einer extra beschreibung“
+- Damit steht fest: Der Kern wird gebaut, die Demoseite kommt aus einem Solr-Dokument. Offene Fragen, die den Bau
+  aufhalten: keine (Felder, Status, Hierarchie, Schreiben unter seinem Konto sind entschieden; Inhalt = JSON aus den
+  Bausteinen des Demos, Konzept 3c). Nicht geklärt, hält nicht auf: Sicherung des Kerns (Export gibt es, Einspielen
+  nicht), der Editor für ihn im Browser.
+- Meine Lesart der Rückmeldung zu den Animationen (im Bericht nennen): Heute steht in der Zeile NACH „√“ schon der
+  Strich durch Wurzel und Quadrat; spielt man „√“ ab, sieht man Wurzelziehen und Kürzen auf einmal. Neu: Die Zeile
+  entsteht ohne Strich, der Strich kommt erst mit dem Abspielen von „kürzen“. Und: keine Erklärsätze mehr unter
+  einfachen Umformungen, die Notiz („| · r“) genügt; eine Beschreibung ist je Schritt freiwillig (für Integrale u. ä.).
+- Stücke, jedes für sich (Typprüfung bzw. Kompilieren danach grün):
+  1. Rubrik `MATHE` und Kapitel `GRUNDLAGEN` auf dem Pi anlegen (sobald die Leitung steht).
+  2. Frontend: Umformungen in Schritten (Strich erst beim Kürzen), Erklärung je Schritt freiwillig, die Sätze der
+     einfachen Umformungen entfernen.
+  3. Frontend: Format des Inhalts (JSON aus Bausteinen) + Leser; die Demoseite entsteht aus einem JSON-Text.
+  4. Backend: Kern `KNOWLEDGE`, Seite schreiben (ADMIN) und lesen (ohne Anmeldung), Key-Änderung zieht Dokumente nach.
+  5. Frontend: `/wissen` lädt Gliederung und Seite vom Backend.
+  6. Nach Commit + Push des Nutzers: Pi bauen, Kern anlegen, Seite unter seinem Konto anlegen.
+- Stück 1 fertig (11:26): auf dem Pi unter dem Konto des Nutzers angelegt, `POST /api/admin/knowledge-section` je
+  201: Rubrik `MATHE` „Mathe“ (id 5, Platz 1), Kapitel `GRUNDLAGEN` „Grundlagen“ (id 6, Platz 1). Derselbe Rubrik-Key
+  noch einmal → 409. Abgemeldet 204, danach `GET /api/session` 401 (die Gegenprobe von 11:03 ist damit nachgeholt).
+  Ohne Anmeldung gelesen: beide Zeilen da. Die ids 1–4 hat der zurückgerollte Wegwerf-Test verbraucht.
+- Stück 2 fertig (11:30), nur lokal, nicht committet: neu `derivation/useDerivationCancellations.ts` (welche Zeile
+  zeigt, was gekürzt wird; `flushSync` vor dem Abspielen); geändert `DerivationBox.tsx`, `DerivationStepRow.tsx`
+  (Prop `cancellationShown`), `DerivationStep.ts` (`explanation` darf `null` sein), `DerivationOperation.ts`
+  (Kommentar), die vier Rechnungen und die Texte der Demoseite (neun Erklärsätze gelöscht; geblieben: je Rechnung der
+  Satz zum Ausgang und bei r der Hinweis „r ist nie negativ“). Typprüfung und Bau grün. Im Firefox ohne Fenster:
+  frisch eingeblendet 0 Striche; nach „· r“ 0; nach „kürzen“ 2 in der Zeile davor; „· r“ noch einmal → wieder 0;
+  r genauso mit „√“ und „hebt sich auf“; aus- und einblenden setzt zurück; keine Fehler.
+- Gelesen bis 11:33 (Stück 4): Kerne stehen in `gebiter.solr.core-keys`, Felder in Postgres (`solr_field`, über
+  `/api/admin/solr-field`), der Ordner eines Kerns entsteht in der Startkette des Solr-Containers aus `SOLR_CORES`
+  der `.env` auf dem Pi. Rohe Schicht: `SolrDocumentService`; Filter als `{!term f=feld}wert`.
+- Stück 4a fertig (11:39), nur lokal, nicht committet: neu in `de.gebiter.knowledge`: `KnowledgeSolrFieldNames`,
+  `model/KnowledgePageStatus`, `dto/KnowledgePage`, `dto/KnowledgePageResolveRequest`,
+  `service/KnowledgePageService` (anlegen, lesen, auflösen, ändern; ADMIN schreibt, veröffentlichte Seiten liest
+  jeder), `service/KnowledgePageSectionKeyService` (Cursor), `controller/KnowledgePageAdminController`
+  (`/api/admin/knowledge-page`), `controller/KnowledgePageShareController` (`/api/share/knowledge-page`); geändert
+  `KnowledgeSectionService` (Key-Änderung zieht ZUERST die Seiten nach; neu `requireExistingKnowledgeSection`),
+  `application.yaml` (`core-keys: FILE,KNOWLEDGE`, Block `gebiter.knowledge`). `clean compile` ohne Fehler. Noch
+  nichts gegen Solr gelaufen.
+- Stück 4b fertig (11:42): Kern `KNOWLEDGE` steht auf dem Pi. In `/gebiter9k/code/.env` dort stand `SOLR_CORES=` (leer,
+  der Ordner von FILE stammt von früher); jetzt `SOLR_CORES=FILE,KNOWLEDGE` (Datei weiter 600, `docker-dummy`).
+  Vorher im Image nachgelesen: `precreate-core` lässt einen vorhandenen Kern unberührt. `docker compose up -d --wait
+  solr`: 8 s, nur der Container `solr` neu. Vorher/nachher 48 Dokumente in FILE, `KNOWLEDGE` leer, beide Kerne laut
+  Solr geladen, 0 ERROR im Backend-Log, Startseite 200. `/tmp/gebieter-*` auf dem Pi gelöscht. Der erste Lauf des
+  Skripts brach sauber ab (es erwartete `SOLR_CORES=FILE`), ohne etwas zu ändern. Noch in `docu/setup.md` eintragen.
+- Stück 4c fertig (11:49): Kontextstart grün, der Runner hat die Referenz `wtf` für den neuen Kern angelegt. Eine
+  Wegwerf-Klasse hat die 18 Felder in `solr_field` angelegt (ids 44–61, bleiben: `id`, `pageGuid`, `language`,
+  `rubricKey`, `chapterKey`, `subChapterKey`, `pageKey`, `listingPosition`, `title` (TEXT_EDGE, Ngram, Gewicht 5),
+  `summary` (TEXT_SUCHE, 3), `content` (STRING, nur gespeichert), `contentFormatVersion`, `tags` (mehrwertig,
+  Suggest, 4), `status`, `relatedPageGuids`, `authorUsersGuid`, `createdAt`, `lastChangedAt`; alle „lesen ab USER“).
+  Abgleich: 22 Felder in Solr (mit den Zwillingen), keine Konflikte. Wegwerf-Test `KnowledgePageThrowawayTests`
+  grün gegen das echte Solr: anlegen (Entwurf als Vorgabe, Schlagwörter bereinigt, Autor, Zeitpunkte, Platz 1, 2, 3);
+  abgelehnt: doppelter `pageKey` im Kapitel, kein JSON, JSON-Liste, fehlendes Kapitel/Unterkapitel, ungültiger Key,
+  leerer Titel, Sprache `en`, Verweis ohne GUID, unbekannte id; Besucher sehen nur Veröffentlichtes, Listen ohne
+  Inhalt; ändern (veröffentlichen, Felder herausnehmen, umbenennen, verschieben mit neuem Platz); Key eines Kapitels
+  zieht 2 Seiten nach, des Unterkapitels 1, der Rubrik 3; weich gelöscht gibt den Key frei; ohne Anmeldung und mit
+  Rolle USER kein Schreiben und kein Admin-Lesen. Beide Testklassen gelöscht; nachgezählt: `KNOWLEDGE` 0 Dokumente,
+  FILE 48, Gliederung auf dem Pi nur die zwei echten Zeilen (5, 6). Im ersten Lauf war nur meine letzte Prüfzeile
+  falsch (Platz 3, ich hatte `- 1` geschrieben).
+- **Dritte Ansage (11:49), wörtlich:** „denk dran auch dieser solr kern sollte im solr manager die felder des dokuments
+  verwalten! also benötigen wir da noch eine zusätzliche auswahl always oder any, sprich felder die keinen login
+  erforderlich machen und dennoch mit werden zurückkommen. ich will keine extralösung wir arbeiten solid uns sauber!°“
+- Heißt für das, was ich in 4a gebaut habe: Der `KnowledgePageService` liest und schreibt heute eine FESTE Feldliste
+  (Record `KnowledgePage`). Das ist die Extralösung. Soll: wie beim Kern FILE über die Felddefinitionen
+  (`SolrDocumentFieldService`): Was ein Leser bekommt, bestimmt „Wer liest“ je Feld; was der Admin setzen darf,
+  bestimmt „vom Client“. Dazu eine neue Auswahl bei „Wer liest“: ohne Anmeldung (`ANY`).
+- Stück 4d fertig (12:00), Backend nur lokal, nicht committet:
+  - Solr-Schicht: neuer Wert für „Wer liest“: `gebiter.solr.reader-any-key: ANY` = jeder, auch ohne Anmeldung (kein
+    Recht). `SolrConfig.readerAnyKey()`, `SolrFieldService` lässt ihn zu, `SolrDocumentFieldService
+    .getReadableSolrFieldNames` gibt solche Felder jedem Leser (ohne Anmeldung: leere Rechteliste).
+  - Wissensseiten ohne Sonderlösung: `KnowledgePageService` arbeitet mit Feld-Maps wie der Kern FILE. Lesen: Felder
+    nach „Wer liest“; Schreiben: Felder mit „vom Client“ (`convertClientFieldValues`); ändern: nur genannte Felder,
+    leer nimmt heraus; geprüft wird der Stand, der sich ergibt. Record `KnowledgePage` gelöscht; neu
+    `dto/NewKnowledgePage`, `dto/KnowledgePageChangeRequest`, `dto/KnowledgeSolrFieldNameSet`; Endpunkt
+    `GET /api/share/knowledge-page/field-name-set`.
+  - Auf dem Pi (Datenbank, bleibt): „Wer liest“ der Felder des Kerns: `ANY` für alle außer `status` und
+    `authorUsersGuid` (`ADMIN`); `wtf` unverändert leer. FILE: ohne Anmeldung weiter kein Feld lesbar.
+  - Wegwerf-Test grün (2 Tests): alles aus 4c, dazu: Besucher ohne Anmeldung bekommt Titel und Inhalt, aber weder
+    `status` noch `authorUsersGuid`; Backend-Felder (`id`, `pageGuid`, Autor, Platz) lassen sich vom Client nicht
+    setzen; unbekannte Felder fallen weg; Teiländerung lässt den Rest stehen; ein Stand ohne Titel, mit kaputtem
+    Inhalt oder fremdem Kapitel wird abgelehnt. Testklasse gelöscht, `KNOWLEDGE` wieder 0 Dokumente, FILE 48.
+- Stück 4e fertig (12:02), nur lokal: Solr-Manager kennt bei „Wer liest“ die Auswahl „Alle, auch ohne Anmeldung“
+  (`SOLR_FIELD_READER_ANY` in `solr/SolrField.ts`, in `SolrCoreFieldsTab.tsx` als erste Wahl; Hinweis der Spalte
+  ergänzt). Typprüfung grün, im Browser noch NICHT gesehen. Doku des Backends steht noch aus (kommt nach dem Frontend).
+- **Angefangen 12:02: Stück 3 + 5, Frontend der Wissensdatenbank.** Plan:
+  - `knowledge/content/`: Modell des Inhalts, `KnowledgeContentReader` (JSON-Text → Bausteine; Format 1: oben
+    `quantities` (Größe → Zeichen + Farbe), dann `blocks`: `BOX` (Titel, `parts`: `PARAGRAPH`/`EQUATIONS`/`HINT`,
+    optional `sketch`) und `DERIVATION` (Kennung, Titel, `steps` mit `equation`, optional `operation` und
+    `explanation`); Terme als Baum mit `type`), Anzeige `KnowledgeContentView`, `KnowledgeBoxBlockView`,
+    `KnowledgeSketchView`; neu `sketch/SketchRightAngle`.
+  - `knowledge/page/`: `useKnowledgePage` (Feldnamen, auflösen, eine Seite holen), Typen.
+  - Modul: `Knowledge.tsx` lädt Gliederung + Feldnamen + alle veröffentlichten Seiten (ohne Inhalt), Reiter je
+    Rubrik; `/wissen/<rubrik>`, `/wissen/<rubrik>/<kapitel>`, `/wissen/<rubrik>/<kapitel>/<seite>`.
+  - `DerivationOperation.notation` und `DerivationStep.explanation` werden einfache Texte (eine Seite = eine Sprache).
+  - Danach löschen: `knowledge/basics/`, `knowledgeChapters.ts`, `KnowledgeChapter.ts`, `KnowledgePage.ts`,
+    `KnowledgePageContent.tsx`. Der Inhalt der Demoseite wird der JSON-Text, den ich als Seite anlege (Bauskript im
+    Scratchpad).
+  Reißt es ab: `npx tsc -b` in `code/frontend` zeigt, was halb ist.
+
 ## 2026-11-27 10:47 – Push `7453d7d` auf den Pi bringen (Backend UND Frontend), danach Anmeldung unter dem Konto des Nutzers prüfen
 
 - Ansage: „so es ist gepusht und ich habe in der env alles für dich eingetragen“

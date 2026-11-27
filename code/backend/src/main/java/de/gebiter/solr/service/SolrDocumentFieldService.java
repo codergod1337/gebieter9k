@@ -13,6 +13,7 @@ import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
+import de.gebiter.solr.SolrConfig;
 import de.gebiter.solr.model.SolrField;
 import de.gebiter.solr.model.SolrFieldType;
 
@@ -23,14 +24,18 @@ import de.gebiter.solr.model.SolrFieldType;
  * Schreiben: Felder, die das Backend nicht vom Client übernimmt ({@link SolrField#isClientValueAccepted()}), und unbekannte Felder fallen still weg.
  * Die übrigen werden gegen Typ und multiValued geprüft und umgewandelt, Beanstandungen kommen gesammelt als eine 400.
  * Lesen: Ein Feld bekommt, wer sein Recht für „Wer liest“ hat ({@code readerAccessRoleKey}); ohne Recht kein User.
+ * Steht „Wer liest“ auf „jeder“ ({@code gebiter.solr.reader-any-key}), bekommt es jeder, auch ohne Anmeldung.
  */
 @Service
 public class SolrDocumentFieldService {
 
 	private final SolrFieldService solrFieldService;
 
-	public SolrDocumentFieldService(SolrFieldService solrFieldService) {
+	private final SolrConfig solrConfig;
+
+	public SolrDocumentFieldService(SolrFieldService solrFieldService, SolrConfig solrConfig) {
 		this.solrFieldService = solrFieldService;
+		this.solrConfig = solrConfig;
 	}
 
 	/**
@@ -65,13 +70,20 @@ public class SolrDocumentFieldService {
 		return convertedFieldValuesByFieldName;
 	}
 
-	/** READ: Die Namen der Felder des Kerns, die ein User mit diesen Rechten lesen darf, in der Reihenfolge der Feldtabelle. */
+	/**
+	 * READ: Die Namen der Felder des Kerns, die ein Leser mit diesen Rechten lesen darf, in der Reihenfolge der
+	 * Feldtabelle. Ein Feld, dessen „Wer liest“ auf „jeder“ steht ({@code gebiter.solr.reader-any-key}), bekommt jeder
+	 * Leser, auch ein Besucher ohne Anmeldung: Für ihn kommt die Liste der Rechte leer.
+	 */
 	public List<String> getReadableSolrFieldNames(String solrCoreKey, Collection<String> accessRoleKeys) {
 		List<SolrField> solrFieldsOfCore = solrFieldService.getSolrFieldBySolrCoreKey(solrCoreKey);
+		String readerAnyKey = solrConfig.readerAnyKey();
 		List<String> readableSolrFieldNames = new ArrayList<>();
 		for (SolrField solrField : solrFieldsOfCore) {
 			String readerAccessRoleKey = solrField.getReaderAccessRoleKey();
-			boolean readable = readerAccessRoleKey != null && accessRoleKeys.contains(readerAccessRoleKey);
+			boolean readableForAnyone = readerAnyKey.equals(readerAccessRoleKey);
+			boolean readableWithAccessRole = readerAccessRoleKey != null && accessRoleKeys.contains(readerAccessRoleKey);
+			boolean readable = readableForAnyone || readableWithAccessRole;
 			if (readable) {
 				String solrFieldName = solrField.getName();
 				readableSolrFieldNames.add(solrFieldName);

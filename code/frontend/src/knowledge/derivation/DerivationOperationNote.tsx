@@ -18,7 +18,7 @@ type DerivationOperationNoteProps = {
  * Term aus der Schreibweise selbst.
  */
 export function DerivationOperationNote({ operation, onPlay }: DerivationOperationNoteProps) {
-  const notationText = getTextInCurrentLanguage(operation.notation)
+  const notationText = operation.notation
   const playLabel = getTextInCurrentLanguage(DERIVATION_TEXTS.playTransformation)
   return (
     <span className="derivation-operation-note">

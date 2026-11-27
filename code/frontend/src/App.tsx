@@ -67,7 +67,8 @@ import { SolrManagerStartTab } from './solrmanager/SolrManagerStartTab.tsx'
 import { IconManager } from './iconmanager/IconManager.tsx'
 import { Knowledge } from './knowledge/Knowledge.tsx'
 import { KnowledgeChapterPage } from './knowledge/KnowledgeChapterPage.tsx'
-import { KnowledgePageContent } from './knowledge/KnowledgePageContent.tsx'
+import { KnowledgePageView } from './knowledge/KnowledgePageView.tsx'
+import { KnowledgeRubricPage } from './knowledge/KnowledgeRubricPage.tsx'
 import { KNOWLEDGE_PATH } from './knowledge/knowledgePaths.ts'
 import { KnowledgeStartPage } from './knowledge/KnowledgeStartPage.tsx'
 import { KnowledgeManager } from './knowledgemanager/KnowledgeManager.tsx'
@@ -131,8 +132,9 @@ function AppRoutes() {
       {/* Die Wissensdatenbank: ohne Anmeldung. Kapitel und Seiten kommen aus knowledge/knowledgeChapters.ts */}
       <Route path={KNOWLEDGE_PATH} element={<Knowledge />}>
         <Route index element={<KnowledgeStartPage />} />
-        <Route path=":chapterPathSegment" element={<KnowledgeChapterPage />} />
-        <Route path=":chapterPathSegment/:pagePathSegment" element={<KnowledgePageContent />} />
+        <Route path=":rubricPathSegment" element={<KnowledgeRubricPage />} />
+        <Route path=":rubricPathSegment/:chapterPathSegment" element={<KnowledgeChapterPage />} />
+        <Route path=":rubricPathSegment/:chapterPathSegment/:pagePathSegment" element={<KnowledgePageView />} />
       </Route>
       {session === null && <Route path="*" element={<LoginPage />} />}
       {session !== null && <Route path="*" element={<LoggedInRoutes />} />}

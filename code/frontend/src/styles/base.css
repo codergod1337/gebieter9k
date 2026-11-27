@@ -4662,6 +4662,17 @@
     font-weight: 600;
   }
 
+  /* ein Unterkapitel in der Übersicht eines Kapitels: sein Name über seinen Seiten */
+  .knowledge-sub-chapter {
+    margin-top: 1rem;
+  }
+
+  .knowledge-sub-chapter-heading {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
   .knowledge-intro {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(14rem, 22rem);
@@ -4673,6 +4684,14 @@
     .knowledge-intro {
       grid-template-columns: minmax(0, 1fr);
     }
+  }
+
+  /* die Teile eines Kastens untereinander (Textblöcke, Gleichungsgruppen, Hinweise), mit Abstand dazwischen */
+  .knowledge-parts {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-width: 0;
   }
 
   .knowledge-text {
@@ -4687,7 +4706,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
     gap: 1.5rem 2.5rem;
-    margin-bottom: 1.25rem;
   }
 
   .knowledge-summary-heading {

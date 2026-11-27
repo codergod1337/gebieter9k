@@ -98,6 +98,7 @@ export const SOLR_FIELD_SEARCH_WEIGHT_HINT = explanation(
 export const SOLR_FIELD_READER_HINT = explanation(
   'Wer liest: mit welchem Recht man das Feld bekommt',
   'Genau ein Recht. Wer es hat, bekommt das Feld in jeder Antwort, darf danach filtern und auflösen. Im Normalfall USER: dann bekommt es jeder, der die Datei sehen darf.',
+  'Alle, auch ohne Anmeldung (ANY): kein Recht, sondern jeder Leser bekommt das Feld, auch ein Besucher ohne Konto, z. B. Titel und Inhalt einer Wissensseite.',
   'niemand: kein User bekommt das Feld, nur das Backend nutzt es, z. B. sftpPath. Ob jemand die Datei überhaupt sieht, entscheiden ihre Leserollen, nicht diese Spalte.',
 )
 

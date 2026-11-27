@@ -484,8 +484,17 @@ public class SolrFieldService {
 	 *
 	 * @throws IllegalArgumentException wenn es das Recht nicht gibt
 	 */
+	/**
+	 * „Wer liest“ ist leer (kein User), der feste Wert für „jeder, auch ohne Anmeldung“
+	 * ({@code gebiter.solr.reader-any-key}) oder der Key eines Rechts, das es gibt.
+	 */
 	private void requireExistingAccessRoleKeyOrNull(String accessRoleKey) {
 		if (accessRoleKey == null) {
+			return;
+		}
+		String readerAnyKey = solrConfig.readerAnyKey();
+		boolean readableForAnyone = accessRoleKey.equals(readerAnyKey);
+		if (readableForAnyone) {
 			return;
 		}
 		boolean accessRoleExists = accessRoleService.existsAccessRole(accessRoleKey);

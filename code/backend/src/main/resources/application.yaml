@@ -167,7 +167,7 @@ gebiter:
     password: ${SOLR_PASSWORD}
     # Die Kerne, die das Backend kennt, kommagetrennt, Key-Regel. Nur hier, nicht in Postgres; ihre Felder stehen in
     # Postgres (solr_field, SolrManager).
-    core-keys: FILE
+    core-keys: FILE,KNOWLEDGE
     # Export eines ganzen Kerns (Backup, GET /api/admin/solr-core/export/<KERN>): so viele Dokumente je Seite, und die
     # Fassung des Dateiformats für das spätere Einspielen.
     export:
@@ -184,6 +184,11 @@ gebiter:
     search-weight:
       min: -1
       max: 10
+    # „Wer liest“ eines Feldes (SolrField.readerAccessRoleKey) ist sonst der Key eines Rechts. Dieser eine feste Wert
+    # ist KEIN Recht: Er heißt „jeder, auch ohne Anmeldung“ (Nutzer 2026-11-27), z. B. für die Felder einer
+    # Wissensseite. Ein Recht mit diesem Key darf es nicht geben. Das Frontend nennt denselben Wert
+    # (SOLR_FIELD_READER_ANY_KEY in solr/SolrField.ts).
+    reader-any-key: ANY
     # Der SolrJ-Client je Kern (HttpJettySolrClient, wie in der Vorlage): Verbindungsaufbau, Antwort, Leerlauf.
     client:
       connection-timeout: 10s
@@ -439,6 +444,39 @@ gebiter:
     max-size: 2MB
     small-size-pixels: 96
     small-max-size: 64KB
+  knowledge:
+    # Der Solr-Kern der Wissensseiten, er muss in gebiter.solr.core-keys stehen. Ein Dokument ist eine Seite in einer
+    # Sprache (docu/solr-cores/KNOWLEDGE.md).
+    solr-core-key: KNOWLEDGE
+    # Die Fassung des Formats, in dem der Inhalt einer Seite (Feld content, JSON aus Bausteinen) geschrieben ist. Das
+    # Backend trägt sie beim Anlegen und Ändern ein; das Frontend liest daran, wie es den Inhalt zu lesen hat.
+    content-format-version: 1
+    # Höchstens so viele Zeichen darf der Inhalt einer Seite haben.
+    content-max-characters: 1000000
+    # Höchstens so viele Seiten liefert ein Auflösen (Übersicht der Wissensdatenbank, Liste im Wissensmanager).
+    resolve-max-rows: 2000
+    # Ändert sich ein Key der Gliederung, bekommen ihn die Seiten in Paketen dieser Größe (Cursor durch den Kern).
+    key-change-batch-size: 200
+    # Die Namen der Felder im Kern, mit denen das Backend rechnet. Angelegt werden die Felder im SolrManager (Postgres).
+    field:
+      id: id
+      page-guid: pageGuid
+      language: language
+      rubric-key: rubricKey
+      chapter-key: chapterKey
+      sub-chapter-key: subChapterKey
+      page-key: pageKey
+      listing-position: listingPosition
+      title: title
+      summary: summary
+      content: content
+      content-format-version: contentFormatVersion
+      tags: tags
+      status: status
+      related-page-guids: relatedPageGuids
+      author-users-guid: authorUsersGuid
+      created-at: createdAt
+      last-changed-at: lastChangedAt
   file:
     # Der Solr-Kern der Dateien, er muss in gebiter.solr.core-keys stehen.
     solr-core-key: FILE

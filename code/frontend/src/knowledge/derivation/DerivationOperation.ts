@@ -1,4 +1,3 @@
-import type { MultilingualText } from '../../language/MultilingualText.ts'
 import type { MathTerm } from '../math/MathTerm.ts'
 
 /**
@@ -7,12 +6,15 @@ import type { MathTerm } from '../math/MathTerm.ts'
  * zeigen kann (Nutzer 2026-11-27: Die Bewegung soll die Rechenregel einprägen):
  * - Was sie bringt: Auf beiden Seiten dasselbe tun heißt, dass in der neuen Zeile Terme stehen, die es vorher nicht gab,
  *   z. B. das `r` links und rechts nach „· r“. Sie kommen beim Abspielen aus der Notiz.
- * - Was sie kürzt: Terme der Zeile davor, die sich wegheben, z. B. das `r` im Zähler und das im Nenner. Sie stehen dort
- *   durchgestrichen.
+ * - Was sie kürzt: Terme der Zeile davor, die sich wegheben, z. B. das `r` im Zähler und das im Nenner. Beim Abspielen
+ *   werden sie dort durchgestrichen, erst danach entsteht die nächste Zeile.
  */
 export class DerivationOperation {
-  /** Was hinter dem Strich steht: ein Rechenzeichen (`·`, `√`), ein Funktionsname (`arctan`) oder Worte. */
-  readonly notation: MultilingualText
+  /**
+   * Was hinter dem Strich steht: ein Rechenzeichen (`·`, `√`), ein Funktionsname (`arctan`) oder Worte, in der Sprache
+   * der Seite.
+   */
+  readonly notation: string
 
   /** Der Term hinter der Schreibweise, z. B. das `r` in „· r“; `null` ohne. */
   readonly operand: MathTerm | null
@@ -23,7 +25,7 @@ export class DerivationOperation {
   /** Die Kennungen der Terme der Zeile DAVOR, die die Umformung kürzt; leer, wenn sie nichts kürzt. */
   readonly cancelledTermKeys: string[]
 
-  constructor(notation: MultilingualText, operand: MathTerm | null, appliedTermKeys: string[], cancelledTermKeys: string[]) {
+  constructor(notation: string, operand: MathTerm | null, appliedTermKeys: string[], cancelledTermKeys: string[]) {
     this.notation = notation
     this.operand = operand
     this.appliedTermKeys = appliedTermKeys

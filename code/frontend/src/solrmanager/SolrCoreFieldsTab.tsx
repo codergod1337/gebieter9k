@@ -20,6 +20,7 @@ import {
   isSolrFieldSwitchAllowed,
   type NewSolrField,
   SOLR_FIELD_NO_READER_TEXT,
+  SOLR_FIELD_READER_ANY,
   SOLR_FIELD_SWITCH_COLUMNS,
   type SolrField,
   type SolrFieldSwitchName,
@@ -140,12 +141,18 @@ export function SolrCoreFieldsTab() {
     return foundSolrField
   }
 
-  /** Das Recht für „Wer liest“ aus den Stammdaten, `null` für niemand. */
+  /**
+   * Was bei „Wer liest“ zur Wahl steht: zuerst „Alle, auch ohne Anmeldung“ ({@link SOLR_FIELD_READER_ANY}), dann die
+   * Rechte aus den Stammdaten. Leer, solange die Stammdaten fehlen.
+   */
+  let readerChoices: AccessRole[] = []
+  if (accessRoles !== null) {
+    readerChoices = [SOLR_FIELD_READER_ANY, ...accessRoles]
+  }
+
+  /** Was bei „Wer liest“ gewählt ist: ein Recht oder „Alle, auch ohne Anmeldung“; `null` für niemand. */
   function getReaderAccessRole(solrField: SolrField): AccessRole | null {
-    if (accessRoles === null) {
-      return null
-    }
-    const foundAccessRole = accessRoles.find((accessRole) => accessRole.key === solrField.readerAccessRoleKey)
+    const foundAccessRole = readerChoices.find((readerChoice) => readerChoice.key === solrField.readerAccessRoleKey)
     if (foundAccessRole === undefined) {
       return null
     }
@@ -541,7 +548,7 @@ export function SolrCoreFieldsTab() {
         <AccessRolePickerPopup
           title={readersPopupTitle}
           selectedAccessRole={readersSolrFieldAccessRole}
-          accessRoles={accessRoles}
+          accessRoles={readerChoices}
           noAccessRoleText={SOLR_FIELD_NO_READER_TEXT}
           isSaving={readersSolrFieldSaving}
           errorMessage={changeErrorMessage}

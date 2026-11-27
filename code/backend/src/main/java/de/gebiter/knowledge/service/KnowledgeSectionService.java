@@ -22,7 +22,8 @@ import jakarta.persistence.EntityNotFoundException;
 /**
  * Die Gliederung der Wissensdatenbank (Rubriken, Kapitel, Unterkapitel): Pflege durch den Admin im Modul
  * „Wissensmanager“, Lesen für jeden, auch ohne Anmeldung (die Wissensdatenbank ist öffentlich zum Ansehen). Nutzt nur
- * sein eigenes Repository.
+ * sein eigenes Repository und, wenn sich ein Key ändert, den {@link KnowledgePageSectionKeyService} für die Seiten im
+ * Solr-Kern.
  * <p>
  * Ein Löschen gibt es noch nicht: Sobald Seiten im Solr-Kern auf die Keys zeigen, wird vorher mit dem Nutzer geklärt,
  * was dann mit ihnen geschieht.
@@ -34,11 +35,15 @@ public class KnowledgeSectionService {
 
 	private final KnowledgeSectionRepository knowledgeSectionRepository;
 
+	private final KnowledgePageSectionKeyService knowledgePageSectionKeyService;
+
 	private final String defaultLanguageCode;
 
 	public KnowledgeSectionService(KnowledgeSectionRepository knowledgeSectionRepository,
+			KnowledgePageSectionKeyService knowledgePageSectionKeyService,
 			@Value("${gebiter.language.default-code}") String defaultLanguageCode) {
 		this.knowledgeSectionRepository = knowledgeSectionRepository;
+		this.knowledgePageSectionKeyService = knowledgePageSectionKeyService;
 		this.defaultLanguageCode = defaultLanguageCode;
 	}
 
@@ -136,15 +141,16 @@ public class KnowledgeSectionService {
 	 * {@code subChapterKey}. Alles darunter trägt den Key ebenfalls und bekommt ihn mit: die Kapitel und Unterkapitel
 	 * einer Rubrik, die Unterkapitel eines Kapitels. Alle betroffenen Zeilen ändern sich in einer Transaktion.
 	 * <p>
-	 * Die Seiten im Solr-Kern tragen dieselben Keys. Den Kern gibt es noch nicht; sobald es ihn gibt, zieht diese
-	 * Methode zuerst alle Dokumente mit dem alten Key nach (Cursor durch den Kern) und ändert Postgres zuletzt, so wie
-	 * die Plattform es bei abhängigen Daten immer hält: Bricht es mittendrin ab, steht in Postgres noch der alte Key,
-	 * und derselbe Aufruf zieht den Rest nach.
+	 * Die Seiten im Solr-Kern tragen dieselben Keys. Deshalb zieht diese Methode ZUERST alle Seiten mit dem alten Key
+	 * nach (Cursor durch den Kern, {@link KnowledgePageSectionKeyService}) und ändert Postgres zuletzt, so wie die
+	 * Plattform es bei abhängigen Daten immer hält: Bricht es mittendrin ab, steht in Postgres noch der alte Key, und
+	 * derselbe Aufruf zieht den Rest nach.
 	 *
 	 * @return die ganze Gliederung nach der Änderung
 	 * @throws IllegalArgumentException wenn die id fehlt oder der Key nicht der Key-Regel entspricht
 	 * @throws EntityNotFoundException wenn es den Punkt nicht gibt
 	 * @throws DuplicateKeyException wenn ein Geschwister den Key schon trägt
+	 * @throws de.gebiter.solr.SolrUnavailableException wenn Solr nicht antwortet; dann ist auch in Postgres nichts geändert
 	 */
 	@PreAuthorize("hasRole('ADMIN')")
 	@Transactional
@@ -181,6 +187,9 @@ public class KnowledgeSectionService {
 			String takenSectionName = describeKnowledgeSection(changedRubricKey, changedChapterKey, changedSubChapterKey);
 			throw new DuplicateKeyException(takenSectionName + " gibt es schon.");
 		}
+
+		// zuerst die Seiten im Solr-Kern, die unter dem Punkt stehen; Postgres zuletzt
+		knowledgePageSectionKeyService.changeSectionKeyOfKnowledgePages(rubricKey, chapterKey, subChapterKey, changedKey);
 
 		// der Punkt selbst und alles darunter: jede Zeile, die den alten Key auf dieser Ebene trägt
 		List<KnowledgeSection> changedKnowledgeSections = new ArrayList<>();
@@ -242,6 +251,23 @@ public class KnowledgeSectionService {
 		}
 		knowledgeSectionRepository.saveAll(siblings);
 		return knowledgeSectionRepository.findAllByOrderByListingPositionAscIdAsc();
+	}
+
+	/**
+	 * READ: Prüft, dass es den Punkt der Gliederung gibt, in dem eine Seite stehen soll: das Kapitel in seiner Rubrik
+	 * oder, wenn {@code subChapterKey} genannt ist, das Unterkapitel in seinem Kapitel.
+	 *
+	 * @throws IllegalArgumentException wenn es den Punkt nicht gibt
+	 */
+	@Transactional(readOnly = true)
+	public void requireExistingKnowledgeSection(String rubricKey, String chapterKey, String subChapterKey) {
+		List<KnowledgeSection> allKnowledgeSections = knowledgeSectionRepository.findAllByOrderByListingPositionAscIdAsc();
+		Optional<KnowledgeSection> foundKnowledgeSection = findKnowledgeSection(allKnowledgeSections, rubricKey, chapterKey,
+				subChapterKey);
+		if (foundKnowledgeSection.isEmpty()) {
+			String missingSectionName = describeKnowledgeSection(rubricKey, chapterKey, subChapterKey);
+			throw new IllegalArgumentException(missingSectionName + " gibt es nicht.");
+		}
 	}
 
 	/** Den Punkt über dem neuen muss es geben: zu einem Kapitel seine Rubrik, zu einem Unterkapitel sein Kapitel. */

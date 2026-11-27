@@ -1,4 +1,3 @@
-import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguage.ts'
 import { MathTermView } from '../math/MathTermView.tsx'
 import { TermRoles } from '../math/TermRoles.ts'
 import type { DerivationOperation } from './DerivationOperation.ts'
@@ -11,8 +10,10 @@ type DerivationStepRowProps = {
   derivationStep: DerivationStep
   /** Die Beschriftung vor der Zeile, z. B. „Ausgang“ oder „Ergebnis“; `null` bei einer Zeile des Rechenwegs dazwischen. */
   label: string | null
-  /** Ob die Zeile zum eingeblendeten Rechenweg gehört: Dann stehen ihre Erklärung und die Umformung zur nächsten Zeile dabei. */
+  /** Ob die Zeile zum eingeblendeten Rechenweg gehört: Dann stehen die Umformung zur nächsten Zeile und, wenn es eine gibt, ihre Beschreibung dabei. */
   pathShown: boolean
+  /** Ob in der Zeile durchgestrichen steht, was die Umformung zur nächsten Zeile kürzt: erst, nachdem diese abgespielt wurde. */
+  cancellationShown: boolean
   /** Die Umformung, die aus diesem Schritt den nächsten macht; `null` beim letzten Schritt. */
   followingOperation: DerivationOperation | null
   /** Spielt die Umformung zum nächsten Schritt ab. */
@@ -21,7 +22,7 @@ type DerivationStepRowProps = {
 
 /**
  * Die Zeile eines Schritts: davor ihre Beschriftung, dann die Gleichung; im eingeblendeten Rechenweg am Zeilenende die
- * Umformung zur nächsten Zeile samt Abspiel-Knopf und darunter die Erklärung in Worten. Beschriftung, linke Seite,
+ * Umformung zur nächsten Zeile samt Abspiel-Knopf und darunter, wo es eine gibt, die Beschreibung in Worten. Beschriftung, linke Seite,
  * Gleichheitszeichen und rechte Seite sind eigene Zellen, damit die Gleichheitszeichen aller Zeilen einer Herleitung
  * untereinander stehen. Die beiden Seiten sind der Bereich, in dem Terme wandern (`data-flight-scope` mit dem Namen der
  * Seite).
@@ -31,15 +32,16 @@ export function DerivationStepRow({
   derivationStep,
   label,
   pathShown,
+  cancellationShown,
   followingOperation,
   onPlayFollowingTransformation,
 }: DerivationStepRowProps) {
   const equation = derivationStep.equation
-  const explanationText = getTextInCurrentLanguage(derivationStep.explanation)
-  // Was die nächste Umformung in dieser Zeile kürzt, steht im eingeblendeten Rechenweg durchgestrichen da; was die
+  const explanationText = derivationStep.explanation
+  // Was die nächste Umformung in dieser Zeile kürzt, steht erst durchgestrichen da, wenn sie abgespielt wurde; was die
   // Umformung davor in diese Zeile gebracht hat, kommt beim Abspielen aus ihrer Notiz
   let cancelledTrackingKeys: string[] = []
-  if (pathShown && followingOperation !== null) {
+  if (pathShown && cancellationShown && followingOperation !== null) {
     cancelledTrackingKeys = followingOperation.cancelledTermKeys
   }
   let appliedTrackingKeys: string[] = []
@@ -69,7 +71,7 @@ export function DerivationStepRow({
           <DerivationOperationNote operation={followingOperation} onPlay={onPlayFollowingTransformation} />
         )}
       </span>
-      {pathShown && <p className="derivation-step-explanation">{explanationText}</p>}
+      {pathShown && explanationText !== null && <p className="derivation-step-explanation">{explanationText}</p>}
     </div>
   )
 }

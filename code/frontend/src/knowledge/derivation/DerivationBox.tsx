@@ -7,6 +7,7 @@ import type { Derivation } from './Derivation.ts'
 import type { DerivationOperation } from './DerivationOperation.ts'
 import { DerivationStepRow } from './DerivationStepRow.tsx'
 import { DERIVATION_TEXTS } from './derivationTexts.ts'
+import { useDerivationCancellations } from './useDerivationCancellations.ts'
 import { useDerivationFlight } from './useDerivationFlight.ts'
 import { useDerivationPathVisibility } from './useDerivationPathVisibility.ts'
 
@@ -18,19 +19,32 @@ type DerivationBoxProps = {
 /**
  * Eine Herleitung in einer ContentBox (Nutzer 2026-11-27): Immer zu sehen sind ihr Ausgang und ihr Ergebnis. Der Knopf
  * im Fuß blendet bei Bedarf den ganzen Rechenweg dazwischen ein, mit allen Äquivalenzumformungen, jede in ihrer eigenen
- * Zeile samt Erklärung, und wieder aus. Im eingeblendeten Rechenweg bleibt alles stehen: Man schaut zwei Zeilen zurück
- * und liest weiter, ohne dass etwas verschwindet. Jede Umformung hat einen Abspiel-Knopf, der zeigt, wie aus ihrer Zeile
- * die nächste wird; die markierten Terme wandern dabei sichtbar an ihre neue Stelle.
+ * Zeile, und wieder aus. Im eingeblendeten Rechenweg bleibt alles stehen: Man schaut zwei Zeilen zurück und liest
+ * weiter, ohne dass etwas verschwindet. Jede Umformung hat einen Abspiel-Knopf, der zeigt, wie aus ihrer Zeile die
+ * nächste wird; die markierten Terme wandern dabei sichtbar an ihre neue Stelle. Jede Umformung ist ein eigener
+ * Schritt: Eine Zeile entsteht ohne Strich, durchgestrichen wird erst beim Abspielen der Umformung, die kürzt
+ * ({@link useDerivationCancellations}).
  */
 export function DerivationBox({ title, derivation }: DerivationBoxProps) {
   const pathVisibility = useDerivationPathVisibility(derivation)
   const derivationFlight = useDerivationFlight()
+  const derivationCancellations = useDerivationCancellations()
   const pathShown = pathVisibility.pathShown
   const steps = derivation.steps
   const lastStepIndex = steps.length - 1
   const transformationCount = lastStepIndex
   const startLabel = getTextInCurrentLanguage(DERIVATION_TEXTS.startLabel)
   const resultLabel = getTextInCurrentLanguage(DERIVATION_TEXTS.resultLabel)
+
+  function playTransformationInto(targetStepIndex: number) {
+    derivationCancellations.showCancellationOfTransformationInto(targetStepIndex)
+    derivationFlight.playTransformationInto(targetStepIndex)
+  }
+
+  function hidePath() {
+    derivationCancellations.resetCancellations()
+    pathVisibility.hidePath()
+  }
 
   const rows: ReactNode[] = []
   steps.forEach((derivationStep, stepIndex) => {
@@ -58,8 +72,9 @@ export function DerivationBox({ title, derivation }: DerivationBoxProps) {
         derivationStep={derivationStep}
         label={label}
         pathShown={pathShown}
+        cancellationShown={derivationCancellations.isCancellationShown(stepIndex)}
         followingOperation={followingOperation}
-        onPlayFollowingTransformation={() => derivationFlight.playTransformationInto(followingStepIndex)}
+        onPlayFollowingTransformation={() => playTransformationInto(followingStepIndex)}
       />,
     )
     // Ausgeblendet steht zwischen Ausgang und Ergebnis ein Zeichen dafür, dass dazwischen etwas liegt
@@ -86,7 +101,7 @@ export function DerivationBox({ title, derivation }: DerivationBoxProps) {
   )
   if (pathShown) {
     pathButton = (
-      <Button size="sm" variant="outline-secondary" onClick={pathVisibility.hidePath}>
+      <Button size="sm" variant="outline-secondary" onClick={hidePath}>
         <i className="bi bi-chevron-up me-1" aria-hidden="true"></i>
         {getTextInCurrentLanguage(DERIVATION_TEXTS.hidePath)}
       </Button>

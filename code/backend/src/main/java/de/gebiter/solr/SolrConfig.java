@@ -54,6 +54,12 @@ public class SolrConfig {
 	/** Das größte Suchgewicht ({@code gebiter.solr.search-weight.max}). */
 	private final int searchWeightMax;
 
+	/**
+	 * Der Wert von „Wer liest“, der kein Recht ist, sondern „jeder, auch ohne Anmeldung“ heißt
+	 * ({@code gebiter.solr.reader-any-key}).
+	 */
+	private final String readerAnyKey;
+
 	public SolrConfig(@Value("${gebiter.solr.core-keys}") List<String> configuredCoreKeys,
 			@Value("${gebiter.solr.suggest-twin-suffix}") String suggestTwinSuffix,
 			@Value("${gebiter.solr.ngram-twin-suffix}") String ngramTwinSuffix,
@@ -66,7 +72,8 @@ public class SolrConfig {
 			@Value("${gebiter.solr.reference-field.client-value-accepted}") boolean referenceFieldClientValueAccepted,
 			@Value("${gebiter.solr.reference-field.search-weight}") int referenceFieldStartSearchWeight,
 			@Value("${gebiter.solr.search-weight.min}") int searchWeightMin,
-			@Value("${gebiter.solr.search-weight.max}") int searchWeightMax) {
+			@Value("${gebiter.solr.search-weight.max}") int searchWeightMax,
+			@Value("${gebiter.solr.reader-any-key}") String readerAnyKey) {
 		Set<String> distinctCoreKeys = new LinkedHashSet<>();
 		for (String configuredCoreKey : configuredCoreKeys) {
 			String coreKey = configuredCoreKey.trim();
@@ -89,6 +96,7 @@ public class SolrConfig {
 		this.referenceFieldStartSearchWeight = referenceFieldStartSearchWeight;
 		this.searchWeightMin = searchWeightMin;
 		this.searchWeightMax = searchWeightMax;
+		this.readerAnyKey = Helper.requireValidKey(readerAnyKey);
 	}
 
 	public int searchWeightMin() {
@@ -97,6 +105,11 @@ public class SolrConfig {
 
 	public int searchWeightMax() {
 		return searchWeightMax;
+	}
+
+	/** „Wer liest“: jeder, auch ohne Anmeldung ({@code gebiter.solr.reader-any-key}). */
+	public String readerAnyKey() {
+		return readerAnyKey;
 	}
 
 	public List<String> coreKeys() {

@@ -1,47 +1,30 @@
-import ListGroup from 'react-bootstrap/ListGroup'
-import { Link, useParams } from 'react-router'
-import { ContentBox } from '../components/ContentBox.tsx'
+import { useParams } from 'react-router'
+import { LoadStatus } from '../components/LoadStatus.tsx'
 import { getTextInCurrentLanguage } from '../language/getTextInCurrentLanguage.ts'
-import { getTextInCurrentLanguageWithValues } from '../language/getTextInCurrentLanguageWithValues.ts'
-import { useOrigin } from '../navigation/useOrigin.ts'
-import { findKnowledgeChapter } from './knowledgeChapters.ts'
-import { getKnowledgePagePath } from './knowledgePaths.ts'
+import { useKnowledgeContext } from './Knowledge.tsx'
+import { KnowledgeChapterBox } from './KnowledgeChapterBox.tsx'
+import { findKnowledgeChapter, findKnowledgeRubric } from './knowledgePaths.ts'
 import { KNOWLEDGE_TEXTS } from './knowledgeTexts.ts'
 
 /**
- * Die Übersicht eines Kapitels unter `/wissen/<Kapitel>`: seine Seiten als Liste, je Seite der Titel und ein Satz,
- * worum es geht. Ein Klick öffnet die Seite; das Kapitel geht als Origin mit („Zurück zu Grundlagen“ im Header).
+ * Die Übersicht eines Kapitels unter `/wissen/<Rubrik>/<Kapitel>`, z. B. `/wissen/mathe/grundlagen`: der Kasten des
+ * Kapitels mit seinen Seiten. Das Kapitel geht als Origin mit, wenn man eine Seite öffnet.
  */
 export function KnowledgeChapterPage() {
-  const { chapterPathSegment } = useParams()
-  const originNavigation = useOrigin()
-  const knowledgeChapter = findKnowledgeChapter(chapterPathSegment)
-
+  const { rubricPathSegment, chapterPathSegment } = useParams()
+  const knowledgeContext = useKnowledgeContext()
+  const knowledgeBase = knowledgeContext.knowledgeBase
+  if (knowledgeBase === null) {
+    return <LoadStatus errorMessage={knowledgeContext.errorMessage} isLoading={knowledgeContext.errorMessage === null} />
+  }
+  const knowledgeRubric = findKnowledgeRubric(knowledgeBase.knowledgeSections, rubricPathSegment)
+  if (knowledgeRubric === null) {
+    return <p className="text-body-secondary">{getTextInCurrentLanguage(KNOWLEDGE_TEXTS.unknownRubric)}</p>
+  }
+  const knowledgeChapter = findKnowledgeChapter(knowledgeBase.knowledgeSections, knowledgeRubric.rubricKey, chapterPathSegment)
   if (knowledgeChapter === null) {
     return <p className="text-body-secondary">{getTextInCurrentLanguage(KNOWLEDGE_TEXTS.unknownChapter)}</p>
   }
-
-  const chapterTitle = getTextInCurrentLanguage(knowledgeChapter.title)
-  const originState = originNavigation.createOriginStateHere(chapterTitle)
-  const pageCount = knowledgeChapter.pages.length
-  let pageCountText = getTextInCurrentLanguageWithValues(KNOWLEDGE_TEXTS.pageCountMany, { pageCount: String(pageCount) })
-  if (pageCount === 1) {
-    pageCountText = getTextInCurrentLanguage(KNOWLEDGE_TEXTS.pageCountOne)
-  }
-
-  return (
-    <ContentBox title={chapterTitle} footer={pageCountText}>
-      <ListGroup variant="flush">
-        {knowledgeChapter.pages.map((knowledgePage) => {
-          const pagePath = getKnowledgePagePath(knowledgeChapter.pathSegment, knowledgePage.pathSegment)
-          return (
-            <ListGroup.Item key={knowledgePage.pathSegment} action as={Link} to={pagePath} state={originState}>
-              <div className="knowledge-page-entry-title">{getTextInCurrentLanguage(knowledgePage.title)}</div>
-              <div className="knowledge-page-entry-summary">{getTextInCurrentLanguage(knowledgePage.summary)}</div>
-            </ListGroup.Item>
-          )
-        })}
-      </ListGroup>
-    </ContentBox>
-  )
+  const chapterTitle = getTextInCurrentLanguage(knowledgeChapter.displayName)
+  return <KnowledgeChapterBox knowledgeBase={knowledgeBase} knowledgeChapter={knowledgeChapter} originLabel={chapterTitle} />
 }

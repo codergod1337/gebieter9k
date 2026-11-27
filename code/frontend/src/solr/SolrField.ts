@@ -1,3 +1,4 @@
+import type { AccessRole } from '../auth/access/AccessRole.ts'
 import type { MultilingualText } from '../language/MultilingualText.ts'
 
 /** Die Typen eines Feldes, wie das Enum `SolrFieldType` im Backend. */
@@ -118,3 +119,19 @@ export function describeSolrFieldSearchWeight(searchWeight: number): string {
 
 /** Was „niemand“ bei „Wer liest“ bedeutet, gleich in Tabelle und Formular. */
 export const SOLR_FIELD_NO_READER_TEXT = 'Kein User bekommt das Feld, nur das Backend nutzt es.'
+
+/**
+ * „Wer liest“ = jeder, auch ohne Anmeldung (Nutzer 2026-11-27), z. B. die Felder einer Wissensseite. Kein Recht aus den
+ * Stammdaten, sondern der feste Wert `gebiter.solr.reader-any-key` der `application.yaml` im Backend.
+ */
+export const SOLR_FIELD_READER_ANY_KEY = 'ANY'
+
+/**
+ * Derselbe Wert in der Form eines Rechts, damit Auswahl und Anzeige von „Wer liest“ ihn wie ein Recht behandeln: Er
+ * steht in der Auswahl ganz oben.
+ */
+export const SOLR_FIELD_READER_ANY: AccessRole = {
+  key: SOLR_FIELD_READER_ANY_KEY,
+  displayName: { de: 'Alle, auch ohne Anmeldung' },
+  listingPosition: 0,
+}

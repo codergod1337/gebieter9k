@@ -105,7 +105,8 @@ public class SolrField {
 	/**
 	 * Der Key des einen Rechts, mit dem man das Feld in einer Antwort des Backends bekommt („Wer liest“). Wer es nicht hat,
 	 * bekommt das Feld nicht. {@code null} heißt: kein User bekommt es (nur das Backend selbst nutzt es, z. B.
-	 * {@code sftpPath}).
+	 * {@code sftpPath}). Der feste Wert aus {@code gebiter.solr.reader-any-key} ({@code ANY}) ist kein Recht und heißt:
+	 * jeder bekommt es, auch ohne Anmeldung (z. B. die Felder einer Wissensseite).
 	 */
 	private String readerAccessRoleKey;
 
