@@ -3,9 +3,19 @@
 Je Kern eine Doku mit allen Feldern (Regel des Nutzers vom 2026-11-09), erzeugt aus einem Export des Kerns:
 
 - [FILE](FILE.md): die Dateien (Upload, Galerie, File-Manager).
+- [KNOWLEDGE](KNOWLEDGE.md): die Seiten der Wissensdatenbank, je Seite und Sprache ein Dokument (seit 2026-11-27).
 
 Die Kerne selbst stehen in der `application.yaml` (`gebiter.solr.core-keys`), ihre Felder in Postgres (`solr_field`,
 gepflegt im Solr-Manager). Solr baut sein Schema daraus (`SolrSchemaSyncService`).
+
+## Wer liest ein Feld, wer setzt es
+
+Für jeden Kern gleich ([`SolrDocumentFieldService`](../../code/backend/src/main/java/de/gebiter/solr/service/SolrDocumentFieldService.java)), eingestellt je Feld im Solr-Manager:
+
+- **Wer liest** (`readerAccessRoleKey`): der Key des einen Rechts, mit dem man das Feld in einer Antwort bekommt; leer = kein User, nur das Backend. Seit 2026-11-27 dazu der feste Wert **`ANY`** („Alle, auch ohne Anmeldung“, `gebiter.solr.reader-any-key`): kein Recht, sondern jeder Leser bekommt das Feld, auch ein Besucher ohne Konto. Im Kern KNOWLEDGE steht fast jedes Feld so, im Kern FILE keins. Ein Recht mit dem Key `ANY` darf es nicht geben.
+- **vom Client** (`clientValueAccepted`): Nur solche Felder übernimmt das Backend aus dem JSON des Clients, alle anderen fallen still weg.
+
+Einen neuen Kern legt man an über `gebiter.solr.core-keys` (YAML), `SOLR_CORES` in der `.env` auf dem Pi (die Startkette des Solr-Containers legt den Ordner an, vorhandene Kerne bleiben unberührt) und seine Felder im Solr-Manager.
 
 ## Abgleich des Schemas
 

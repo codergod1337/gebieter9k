@@ -1,8 +1,10 @@
 # Konzept: Wissensdatenbank
 
-Stand 2026-11-27: Das Modul steht im Frontend, mit einem Demokapitel („Grundlagen“, Seite „Koordinatentransformation“)
-und seiner Kachel auf Startseite und Login-Seite.
-Die Inhalte stehen dafür im Code. Der eigene Solr-Kern ist die Richtung, aber noch nicht begonnen (Abschnitt 4).
+Stand 2026-11-27: Das Modul steht im Frontend mit seiner Kachel auf Startseite und Login-Seite. Die Gliederung
+(Rubrik, Kapitel, Unterkapitel) steht in Postgres, die Seiten stehen im Solr-Kern `KNOWLEDGE`, je Seite ein Dokument
+([`solr-cores/KNOWLEDGE.md`](solr-cores/KNOWLEDGE.md), dort auch das Format des Inhalts). Auf dem Pi seit dem 2026-11-27 (Commit `a8f5df2`), mit der ersten Seite: Mathe → Grundlagen →
+Koordinatentransformation (`/wissen/mathe/grundlagen/koordinatentransformation`), angelegt von Claude unter dem Konto des
+Nutzers. Die alte Adresse `/wissen/grundlagen/koordinatentransformation` gibt es nicht mehr.
 
 ## 1. Was es werden soll (Nutzer, 2026-11-24 und 2026-11-26)
 
@@ -31,10 +33,13 @@ Nicht verwechseln: Jupyter-Notebooks kommen nicht in die App (Entscheidung vom 2
 | **Ansehen auch ohne Anmeldung, Schreiben nur über Admin-Endpunkte** | Nutzer, 2026-11-27 | „wissensdatenbank soll auch für anonym verfügbar sein zum ANSEHEN schreiben erst mal nur über admin endpunkte. schreiben machen wir aber erst wenn wir alle feinheiten am dummy test modul dafür geklärt haben!“ Also: Lesen über `/api/share/…`, Schreiben über `/api/admin/…` (nur ADMIN), und das Schreiben wird erst gebaut, wenn am Demo-Modul alles geklärt ist. |
 | Erst ein **Demo ohne Solr-Kern** | Nutzer, 2026-11-26 | „ein wissensdatenbank modul […] noch ohne solr kern einfach mit einem demokapitel und zwar grundlagen/ koordinaten transformation“. Gebaut, siehe Abschnitt 3. |
 
-## 3. Was gebaut ist (2026-11-26, nur Frontend)
+## 3. Was gebaut ist
 
-Adresse, ohne Anmeldung: `/wissen` → `/wissen/grundlagen` (Übersicht des Kapitels) →
-`/wissen/grundlagen/koordinatentransformation`.
+Adresse, ohne Anmeldung (seit 2026-11-27 aus der Gliederung): `/wissen` → `/wissen/mathe` (Übersicht der Rubrik: je
+Kapitel ein Kasten mit seinen Seiten) → `/wissen/mathe/grundlagen` (ein Kapitel) →
+`/wissen/mathe/grundlagen/koordinatentransformation` (die Seite). Je Rubrik ein Reiter. Bis zum 2026-11-27 stand die
+Demoseite fest im Code unter `/wissen/grundlagen/koordinatentransformation`; diese Fassung ist gelöscht, ihr Inhalt ist
+jetzt ein Dokument im Kern.
 
 **Einstieg (2026-11-27):** die Kachel „Wissensdatenbank“. Angemeldet steht sie auf der Startseite (jeder Angemeldete,
 kein Recht nötig), für Besucher ohne Konto dieselbe Kachel auf der Login-Seite unter „Ohne Anmeldung ansehen“
@@ -55,10 +60,15 @@ in den Formeln.
 - **Die Bewegung zeigt die Rechenregel:**
   - Auf beiden Seiten dasselbe tun: Was dazukommt, wandert sichtbar aus der Notiz der Umformung an beide Seiten.
     Beispiel „· r“: aus `cos φ = x / r` wird `r · cos φ = r · x / r`, beide `r` kommen aus dem „· r“.
-  - Kürzen und Aufheben: Was wegfällt, steht in seiner Zeile **durchgestrichen**, und das bleibt so, wie auf dem
-    Papier. Beim Abspielen wird erst der Strich gezogen, dann entsteht die nächste Zeile. Beispiel: In
-    `r · cos φ = r · x / r` sind rechts der Faktor `r` und das `r` im Nenner durchgestrichen, die nächste Zeile ist
-    `r · cos φ = x`. Ebenso heben sich in `√(r²)` Wurzel und Quadrat auf und in `arctan(tan φ)` Arkustangens und Tangens.
+  - Kürzen und Aufheben ist ein EIGENER Schritt (Nutzer 2026-11-27: „erst wurzelziehen über beide seiten, und erst
+    danach kürzen“): Eine Zeile entsteht ohne Strich. Erst beim Abspielen der Umformung, die kürzt, wird durch das
+    gestrichen, was wegfällt, dann entsteht die nächste Zeile; der Strich bleibt danach stehen wie auf dem Papier, bis
+    die Zeile neu entsteht oder der Rechenweg ausgeblendet wird. Beispiel: `r · cos φ = r · x / r` steht erst ohne
+    Strich da; „kürzen“ streicht rechts den Faktor `r` und das `r` im Nenner, die nächste Zeile ist `r · cos φ = x`.
+    Ebenso heben sich in `√(r²)` Wurzel und Quadrat auf und in `arctan(tan φ)` Arkustangens und Tangens.
+  - Nicht ausformulieren (Nutzer 2026-11-27): Unter einer einfachen Umformung steht kein Satz, ihre Notiz („| · r“)
+    genügt. Eine Beschreibung je Schritt gibt es nur, wo sie nötig ist: woher der Ausgang kommt, oder was an einer
+    schwierigeren Umformung zu beachten ist (ein Integral mit Grenzen; auf der Demoseite nur „r ist nie negativ“).
   - Seitenwechsel: Ein Term, der die Seite der Gleichung wechselt, wandert auf einem Bogen hinüber (z. B. bei „Seiten
     tauschen“); alles andere gleitet gerade an seinen neuen Platz.
 - Die vier Rechnungen: x und y je drei Umformungen („· r“ → „kürzen“ → „Seiten tauschen“), r und φ je zwei („√“ bzw.
@@ -73,11 +83,13 @@ Zeigen seine beiden Schenkel hervor, alles andere tritt zurück, und das Hoverla
 
 | Ordner | Inhalt |
 |---|---|
-| `knowledge/` | Das Modul: `Knowledge.tsx` (Subheader, je Kapitel ein Reiter), `KnowledgeStartPage`, `KnowledgeChapterPage` (Liste der Seiten eines Kapitels), `KnowledgePageContent` (sucht die Seite zur Adresse), `knowledgeChapters.ts` (alle Kapitel), `knowledgePaths.ts`, `knowledgeTexts.ts`, `knowledgeIcon.ts`, die Typen `KnowledgeChapter` und `KnowledgePage`. |
+| `knowledge/` | Das Modul: `Knowledge.tsx` (Subheader, je Rubrik ein Reiter; lädt Gliederung, Feldnamen und die Liste der Seiten), `KnowledgeBase.ts`, `KnowledgeStartPage`, `KnowledgeRubricPage`, `KnowledgeChapterPage`, `KnowledgeChapterBox` (ein Kapitel mit seinen Seiten), `KnowledgePageView` (holt die Seite zur Adresse und zeichnet sie), `knowledgePaths.ts`, `knowledgeTexts.ts`, `knowledgeIcon.ts`. |
+| `knowledge/page/` | Die Seiten vom Backend: `KnowledgePageDocument.ts` (die Feld-Map eines Dokuments, die Feldnamen), `useKnowledgePage.ts`. |
+| `knowledge/content/` | Der Inhalt einer Seite: `KnowledgeContentReader` (JSON-Text → Bausteine, mit der Stelle im JSON bei einem Fehler), das Modell `KnowledgeContent`/`KnowledgeSketch`, die Anzeige `KnowledgeContentView`, `KnowledgeBoxBlockView`, `KnowledgeSketchView`. |
+| `knowledge/section/` | Die Gliederung: Typ, Hook, `knowledgeSectionTree.ts`. |
 | `knowledge/math/` | Eine Formel als Baum aus Termen, je Klasse eine Datei, ohne React: `MathTerm` (Basis), `SymbolTerm`, `NumberTerm`, `SumTerm`, `ProductTerm`, `FractionTerm`, `PowerTerm`, `RootTerm`, `FunctionTerm`, `GroupTerm`, `MarkedTerm`, dazu `TermMark` (Kennung + Farbe), `TermRoles` (welche Terme einer Zeile gekürzt bzw. von der Umformung gebracht sind), `Equation`. Gezeichnet wird über den Visitor `MathTermReactRenderer` (`MathTermView`, `EquationView`); Wurzelzeichen und Klammern sind kleine SVGs, die mit dem Inhalt wachsen (`MathStretchySign`). |
-| `knowledge/derivation/` | Eine Rechnung: `Derivation`, `DerivationStep`, `DerivationOperation` (das „\| · r“ am Zeilenende samt dem, was die Umformung bringt und kürzt). Anzeige: `DerivationBox`, `DerivationStepRow`, `DerivationOperationNote`. Ob der Rechenweg eingeblendet ist: `useDerivationPathVisibility`; das Abspielen einer Umformung: `useDerivationFlight` mit `TermFlightAnimator` (reines DOM). |
-| `knowledge/sketch/` | Die Bausteine jeder Skizze: `SketchCoordinateSystem` (Nullpunkt und Maßstab), `Sketch` (Rahmen), `SketchAxes`, `SketchPoint`, `SketchSegment`, `SketchAngle`, `formatSketchNumber`, `SketchPosition`. |
-| `knowledge/basics/` | Das Kapitel „Grundlagen“ (`basicsChapter.ts`) und im Unterordner `coordinatetransformation/` die Seite: Texte, die vier Größen mit ihren Marken, je Rechnung eine Datei, die Skizze, die Seite selbst. |
+| `knowledge/derivation/` | Eine Rechnung: `Derivation`, `DerivationStep`, `DerivationOperation` (das „\| · r“ am Zeilenende samt dem, was die Umformung bringt und kürzt). Anzeige: `DerivationBox`, `DerivationStepRow`, `DerivationOperationNote`. Ob der Rechenweg eingeblendet ist: `useDerivationPathVisibility`; welche Zeile zeigt, was gekürzt wird: `useDerivationCancellations`; das Abspielen einer Umformung: `useDerivationFlight` mit `TermFlightAnimator` (reines DOM). |
+| `knowledge/sketch/` | Die Bausteine jeder Skizze: `SketchCoordinateSystem` (Nullpunkt und Maßstab), `Sketch` (Rahmen), `SketchAxes`, `SketchPoint`, `SketchSegment`, `SketchAngle`, `SketchRightAngle`, `formatSketchNumber`, `SketchPosition`. |
 
 Global dazugekommen: `components/PlayButton` (der Abspiel-Knopf).
 
@@ -92,9 +104,11 @@ und die Skizze stehen in `src/styles/base.css`; Schrift, die fünf Farben der He
 `-fifth`), die Farbe des Strichs (`--math-cancel-color`), die Dauer des Wanderns (`--math-flight-milliseconds`, 0
 schaltet es ab) und das Hervorheben in der Skizze stehen im Theme.
 
-**Ein neues Kapitel oder eine neue Seite:** Kapitel = neuer Ordner mit seiner Kapitel-Datei und ein Eintrag in
-`knowledgeChapters.ts`; Seite = neuer Ordner im Kapitel und ein Eintrag in dessen `pages`. Routen und Reiter entstehen
-daraus von selbst, `App.tsx` bleibt, wie es ist.
+**Ein neues Kapitel oder eine neue Seite:** Rubrik, Kapitel und Unterkapitel legt der Admin im Wissensmanager an
+(Reiter „Gliederung“). Eine Seite ist ein Dokument im Kern: angelegt über `POST /api/admin/knowledge-page` (vorerst von
+Claude unter dem Konto des Nutzers; der Editor im Wissensmanager ist noch nicht gebaut). Reiter, Übersichten und
+Adressen entstehen daraus von selbst. Eine neue Schreibweise in Formeln oder ein neuer Baustein heißt: eine Klasse im
+Frontend, ein Fall im `KnowledgeContentReader`, und das Format in `solr-cores/KNOWLEDGE.md` nachtragen.
 
 **Von Claude festgelegt, weil der Nutzer bauen statt antworten wollte (alles leicht zu ändern):**
 
@@ -126,6 +140,14 @@ fotografiert (ausgeblendet, eingeblendet, jede Art von Umformung beim Abspielen,
    überhaupt für ein winkel ist.“
 
 Noch nicht gezeigt, weil die Seite keinen Fall dafür hat: ein Term, der vom Zähler in den Nenner wandert.
+
+**Zweite Rückmeldung (Nutzer, 2026-11-27), umgesetzt am selben Tag:** „was mir noch eingefallen ist bei den
+animationen, füge da schritte ein! nicht alle in einer animation machen, zum beispiel erst wurzelziehen über beide
+seiten, und erst danach kürzen. und nicht ausformulieren. also wenn die äquivalenzumformung ist mit 1/r
+durchmultiplizieren ist das als anzeige genug. beim integrieren mit grenzen oder sonstigen komplizierteren dingen
+bedarf es dann wohl eher einer extra beschreibung“. Lesart von Claude (in Abschnitt 3 beschrieben): Die Zeile nach
+einer Umformung zeigte schon den Strich der nächsten; jetzt ist das Kürzen ein eigener Schritt, und die Erklärsätze der
+einfachen Umformungen sind weg.
 Der umgesetzte Stand ist seit dem 2026-11-27 auf dem Pi (Commit `7453d7d`); eine Rückmeldung des Nutzers dazu steht aus.
 
 
@@ -153,12 +175,18 @@ Was daraus feststeht:
 - **Reihenfolge:** zuerst die Architektur des Kerns klären; die ersten Inhalte danach: Mathe Grundlagen und Physik
   Grundlagen.
 
-Folge für das Demo (noch nicht umgesetzt): Dort ist „Grundlagen“ heute die oberste Ebene (ein Reiter) mit Seiten
-darunter. Nach dieser Hierarchie wäre es Rubrik „Mathe“ → Unterrubrik „Grundlagen“ → Seite „Koordinatentransformation“.
+Umgesetzt am 2026-11-27: Rubrik „Mathe“ → Kapitel „Grundlagen“ (beide auf dem Pi angelegt) → Seite
+„Koordinatentransformation“.
 
 ## 3c. Der Kern `KNOWLEDGE`: Vorschlag von Claude, vom Nutzer am 2026-11-27 bestätigt („ja das sieht gut aus“)
 
-Noch nicht gebaut ist der Kern selbst. **Gebaut am 2026-11-27 (lokal): die Gliederung in Postgres** (Rückfrage 1,
+**Gebaut am 2026-11-27: der Kern** (auf dem Pi angelegt, 18 Felder, leer) und im Backend das Schreiben und Lesen
+einer Seite, lokal gegen das echte Solr geprüft; alles dazu in [`solr-cores/KNOWLEDGE.md`](solr-cores/KNOWLEDGE.md).
+Vorgabe des Nutzers dabei (2026-11-27): „auch dieser solr kern sollte im solr manager die felder des dokuments
+verwalten! also benötigen wir da noch eine zusätzliche auswahl always oder any, sprich felder die keinen login
+erforderlich machen und dennoch mit werden zurückkommen. ich will keine extralösung wir arbeiten solid uns sauber!“
+Also: Seiten gehen als Feld-Maps über die Felddefinitionen wie beim Kern FILE, und „Wer liest“ kennt den Wert `ANY`
+(jeder, auch ohne Anmeldung). **Ebenfalls gebaut: die Gliederung in Postgres** (Rückfrage 1,
 Nutzer: „dann machen wir das mapping der ganzen keys zum anzeigetext in postgres“): Entity `KnowledgeSection`
 ([`entities/KnowledgeSection.md`](entities/KnowledgeSection.md)), Endpunkte unter `/api/admin/knowledge-section` (nur
 ADMIN) und `/api/share/knowledge-section` (Lesen ohne Anmeldung), im Frontend als Stammdaten (`knowledgeSections`) und
@@ -235,25 +263,25 @@ Später, eigener Gang (Nutzer): die aus `content` aufbereiteten Schlagwörter f�
 
 ## 4. Wie es weitergeht (nur Richtung)
 
-1. Der Nutzer sieht sich das Demo an; daran wird besprochen, was am Wandern und an den Formeln anders soll.
-2. Der Solr-Kern: Kern in `gebiter.solr.core-keys` (YAML) und `SOLR_CORES` (`.env`), Felder im Solr-Manager, Doku in
-   `docu/solr-cores/`. Lesen ohne Login über `/api/share/…`, Schreiben für Berechtigte.
-3. Die Seiten kommen aus dem Kern statt aus dem Code; die Suche über die Themen fällt dabei mit ab.
-4. Danach: die Bewegung (ein Punkt im Achsenkreuz, Slider, Umschalter kartesisch/polar), weitere Kapitel,
+1. Erledigt am 2026-11-27: der Kern, die Seiten aus dem Kern statt aus dem Code.
+2. Der Nutzer sieht sich die Seite aus dem Kern an; daran wird besprochen, was noch anders soll.
+3. Die Seiten im Wissensmanager: Liste, Anlegen, Editor (der Nutzer will Seiten selbst anlegen und ändern können).
+4. Die Suche über die Seiten (Titel, Zusammenfassung, Schlagwörter; später aufbereitete Schlagwörter aus dem Inhalt).
+5. Danach: die Bewegung (ein Punkt im Achsenkreuz, Slider, Umschalter kartesisch/polar), weitere Kapitel,
    Stern-Gerlach, Statistik.
 
 ## 5. Offene Fragen
 
-1. **Wie liegt der Inhalt im Solr-Dokument?** Entschieden ist nur: kein Rich-Text. Eine Vorlage von Claude mit drei
-   Möglichkeiten (Formeltext mit Marken, eigener Baum als JSON, fertige Zeichnung je Schritt) hat der Nutzer am
-   2026-11-26 nicht angenommen („du nervst mich“): nicht noch einmal als Auswahl vorlegen, am Demo besprechen. Das Demo
-   nutzt einen eigenen Baum aus Termen; der ließe sich als JSON ablegen.
-2. **Namen im Kern:** Kern-Key (Vorschlag `KNOWLEDGE`) und Feldnamen (englisch wie im Kern FILE?).
+1. **Wie liegt der Inhalt im Solr-Dokument?** Gebaut am 2026-11-27 (Fassung 1): ein JSON-Objekt aus den Bausteinen
+   des Demos, Terme als Baum (`solr-cores/KNOWLEDGE.md`, „Format des Inhalts“). Der Nutzer hat es noch nicht gesehen;
+   nicht als Auswahl vorlegen, an der Seite besprechen.
+2. **Namen im Kern:** erledigt (`KNOWLEDGE`, Feldnamen englisch, vom Nutzer bestätigt).
 3. **Referenzen:** Welche? Eine Referenz ist bei uns automatisch ein Feld in JEDEM Kern (wie `wtf`); was nur im
    Wissenskern gilt (z. B. „gehört zu Kapitel“), wäre ein normales Feld dieses Kerns.
-4. **Status:** Welche (Entwurf, veröffentlicht, gelöscht)? Der Nutzer sprach von „Statusfeldern“ in der Mehrzahl.
-5. **Wie geschrieben wird:** Entschieden ist (2026-11-27): nur über Admin-Endpunkte, und erst nach dem Klären am
-   Demo-Modul. Offen: im Browser (Editor) oder per Einspielen?
-6. **Sicherung:** Der Text läge nur in Solr. Den Export eines Kerns gibt es per Knopf, das Einspielen ist nicht gebaut.
+4. **Status:** erledigt (`DRAFT`, `PUBLISHED`, `DELETED`).
+5. **Wie geschrieben wird:** über Admin-Endpunkte; Claude unter dem Konto des Nutzers. Offen: wie der Editor im Browser
+   aussieht (noch nicht gebaut).
+6. **Sicherung:** offen. Der Inhalt einer Seite liegt NUR in Solr. Den Export eines Kerns gibt es per Knopf
+   (Solr-Manager), das Einspielen ist nicht gebaut. Bis dahin ist der Export das einzige Backup der Seiten.
 7. **Einstieg:** erledigt am 2026-11-27 (Kachel auf Startseite und Login-Seite, Abschnitt 3).
 8. **Was steuert der Slider** in der späteren Bewegungsansicht: die Zeit entlang einer Bahn oder direkt die Koordinaten?

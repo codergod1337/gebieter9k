@@ -131,20 +131,52 @@ Nach dem 2026-12-03 diesen Abschnitt löschen (ebenso die Regel `interruptions-u
 - Stück 4e fertig (12:02), nur lokal: Solr-Manager kennt bei „Wer liest“ die Auswahl „Alle, auch ohne Anmeldung“
   (`SOLR_FIELD_READER_ANY` in `solr/SolrField.ts`, in `SolrCoreFieldsTab.tsx` als erste Wahl; Hinweis der Spalte
   ergänzt). Typprüfung grün, im Browser noch NICHT gesehen. Doku des Backends steht noch aus (kommt nach dem Frontend).
-- **Angefangen 12:02: Stück 3 + 5, Frontend der Wissensdatenbank.** Plan:
-  - `knowledge/content/`: Modell des Inhalts, `KnowledgeContentReader` (JSON-Text → Bausteine; Format 1: oben
-    `quantities` (Größe → Zeichen + Farbe), dann `blocks`: `BOX` (Titel, `parts`: `PARAGRAPH`/`EQUATIONS`/`HINT`,
-    optional `sketch`) und `DERIVATION` (Kennung, Titel, `steps` mit `equation`, optional `operation` und
-    `explanation`); Terme als Baum mit `type`), Anzeige `KnowledgeContentView`, `KnowledgeBoxBlockView`,
-    `KnowledgeSketchView`; neu `sketch/SketchRightAngle`.
-  - `knowledge/page/`: `useKnowledgePage` (Feldnamen, auflösen, eine Seite holen), Typen.
-  - Modul: `Knowledge.tsx` lädt Gliederung + Feldnamen + alle veröffentlichten Seiten (ohne Inhalt), Reiter je
-    Rubrik; `/wissen/<rubrik>`, `/wissen/<rubrik>/<kapitel>`, `/wissen/<rubrik>/<kapitel>/<seite>`.
-  - `DerivationOperation.notation` und `DerivationStep.explanation` werden einfache Texte (eine Seite = eine Sprache).
-  - Danach löschen: `knowledge/basics/`, `knowledgeChapters.ts`, `KnowledgeChapter.ts`, `KnowledgePage.ts`,
-    `KnowledgePageContent.tsx`. Der Inhalt der Demoseite wird der JSON-Text, den ich als Seite anlege (Bauskript im
-    Scratchpad).
-  Reißt es ab: `npx tsc -b` in `code/frontend` zeigt, was halb ist.
+- Stück 3 + 5 fertig (12:13), nur lokal, nicht committet. Neu unter `code/frontend/src/knowledge/`:
+  `content/` (`KnowledgeContent.ts`, `KnowledgeSketch.ts`, `KnowledgeContentError.ts`, `KnowledgeContentReader.ts`,
+  `knowledgeContentFormat.ts`, `KnowledgeContentView.tsx`, `KnowledgeBoxBlockView.tsx`, `KnowledgeSketchView.tsx`),
+  `page/` (`KnowledgePageDocument.ts`, `useKnowledgePage.ts`), `sketch/SketchRightAngle.tsx`, `KnowledgeBase.ts`,
+  `KnowledgeChapterBox.tsx`, `KnowledgeRubricPage.tsx`, `KnowledgePageView.tsx`; neu geschrieben `Knowledge.tsx`
+  (Reiter je Rubrik, lädt Gliederung + Feldnamen + Seitenliste), `KnowledgeStartPage.tsx`, `KnowledgeChapterPage.tsx`,
+  `knowledgePaths.ts`, `knowledgeTexts.ts`; `App.tsx` (Routen `/wissen/<rubrik>[/<kapitel>[/<seite>]]`); `base.css`
+  (`.knowledge-parts`, Unterkapitel). Gelöscht: `knowledge/basics/` (die fest eingebaute Demoseite),
+  `knowledgeChapters.ts`, `KnowledgeChapter.ts`, `KnowledgePage.ts`, `KnowledgePageContent.tsx`.
+  `DerivationOperation.notation` und `DerivationStep.explanation` sind jetzt einfache Texte.
+  Typprüfung und Bau grün. Im Firefox ohne Fenster gegen ein nachgestelltes Backend (`tools/serve_wissen.py`):
+  `/wissen` → `/wissen/mathe`, Reiter Mathe und Physik, Kasten je Kapitel mit Seiten (Unterkapitel als
+  Zwischenüberschrift), Klick öffnet `/wissen/mathe/grundlagen/koordinatentransformation`: 6 Kästen, 4 Rechnungen,
+  Skizze mit 0, 1, 1, drei Punkten, Winkel und rechtem Winkel, Zusammenfassung mit 4 Gleichungen und Hinweis;
+  Rechenweg einblenden, Strich erst beim Kürzen; leere Rubrik, unbekannte Rubrik/Seite und eine Seite mit kaputtem
+  Inhalt zeigen ihren Hinweis (mit der Stelle im JSON). NICHT gesehen: der Link „Zurück zu …“ (im Kopf für Besucher
+  nicht gefunden, am Kopf habe ich nichts geändert) und der Solr-Manager mit der neuen Auswahl.
+  Der Inhalt der Seite: `scratchpad/seiten/koordinatentransformation.json` (Bauskript
+  `tools/build_koordinatentransformation.py`, nimmt die Texte aus dem Commit `7453d7d`), 10 386 Zeichen.
+- Stück 7 (Doku) fertig (12:20): neu `docu/solr-cores/KNOWLEDGE.md` (Felder, Regeln, Endpunkte, Format des Inhalts,
+  Tests); nachgezogen `solr-cores/README.md` („Wer liest“/`ANY`, neuer Kern), `entities/SolrField.md`,
+  `entities/KnowledgeSection.md`, `konzept-wissensdatenbank.md`, `konzept-navigation.md`, privat `setup.md` (Kern auf
+  dem Pi). Backend `clean compile` und Frontend `tsc -b` grün.
+- Bemerkt 12:20: Der Nutzer hat zwischendurch committet und gepusht: `8211754` (11:08, Doku) und `a8f5df2` (12:13,
+  „wissensdatenbank doku solr“): 64 Dateien seit `7453d7d`, darin das ganze Backend (16 Dateien, auch
+  `application.yaml`) und das Frontend bis zum grünen Bau von 12:12. Lokal noch NICHT committet: `App.tsx` (nur ein
+  Kommentar) und die Doku aus Stück 7. Zugangsdaten im Commit: keine (11 Werte geprüft; ein Treffer ist der Name des
+  Postgres-Users, zugleich das Wort in `gebieter.ddns.net`, kein Geheimnis und schon vorher öffentlich).
+- Stück 6 fertig (12:24): (a) Pi von `7453d7d` auf `a8f5df2`: Bau `backend` 24 s, `frontend` 7 s, gestartet 12:21:28,
+  „Started Gebiter9kApplication in 18.285 seconds“, 0 ERROR, 0 WARN, Abgleich FILE 39 / KNOWLEDGE 22 Felder ohne
+  Konflikt; alte Images als `:vorher`; `/tmp` auf dem Pi leer, Tunnel zu. (b) Seite „Koordinatentransformation“ unter
+  dem Konto des Nutzers angelegt: `POST /api/admin/knowledge-page` 201, id
+  `01a21cbe-11d0-7889-ad8d-b0bb58994255_de`, veröffentlicht; noch einmal 409; ohne Anmeldung lesbar ohne `status` und
+  Autor, Inhalt gleich; ändern ohne Anmeldung 401. (c) Im Firefox ohne Fenster von außen: Login-Seite → Kachel →
+  `/wissen/mathe` → `/wissen/mathe/grundlagen/koordinatentransformation` aus dem Dokument, alles da, Strich erst beim
+  Kürzen, keine Fehler; die alte Adresse `/wissen/grundlagen/…` zeigt „Diese Rubrik gibt es nicht.“ (d) `setup.md`
+  (Bau-Eintrag 12:21), `solr-cores/KNOWLEDGE.md` (Tests), Konzept.
+- **FERTIG 12:24.** Lokal noch NICHT committet (macht der Nutzer): `code/frontend/src/App.tsx` (nur ein Kommentar),
+  `docu/arbeitsprotokoll.md`, `docu/entities/KnowledgeSection.md`, `docu/entities/SolrField.md`,
+  `docu/konzept-navigation.md`, `docu/konzept-wissensdatenbank.md`, `docu/solr-cores/README.md`, neu
+  `docu/solr-cores/KNOWLEDGE.md`. Der Pi braucht davon nichts. Offen, nichts angefangen: Wissensmanager und
+  Solr-Manager auf dem Pi im Browser ansehen (der Nutzer); `PUT /api/admin/knowledge-page` über HTTP; Seiten im
+  Wissensmanager (Liste, Editor); Sicherung der Seiten (liegen nur in Solr; Export gibt es, Einspielen nicht);
+  `SOLR_CORES` in der `.env` auf dem Laptop ist leer, auf dem Pi `FILE,KNOWLEDGE`. Die Seite ändere ich später so:
+  `GET /api/admin/knowledge-page/<id>` holen, `content` anpassen, `PUT` mit `{"id": …, "fieldValuesByFieldName":
+  {"content": …}}` (Bauskript und JSON lagen nur im Scratchpad).
 
 ## 2026-11-27 10:47 – Push `7453d7d` auf den Pi bringen (Backend UND Frontend), danach Anmeldung unter dem Konto des Nutzers prüfen
 

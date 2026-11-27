@@ -86,9 +86,15 @@ Anlegen einer Rubrik: `{"rubricKey": "MATHE", "displayName": {"de": "Mathe"}}`; 
 - [`code/frontend/src/knowledgemanager/section/knowledgeSectionTexts.ts`](../../code/frontend/src/knowledgemanager/section/knowledgeSectionTexts.ts): alle Texte des Reiters, je Ebene ein Satz Texte
 - [`code/frontend/src/knowledgemanager/KnowledgeManager.tsx`](../../code/frontend/src/knowledgemanager/KnowledgeManager.tsx): das Modul mit dem Reiter; Kachel in [`home/homeTiles.ts`](../../code/frontend/src/home/homeTiles.ts), Route in [`App.tsx`](../../code/frontend/src/App.tsx)
 
-Noch NICHT genutzt: Das öffentliche Modul `/wissen` zeigt weiter das Demo mit seinem fest eingebauten Kapitel. Sobald es die Gliederung von hier nimmt, braucht es sie auch ohne Anmeldung (die Stammdaten laden heute erst nach dem Login).
+- [`code/frontend/src/knowledge/Knowledge.tsx`](../../code/frontend/src/knowledge/Knowledge.tsx) (seit 2026-11-27): das öffentliche Modul `/wissen` lädt die Gliederung selbst, ohne Anmeldung: je Rubrik ein Reiter, je Kapitel ein Kasten mit seinen Seiten, Unterkapitel als Zwischenüberschrift ([`KnowledgeRubricPage.tsx`](../../code/frontend/src/knowledge/KnowledgeRubricPage.tsx), [`KnowledgeChapterBox.tsx`](../../code/frontend/src/knowledge/KnowledgeChapterBox.tsx), [`knowledgePaths.ts`](../../code/frontend/src/knowledge/knowledgePaths.ts): `findKnowledgeRubric`, `findKnowledgeChapter`)
+
+**Seiten im Solr-Kern (seit 2026-11-27):** Die Seiten tragen `rubricKey`, `chapterKey`, `subChapterKey` als Felder ([`solr-cores/KNOWLEDGE.md`](../solr-cores/KNOWLEDGE.md)). `KnowledgeSectionService.changeKnowledgeSectionKey` zieht deshalb ZUERST alle Seiten unter dem Punkt nach ([`KnowledgePageSectionKeyService.changeSectionKeyOfKnowledgePages`](../../code/backend/src/main/java/de/gebiter/knowledge/service/KnowledgePageSectionKeyService.java), Cursor durch den Kern) und ändert Postgres zuletzt; antwortet Solr nicht (503), ändert sich nichts. `requireExistingKnowledgeSection` prüft für den `KnowledgePageService`, dass es das Kapitel bzw. Unterkapitel einer Seite gibt.
 
 ## Getestet
+
+2026-11-27, auf dem Pi über HTTP, angemeldet unter dem Konto des Nutzers: `POST /api/admin/knowledge-section` zweimal 201 (Rubrik `MATHE` „Mathe“ id 5, Kapitel `GRUNDLAGEN` „Grundlagen“ id 6), derselbe Rubrik-Key noch einmal 409; ohne Anmeldung gelesen: beide Zeilen da. Das sind die ersten echten Zeilen.
+
+2026-11-27, Key-Änderung mit Seiten im Kern (Wegwerf-Test gegen das echte Solr, Rollback): Kapitel zieht 2 Seiten nach, Unterkapitel 1, Rubrik 3.
 
 2026-11-27, Backend: `./mvnw -q -o -DskipTests clean compile` ohne Fehler; Kontextstart `Gebiter9kApplicationTests` gegen die Pi-DB grün. Dabei hat Hibernate die Tabelle `knowledge_section` angelegt (sechs Spalten wie oben, nur der Primärschlüssel).
 

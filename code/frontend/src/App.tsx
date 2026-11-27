@@ -129,7 +129,7 @@ function AppRoutes() {
     <Routes>
       {/* Die Besucherseite einer Galerie-Freigabe: ohne Anmeldung, der Token im Link ist das Recht */}
       <Route path="/share/galerie/:shareToken" element={<GalleryShareVisitorPage />} />
-      {/* Die Wissensdatenbank: ohne Anmeldung. Kapitel und Seiten kommen aus knowledge/knowledgeChapters.ts */}
+      {/* Die Wissensdatenbank: ohne Anmeldung. Gliederung und Seiten kommen vom Backend (/api/share/knowledge-…) */}
       <Route path={KNOWLEDGE_PATH} element={<Knowledge />}>
         <Route index element={<KnowledgeStartPage />} />
         <Route path=":rubricPathSegment" element={<KnowledgeRubricPage />} />
