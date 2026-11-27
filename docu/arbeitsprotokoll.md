@@ -25,6 +25,61 @@ Nach dem 2026-12-03 diesen Abschnitt löschen (ebenso die Regel `interruptions-u
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-27 10:47 – Push `7453d7d` auf den Pi bringen (Backend UND Frontend), danach Anmeldung unter dem Konto des Nutzers prüfen
+
+- Ansage: „so es ist gepusht und ich habe in der env alles für dich eingetragen“
+- Geprüft 10:47: lokal = `origin/main` = `7453d7d` („wissensdatenbank erste iteration“), Arbeitskopie sauber. Seit dem
+  Stand des Pi (`0380fab`): 7 Dateien im Backend (alle `de.gebiter.knowledge`), 44 im Frontend, `compose.yaml` und
+  YAML unverändert. `code/.env` ist nicht im Repo.
+- Zugangsdaten: Zeile 81 der `code/.env`, Aufbau `… app: <Anmeldename> pw: <Passwort> 2fa: <acht Vierergruppen>`.
+  Nur die Form gelesen, keine Werte ausgegeben. Auslesen: Wort hinter `app:`, Wort hinter `pw:`, alles hinter `2fa:`
+  ohne Leerzeichen.
+- Schritte, jeder für sich:
+  1. Commit auf Zugangsdaten prüfen (jetzt auch die drei neuen Werte).
+  2. Tunnel mit allen drei Ports; lokal sauber kompilieren; Kontextstart `Gebiter9kApplicationTests` (Hibernate legt
+     dabei `knowledge_section` in der Pi-DB an); Wegwerf-Test der neuen Endpunkte mit Rollback, danach löschen.
+  3. Pi: Lage, Images sichern, `git pull`, `backend` bauen, `frontend` bauen, erst dann beide starten, Log lesen.
+  4. Aufräumen auf dem Pi, von außen prüfen.
+  5. Anmeldung unter dem Konto des Nutzers (nur lesen: wer bin ich, Gliederung).
+  6. `setup.md` 5.16, Entity-Doku (Tests), dieser Eintrag.
+- Schritt 1 fertig (10:49): kein geheimer Wert aus `code/.env` im Commit (11 geprüft, dazu Zeile 81 als Ganzes).
+- Schritt 2 fertig (10:58): `clean compile` ohne Fehler; Kontextstart `Gebiter9kApplicationTests` grün (36 s, kein
+  ERROR, kein WARN). Wegwerf-Test `KnowledgeSectionThrowawayTests` grün (1 Test): anlegen auf allen drei Ebenen mit
+  Platz 1, 2; doppelter Key, ungültiger Key, fehlendes Elternteil, leerer Name, unbekannte id werden abgelehnt;
+  umbenennen lässt Keys und Platz stehen; Reihenfolge tauschen, unvollständige und fremde Liste abgelehnt; Key eines
+  Kapitels zieht sein Unterkapitel nach, Key der Rubrik alle vier Zeilen; ohne Anmeldung geht lesen, schreiben nicht,
+  mit Rolle USER schreiben nicht. Testklasse gelöscht. Auf dem Pi nachgesehen: Tabelle `knowledge_section` steht
+  (`id`, `rubric_key`, `chapter_key`, `sub_chapter_key`, `display_name` jsonb, `listing_position`), 0 Zeilen.
+  Ein Lauf dazwischen scheiterte sofort an „Pi nicht erreichbar“ (Aussetzer der Leitung), der nächste lief durch.
+- Schritt 3 fertig (11:00): Pi von `0380fab` auf `7453d7d`; Bau `backend` 23 s, `frontend` 8 s, danach beide
+  gestartet (10:59:56). Alte Images als `:vorher` gesichert (backend `792f8259063e`, frontend `c9ad7f080503`).
+  Backend: „Started Gebiter9kApplication in 17.603 seconds“, 0 ERROR, 0 WARN. Über nginx auf dem Pi: Startseite 200,
+  `/wissen` 200, `/api/session` ohne Anmeldung 401, `/api/share/knowledge-section` 200 mit `[]`,
+  `/api/admin/knowledge-section/1` ohne Anmeldung 401. (Die Prüfung im Bauskript selbst kam eine Sekunde nach dem
+  Start und sah 502, weil das Backend noch hochfuhr; `--wait` wartet beim Backend nicht, es hat keinen Healthcheck.)
+- Schritt 4 fertig (11:02): auf dem Pi liegt nichts mehr in `/tmp`, Tunnel geschlossen. Von außen
+  (`https://gebieter.ddns.net`): Bundle `index-BL1sA4np.js` mit „Rechenweg einblenden“, Wissensmanager und den
+  Pfaden der Gliederung; Theme byte-gleich mit dem Repo; `/api/share/knowledge-section` 200 mit `[]`;
+  GET, POST und PUT unter `/api/admin/knowledge-section` ohne Anmeldung 401. Im Firefox ohne Fenster gesehen:
+  `/wissen/grundlagen/koordinatentransformation` ohne Login-Maske, Ausgang + Ergebnis, „Rechenweg einblenden“ zeigt
+  4 Zeilen mit 3 Abspiel-Knöpfen (Adresse `?xCoordinatePath=shown`), Flug läuft und räumt auf, Skizze mit 0, 1, 1,
+  drei Punkten und dem Winkel, keine Fehler.
+- Schritt 5 fertig (11:03): Anmeldung unter dem Konto des Nutzers geht, ein Versuch, nichts angelegt. Ablauf:
+  `POST /api/share/users-login-2fa` (Name + SHA-256-Hex des Passworts) → 201, `TOTP_CODE`; Code selbst gerechnet
+  (HMAC-SHA1, 6 Stellen, 30 s) → `POST /api/share/session` 200, Cookies `gebiter_jwt` + `gebiter_refresh`. Konto
+  `7777…`, ARC `ALLMAECHTIGER`, Rechte `ADMIN, USER, FILE_MANAGER, MODERATOR, FREIGABE`. `GET /api/session` 200,
+  `GET /api/share/knowledge-section` 200 (0 Einträge), `GET /api/admin/knowledge-section/1` 404 (als ADMIN
+  durchgelassen, Zeile gibt es nicht; ohne ADMIN wäre es 403). Abgemeldet: `DELETE /api/share/session` 204. Die
+  Gegenprobe danach (`GET /api/session` → 401) fiel aus, die Leitung war in dem Moment weg (Namensauflösung).
+  Das Skript liegt nur im Scratchpad (`tools/login_check.py`), liest Zeile 81 der `.env` selbst und gibt keine Werte aus.
+- Schritt 6 fertig (11:07): `docu/setup.md` 5.16 (Bau-Eintrag 10:59, privat), `docu/entities/KnowledgeSection.md`
+  (Abschnitt „Getestet“), `docu/konzept-wissensdatenbank.md` (eine Zeile zum Stand), Regeln
+  `knowledge-base-module` (Stand auf dem Pi, Ablauf der Anmeldung) und `pi-access-self` (`pipefail` im Bauskript).
+- **FERTIG 11:07.** Der Pi läuft auf `7453d7d`. Nicht committet (macht der Nutzer): `docu/arbeitsprotokoll.md`,
+  `docu/entities/KnowledgeSection.md`, `docu/konzept-wissensdatenbank.md`. Offen, nichts davon angefangen: Auf dem
+  Pi ist über die Endpunkte der Gliederung noch nichts angelegt; der Wissensmanager ist dort im Browser nicht
+  gesehen; die Gegenprobe nach dem Abmelden fehlt. Als Nächstes laut Konzept: Kern `KNOWLEDGE` bauen, auf Ansage.
+
 ## 2026-11-27 10:33 – Gliederung: Keys sollen änderbar sein; Claude schreibt Seiten unter dem Konto des Nutzers
 
 - Ansage, wörtlich: „na aber wir können doch keys ändern, wenn wir direkt nach einer änderung, also in der selben

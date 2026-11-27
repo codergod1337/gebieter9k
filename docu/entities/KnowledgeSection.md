@@ -90,6 +90,17 @@ Noch NICHT genutzt: Das öffentliche Modul `/wissen` zeigt weiter das Demo mit s
 
 ## Getestet
 
-2026-11-27, Backend: nur kompiliert (`./mvnw -q -o -DskipTests clean compile` ohne Fehler). KEIN Start gegen die Pi-DB: Die Tabelle `knowledge_section` gibt es dort noch nicht, sie entsteht beim ersten Start des Backends mit diesem Stand (Hibernate). Die Endpunkte selbst sind damit noch NICHT geprüft.
+2026-11-27, Backend: `./mvnw -q -o -DskipTests clean compile` ohne Fehler; Kontextstart `Gebiter9kApplicationTests` gegen die Pi-DB grün. Dabei hat Hibernate die Tabelle `knowledge_section` angelegt (sechs Spalten wie oben, nur der Primärschlüssel).
+
+2026-11-27, Service gegen die Pi-DB, in einer Transaktion mit Rollback (Wegwerf-Test, danach gelöscht; nachgezählt: 0 Zeilen):
+
+- anlegen auf allen drei Ebenen (Rubrik `ZZWEGWERF`, Kapitel `KAPITELA` und `KAPITELB`, Unterkapitel `UNTER`); die Kapitel bekommen Platz 1 und 2;
+- abgelehnt: derselbe Key noch einmal (Rubrik und Kapitel, `DuplicateKeyException`), ein ungültiger Key (`zz klein`), ein Kapitel in einer Rubrik, die es nicht gibt, ein Unterkapitel ohne Kapitel oder in einem Kapitel, das es nicht gibt, ein leerer Anzeigename, eine unbekannte id (`EntityNotFoundException`);
+- umbenennen: Keys und Platz bleiben stehen;
+- Reihenfolge: zwei Kapitel tauschen; eine unvollständige Liste und eine Liste mit einer fremden id werden abgelehnt;
+- Key ändern: Kapitel `KAPITELA` → `KAPITELX` zieht sein Unterkapitel nach, das andere Kapitel bleibt; ein schon vergebener oder ungültiger Key wird abgelehnt; Rubrik `ZZWEGWERF` → `ZZWEGWERFNEU` ändert alle vier Zeilen; Unterkapitel `UNTER` → `UNTERNEU`;
+- Rechte: ohne Anmeldung geht `getAllKnowledgeSection`, anlegen nicht; mit der Rolle USER geht Key ändern nicht.
+
+2026-11-27, auf dem Pi (Stand `7453d7d`), von außen: `GET /api/share/knowledge-section` ohne Anmeldung 200 mit `[]`; GET, POST und PUT unter `/api/admin/knowledge-section` ohne Anmeldung 401; angemeldet als ADMIN `GET /api/admin/knowledge-section/1` → 404 (durchgelassen, die Zeile gibt es nicht). Über die Controller ist noch NICHTS angelegt, geändert oder umsortiert worden: Die Schreib-Endpunkte selbst (Body, Statuscodes) sind nur über den Service geprüft, nicht über HTTP.
 
 2026-11-27, Frontend: Typprüfung und Bau ohne Fehler; im Firefox ohne Fenster gegen ein nachgestelltes Backend durchgeklickt: Kachel „Wissensmanager“, zwei Rubriken anlegen, „Darin“ wählt die Rubrik (`?rubric=MATHE`), zwei Kapitel anlegen, Kapitel wählen, Unterkapitel anlegen; denselben Key noch einmal → die Meldung bleibt im Popup; umbenennen; andere Rubrik wählen; „Zurück“ im Browser; Reihenfolge der Rubriken am Griff tauschen. Dazu das Ändern der Keys: Rubrik `MATHE` → `MATHEMATIK` (ihre zwei Kapitel bleiben bei ihr, die Adresse nennt den neuen Key), Kapitel `GRUNDLAGEN` → `BASICS`, Unterkapitel `KOORDINATEN` → `KOORDINATENSYSTEME`, ein schon vergebener Key → die Meldung bleibt im Popup.

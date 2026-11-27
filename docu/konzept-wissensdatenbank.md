@@ -126,7 +126,7 @@ fotografiert (ausgeblendet, eingeblendet, jede Art von Umformung beim Abspielen,
    überhaupt für ein winkel ist.“
 
 Noch nicht gezeigt, weil die Seite keinen Fall dafür hat: ein Term, der vom Zähler in den Nenner wandert.
-Der Nutzer hat den umgesetzten Stand noch nicht gesehen.
+Der umgesetzte Stand ist seit dem 2026-11-27 auf dem Pi (Commit `7453d7d`); eine Rückmeldung des Nutzers dazu steht aus.
 
 
 ## 3b. Hierarchie und Solr-Kern (Nutzer, 2026-11-27) – zu klären, BEVOR echter Inhalt entsteht
