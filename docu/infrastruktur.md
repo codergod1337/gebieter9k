@@ -47,6 +47,8 @@ Die Passwörter kommen als Compose-Secrets in die Container: als Dateien unter
 
 ## Solr
 
+**Admin-Oberfläche von außen (seit 2026-11-27):** `https://gebieter.ddns.net/solr/`, durchgereicht vom nginx des Containers `frontend` (`mounts/nginx/conf/default.conf`: `/solr/` und `/api/(cores|node|cluster)` → `solrhost:8983`). Einzige Hürde ist Solrs Basic Auth (`blockUnknown`, User und Passwort aus der `.env`); wer sie besteht, ist Solr-Admin. Im LAN und über den Tunnel wie bisher über den Host-Port.
+
 Aufgebaut wie in der Vorlage. Die Startkette in `compose.yaml` läuft bei **jedem** Start:
 
 1. Je Kern aus `SOLR_CORES` (kommagetrennt, leer = keiner) den Ordner `mounts/solr/data/<kern>` aus dem

@@ -153,7 +153,7 @@ export class KnowledgeContentReader {
 
   private readOperation(operationValue: unknown, operationPath: string): DerivationOperation {
     const operationObject = this.requireObject(operationValue, operationPath)
-    const notation = this.requireText(operationObject.notation, operationPath + '.notation')
+    const notation = this.readOptionalText(operationObject.notation, operationPath + '.notation')
     let operand: MathTerm | null = null
     if (operationObject.operand !== undefined && operationObject.operand !== null) {
       operand = this.readTerm(operationObject.operand, operationPath + '.operand')

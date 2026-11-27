@@ -73,6 +73,8 @@ import { KNOWLEDGE_PATH } from './knowledge/knowledgePaths.ts'
 import { KnowledgeStartPage } from './knowledge/KnowledgeStartPage.tsx'
 import { KnowledgeManager } from './knowledgemanager/KnowledgeManager.tsx'
 import { KNOWLEDGE_MANAGER_PATH } from './knowledgemanager/knowledgeManagerPaths.ts'
+import { KnowledgePageEditorPage } from './knowledgemanager/page/KnowledgePageEditorPage.tsx'
+import { KnowledgePageTab } from './knowledgemanager/page/KnowledgePageTab.tsx'
 import { KnowledgeSectionTab } from './knowledgemanager/section/KnowledgeSectionTab.tsx'
 import { ScrollMemory } from './navigation/ScrollMemory.tsx'
 import { TikaTest } from './tikatest/TikaTest.tsx'
@@ -241,6 +243,8 @@ function LoggedInRoutes() {
         }>
         <Route index element={<Navigate to="section" replace />} />
         <Route path="section" element={<KnowledgeSectionTab />} />
+        <Route path="page" element={<KnowledgePageTab />} />
+        <Route path="page/:knowledgePageId" element={<KnowledgePageEditorPage />} />
       </Route>
       <Route path="/market" element={<Market />}>
         <Route index element={<MarketStartTab />} />

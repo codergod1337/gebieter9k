@@ -4686,6 +4686,86 @@
     }
   }
 
+  /*
+   * ===== Wissensmanager, Editor einer Seite (knowledgemanager/page): oben die Felder, darunter der Inhalt als JSON-Text
+   * neben seiner Vorschau; auf schmalen Schirmen untereinander. =====
+   */
+  .knowledge-editor-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .knowledge-editor-title {
+    margin: 0;
+    font-size: 1.35rem;
+  }
+
+  .knowledge-editor-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .knowledge-editor-line-label {
+    min-width: 7rem;
+    font-size: 0.85rem;
+  }
+
+  .knowledge-editor {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    align-items: start;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 1199.98px) {
+    .knowledge-editor {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /*
+   * JSON-Text und Vorschau sind gleich hoch und rollen jeder für sich: So bleibt der Text stehen, während man durch die
+   * Vorschau blättert, und umgekehrt.
+   */
+  .knowledge-editor {
+    --knowledge-editor-pane-height: 70vh;
+  }
+
+  .knowledge-editor-textarea {
+    height: var(--knowledge-editor-pane-height);
+    font-family: var(--bs-font-monospace);
+    font-size: 0.8rem;
+    line-height: 1.35;
+    white-space: pre;
+    overflow: auto;
+    resize: vertical;
+  }
+
+  .knowledge-editor-preview {
+    min-width: 0;
+  }
+
+  .knowledge-editor-preview-pane {
+    height: var(--knowledge-editor-pane-height);
+    overflow-y: auto;
+    padding-right: 0.5rem;
+  }
+
+  .knowledge-editor-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .knowledge-editor-state {
+    margin-right: auto;
+  }
+
   /* die Teile eines Kastens untereinander (Textblöcke, Gleichungsgruppen, Hinweise), mit Abstand dazwischen */
   .knowledge-parts {
     display: flex;

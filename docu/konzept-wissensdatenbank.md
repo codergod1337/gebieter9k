@@ -66,8 +66,11 @@ in den Formeln.
     die Zeile neu entsteht oder der Rechenweg ausgeblendet wird. Beispiel: `r · cos φ = r · x / r` steht erst ohne
     Strich da; „kürzen“ streicht rechts den Faktor `r` und das `r` im Nenner, die nächste Zeile ist `r · cos φ = x`.
     Ebenso heben sich in `√(r²)` Wurzel und Quadrat auf und in `arctan(tan φ)` Arkustangens und Tangens.
-  - Nicht ausformulieren (Nutzer 2026-11-27): Unter einer einfachen Umformung steht kein Satz, ihre Notiz („| · r“)
-    genügt. Eine Beschreibung je Schritt gibt es nur, wo sie nötig ist: woher der Ausgang kommt, oder was an einer
+  - Nicht ausformulieren (Nutzer 2026-11-27: „ich will kein kürzen und seite tauschen lesen“, „wortbeschreibungen
+    lassen wir optional aber nicht für solche PILLEPALLE OPERATIONEN“): Worte sind je Schritt FREIWILLIG, in der Notiz
+    wie als Satz darunter, und gedacht für schwierige Schritte (ein Integral mit Grenzen). Einfache Schritte bekommen
+    keine: Die Notiz ist dann nur Rechenschreibweise („| · r“, „| √“, „| arctan“), Kürzen und Seiten tauschen haben gar
+    keine Notiz, nur den Abspiel-Knopf. Eine Beschreibung je Schritt gibt es nur, wo sie nötig ist: woher der Ausgang kommt, oder was an einer
     schwierigeren Umformung zu beachten ist (ein Integral mit Grenzen; auf der Demoseite nur „r ist nie negativ“).
   - Seitenwechsel: Ein Term, der die Seite der Gleichung wechselt, wandert auf einem Bogen hinüber (z. B. bei „Seiten
     tauschen“); alles andere gleitet gerade an seinen neuen Platz.
@@ -265,7 +268,11 @@ Später, eigener Gang (Nutzer): die aus `content` aufbereiteten Schlagwörter f�
 
 1. Erledigt am 2026-11-27: der Kern, die Seiten aus dem Kern statt aus dem Code.
 2. Der Nutzer sieht sich die Seite aus dem Kern an; daran wird besprochen, was noch anders soll.
-3. Die Seiten im Wissensmanager: Liste, Anlegen, Editor (der Nutzer will Seiten selbst anlegen und ändern können).
+3. Gebaut am 2026-11-27 (lokal, wartet auf Commit und Push): Wissensmanager, Reiter „Seiten“ mit der Liste und dem
+   Editor einer Seite (Felder per Klick, der Inhalt als JSON-Text mit Vorschau daneben). Anlass (Nutzer): „ausserdem
+   hast du noch keinen editor für die einzelne wissensdatenbank seite, ich muss ja sehen was du da … gebaut hast“.
+   Noch offen: eine neue Seite im Browser anlegen (geführt), eine Seite verschieben, und ob der JSON-Editor reicht
+   oder Formulare je Baustein kommen sollen (erst zeigen, dann besprechen).
 4. Die Suche über die Seiten (Titel, Zusammenfassung, Schlagwörter; später aufbereitete Schlagwörter aus dem Inhalt).
 5. Danach: die Bewegung (ein Punkt im Achsenkreuz, Slider, Umschalter kartesisch/polar), weitere Kapitel,
    Stern-Gerlach, Statistik.

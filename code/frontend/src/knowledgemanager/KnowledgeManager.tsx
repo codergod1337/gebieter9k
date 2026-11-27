@@ -2,16 +2,22 @@ import { Outlet } from 'react-router'
 import { Subheader, type SubheaderTab } from '../components/Subheader.tsx'
 import { getTextInCurrentLanguage } from '../language/getTextInCurrentLanguage.ts'
 import { KNOWLEDGE_MANAGER_ICON_CLASS_NAME } from './knowledgeManagerIcon.ts'
-import { KNOWLEDGE_SECTION_TAB_PATH } from './knowledgeManagerPaths.ts'
+import { KNOWLEDGE_PAGE_TAB_PATH, KNOWLEDGE_SECTION_TAB_PATH } from './knowledgeManagerPaths.ts'
 import { KNOWLEDGE_MANAGER_TEXTS } from './knowledgeManagerTexts.ts'
+import { KNOWLEDGE_PAGE_TEXTS } from './page/knowledgePageTexts.ts'
 import { KNOWLEDGE_SECTION_TEXTS } from './section/knowledgeSectionTexts.ts'
 
-/** Die Reiter des Moduls. Bisher die Gliederung; die Seiten und ihr Editor kommen dazu. */
+/** Die Reiter des Moduls: die Gliederung und die Seiten (mit dem Editor je Seite). */
 const KNOWLEDGE_MANAGER_TABS: SubheaderTab[] = [
   {
     label: getTextInCurrentLanguage(KNOWLEDGE_SECTION_TEXTS.tabLabel),
     iconClassName: 'bi bi-diagram-3',
     to: KNOWLEDGE_SECTION_TAB_PATH,
+  },
+  {
+    label: getTextInCurrentLanguage(KNOWLEDGE_PAGE_TEXTS.tabLabel),
+    iconClassName: 'bi bi-file-earmark-text',
+    to: KNOWLEDGE_PAGE_TAB_PATH,
   },
 ]
 

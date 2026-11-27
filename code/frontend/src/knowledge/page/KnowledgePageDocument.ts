@@ -36,6 +36,15 @@ export type KnowledgePageResolveRequest = {
   pageKey?: string
 }
 
+/** Die Texte eines mehrwertigen Feldes einer Seite, z. B. ihre Schlagwörter; leer, wenn das Dokument das Feld nicht hat. */
+export function getKnowledgePageTexts(knowledgePageDocument: KnowledgePageDocument, fieldName: string): string[] {
+  const fieldValue = knowledgePageDocument[fieldName]
+  if (!Array.isArray(fieldValue)) {
+    return []
+  }
+  return fieldValue.filter((singleValue): singleValue is string => typeof singleValue === 'string')
+}
+
 /** Der Text eines Feldes einer Seite; `null`, wenn das Dokument das Feld nicht hat oder es kein Text ist. */
 export function getKnowledgePageText(knowledgePageDocument: KnowledgePageDocument, fieldName: string): string | null {
   const fieldValue = knowledgePageDocument[fieldName]

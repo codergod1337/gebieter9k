@@ -12,6 +12,11 @@ type EditTextPopupProps = {
   maxLength?: number
   /** Erklärung unter dem Eingabefeld. */
   hint?: ReactNode
+  /**
+   * Ob auch ein leerer Text gespeichert werden darf, z. B. um einen freiwilligen Wert herauszunehmen. Standard `false`:
+   * Ohne Text ist Speichern gesperrt.
+   */
+  emptyAllowed?: boolean
   isSaving: boolean
   /** Fehler des Speicherns, `null` wenn keiner. Das Popup bleibt dann offen. */
   errorMessage: string | null
@@ -31,6 +36,7 @@ export function EditTextPopup({
   initialText,
   maxLength,
   hint,
+  emptyAllowed = false,
   isSaving,
   errorMessage,
   onSave,
@@ -52,7 +58,7 @@ export function EditTextPopup({
       title={title}
       isSaving={isSaving}
       errorMessage={errorMessage}
-      saveDisabled={trimmedText === ''}
+      saveDisabled={trimmedText === '' && !emptyAllowed}
       onSave={handleSave}
       onClose={onClose}>
       <Form.Group controlId="editText">

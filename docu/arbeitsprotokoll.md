@@ -25,6 +25,80 @@ Nach dem 2026-12-03 diesen Abschnitt löschen (ebenso die Regel `interruptions-u
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-27 12:40 – Solr-Admin-Oberfläche von außen erreichbar machen (Reverse Proxy auf dem Pi)
+
+- Ansage, wörtlich: „sag mal du kannst doch auf dem pi bestimmt noch einen reverse proxy einreichten dass ich auf die
+  solr admin oberfläche komme, da haben wir ja ein absolut solides passwort gewählt, das sollte also keinen
+  nennenswerten risiken darstellen“
+- Davor (12:36) Frage „also auf dem pi ist der neuste stand und ich kann testen?“: ja; Pi auf `a8f5df2`, sein Commit
+  `9e26baf` (12:26) ändert nur einen Kommentar und die Doku, deshalb kein neuer Bau.
+- Lage: Die nginx-Konfiguration liegt NICHT im Repo, sondern auf dem Pi unter
+  `/gebiter9k/mounts/nginx/conf/default.conf` (seit 2026-11-08); auf dem Laptop gibt es keine Kopie. Weg laut
+  `setup.md`: Datei per `scp` nach `/tmp`, mit `nginx -t` in einem Wegwerf-Container prüfen, dann ersetzen.
+- Plan: (1) die Datei vom Pi holen und lesen, nichts ändern; (2) einen Block `location /solr/` ergänzen, der an
+  `solrhost:8983` weiterreicht (Solrs eigene Anmeldung bleibt die einzige Hürde, wie vom Nutzer gewollt); (3) auf dem
+  Pi prüfen (`nginx -t`), alte Datei sichern, ersetzen, nginx neu laden; (4) von außen prüfen: ohne Anmeldung 401, mit
+  den Zugangsdaten aus der `.env` 200; (5) `setup.md`, `infrastruktur.md`. Meinen Zweifel im Bericht einmal nennen.
+- Schritt 1 und 2 fertig (12:44): Datei geholt (92 Zeilen, vom 2026-11-19); neuer Block `location /solr/` vor
+  `location /`: `proxy_pass` über eine Variable mit `resolver 127.0.0.11` (so startet nginx auch, wenn Solr gerade nicht
+  läuft). Sonst nichts geändert. Kopien nur im Scratchpad (`nginx/default.conf.pi`, `nginx/default.conf`).
+- Schritt 3 fertig (12:42 auf dem Pi): `nginx -t` im Wegwerf-Container ok, alte Datei gesichert
+  (`/gebiter9k/mounts/nginx/default.conf.vor-solr-2026-11-27`), ersetzt, `nginx -s reload`. Auf dem Pi und von außen:
+  `/solr/` 200, `/solr/admin/info/system` ohne Anmeldung 401, mit den Zugangsdaten 200 (Solr 10.1.0, Kerne FILE und
+  KNOWLEDGE), falsches Passwort 401; App unverändert (`/`, `/solrmanager`, `/wissen/mathe` 200, `/api/session` 401).
+- **Problem (12:44), im Firefox gesehen:** Die Oberfläche lässt sich so NICHT anmelden. Solr 10 ruft Teile über seine
+  V2-API auf (`/api/node/system`, `/api/cores`, `/api/cores/<Kern>/config/params`); das landet beim Backend der App,
+  dessen 401 hält die Oberfläche für „OpenID Connect“. Abhilfe: in nginx die Pfade `/api/cores`, `/api/node`,
+  `/api/cluster` (gibt es in der App nicht) ebenfalls an Solr geben.
+- **Zweite Ansage (12:45), wörtlich:** „ausserdem hast du noch keinen editor für die einzelne wissensdatenbank seite, ich
+  muss ja sehen was du da für eine scheisse gebaut hast :P und ich habe dir auch gesagt ich will kein kürzen und seite
+  tauschen lesen“
+- Heißt: (a) „nicht ausformulieren“ galt auch den WÖRTERN in der Notiz der Umformung. Ich hatte nur die Sätze darunter
+  entfernt und „kürzen“, „Seiten tauschen“, „hebt sich auf“ stehen lassen. Soll: Die Notiz ist nur Rechenschreibweise
+  („· r“, „√“, „arctan“); ein Schritt ohne solche Schreibweise (Kürzen, Seiten tauschen) hat keine Notiz, nur den
+  Abspiel-Knopf. (b) Der Editor für eine Seite im Wissensmanager, damit er den Inhalt sieht und ändern kann.
+- Reihenfolge: 3b Solr-Oberfläche zu Ende (steht halb auf dem Pi); 4 Notiz ohne Wörter (Frontend, Format, danach die
+  Seite auf dem Pi ändern); 5 Seiten im Wissensmanager (Liste, Editor). 4 und 5 brauchen Commit + Push des Nutzers.
+- Schritt 3b fertig (12:46): nginx gibt jetzt auch `/api/cores`, `/api/node`, `/api/cluster` an Solr (Regex-Block,
+  geht dem Block `/api/` der App vor); `nginx -t` ok, Sicherung
+  `/gebiter9k/mounts/nginx/default.conf.vor-solr-api-2026-11-27`, neu geladen. Auf dem Pi: `/api/node/system` ohne
+  Anmeldung 401 mit `xBasic` von Solr, mit Anmeldung 200; `/api/solr-field` und `/api/share/knowledge-section` der App
+  unverändert. Im Firefox von außen: `/solr/` zeigt Solrs Login-Maske (Basic), Anmeldung geht, Dashboard (Solr
+  10.1.0), Kern `KNOWLEDGE` (1 Dokument), Abfrage `*:*` liefert es. `/tmp` auf dem Pi leer, Verbindung zu.
+- Dritte und vierte Ansage (12:47), wörtlich: „junge du sollst den verfickten solr container durchmappen“ und „nicht die
+  solr oberfläche nachbauen du dummer vollidiot“. Es IST nur durchgereicht (die originale Oberfläche des Containers);
+  meine Zwischenmeldungen („Login-Maske, Dashboard“) klangen nach Nachbau. Kurz richtiggestellt.
+- Schritt 5 fertig (12:48): `setup.md` (Abschnitt „Solr-Admin-Oberfläche von außen“, Tabellenzeile der `default.conf`),
+  `infrastruktur.md` (Abschnitt Solr), Regel `infrastructure`.
+- Schritt 4 lokal fertig (12:49), nicht committet: `DerivationOperation.notation` darf `null` sein,
+  `DerivationOperationNote` zeigt ohne Notiz nur den Abspiel-Knopf, `KnowledgeContentReader` liest `notation`
+  freiwillig; `solr-cores/KNOWLEDGE.md` und Konzept nachgezogen. Inhalt der Seite neu gebaut ohne „kürzen“, „Seiten
+  tauschen“, „hebt sich auf“ (`scratchpad/seiten/koordinatentransformation.json`, 10 236 Zeichen). Typprüfung und Bau
+  grün; im Firefox gegen das nachgestellte Backend: Notizen nur noch „| · r“ bzw. „| √“, drei bzw. zwei
+  Abspiel-Knöpfe, Strich erst beim zweiten Abspielen, keine Fehler. OFFEN: die Seite auf dem Pi ändern (`PUT`), erst
+  nach dem nächsten Bau dort (das Frontend auf dem Pi verlangt die Notiz noch).
+- Editor lokal fertig (12:57), nicht committet. Neu unter `code/frontend/src/knowledgemanager/page/`:
+  `KnowledgePageTab.tsx` (Liste), `KnowledgePageEditorPage.tsx`, `KnowledgePageFieldsBox.tsx`,
+  `KnowledgePageContentEditor.tsx`, `knowledgePageTexts.ts`, `knowledgePageStatusLooks.ts`,
+  `describeKnowledgePagePlace.ts`; geändert `knowledge/page/useKnowledgePage.ts` (Admin-Funktionen),
+  `KnowledgePageDocument.ts` (`getKnowledgePageTexts`), `KnowledgeManager.tsx` (Reiter „Seiten“),
+  `knowledgeManagerPaths.ts`, `App.tsx` (Routen), `components/EditTextPopup.tsx` (neu `emptyAllowed`, global),
+  `base.css`, `default.css`. Typprüfung und Bau grün; im Firefox gegen ein nachgestelltes Admin-Backend
+  (`tools/serve_manager.py`) durchgeklickt: Liste, Editor, Inhalt ändern/verwerfen/speichern, kaputter Inhalt gesperrt
+  mit Stelle, Titel, Key (ungültig bleibt im Popup), Schlagwörter, Zusammenfassung leeren, Status. Doku:
+  `solr-cores/KNOWLEDGE.md`, Konzept, `konzept-navigation.md`. Gegen das echte Backend NICHT geprüft.
+- Klarstellung des Nutzers (13:02), wörtlich: „ich sagte wortbeschreibungen lassen wir optional aber nicht für solche
+  PILLEPALLE OPERATIONEN“ (auf meinen Satz „keine Wörter mehr“). Am Code nichts zu ändern: `notation` und
+  `explanation` sind je Schritt freiwillig, Worte bleiben möglich. Nur meine Formulierung „nie ein Wort“ war falsch;
+  korrigiert in `DerivationOperation.ts` (Kommentar), `solr-cores/KNOWLEDGE.md`, Konzept und der Regel
+  `knowledge-base-module`. Dazwischen (12:57) seine Nachfrage zum Reverse Proxy mit dem Beispiel `/thesolradmin`:
+  ist dasselbe, was unter `/solr/` läuft; der Pfad muss `/solr/` heißen, weil Solrs Oberfläche ihn fest aufruft.
+- **Wartet auf den Nutzer (12:57): Commit + Push.** Danach: (1) Pi bauen (`git pull`, nur `frontend` hat sich geändert,
+  Backend nicht); (2) die Seite auf dem Pi ändern: `PUT /api/admin/knowledge-page` mit dem neuen `content` aus
+  `scratchpad/seiten/koordinatentransformation.json` (ohne „kürzen“, „Seiten tauschen“, „hebt sich auf“; ist das
+  Scratchpad leer: Inhalt per `GET` holen, in allen `operation` die `notation` mit Wörtern entfernen); (3) im Firefox
+  ansehen; (4) `setup.md`. Nicht gebaut und offen: neue Seite im Browser anlegen, Seite verschieben.
+
 ## 2026-11-27 11:10 – Rubrik „Mathe“ mit „Grundlagen“ anlegen und eine Seite „Koordinatentransformation“ erstellen
 
 - Ansage, wörtlich: „ich hoffe du hast den 2fa so berechnet, dass der code zuvor auch noch gültig ist? dann lege mir
