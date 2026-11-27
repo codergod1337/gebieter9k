@@ -87,7 +87,8 @@ Stand 2026-11-09, gebaut und auf dem Pi 5. Vorgabe des Nutzers am selben Tag:
 | Galerie (2026-11-20) | `/profile/<guid>/galleries/<id>?tags=sky+beach&page=…&image=…` (gewählte Hashtags, Seite, offenes Bild; Filtern und Blättern PUSH), Cache `FILE_DOCUMENT`; die Reiter „Bilder“ und „Freigabe“ (`…/share`) sind Routen im Subheader des Profils | Datei mit „Zurück zu <Galerie>“ |
 | Gebietermarkt (2026-11-11) | die Rubrik steht im Pfad: `/market/category/<Key>`, je Rubrik ein Tab; Artikel im Cache `SHOP_ITEM` | Datei mit „Zurück zu <Rubrik>“ |
 
-| Wissensdatenbank (2026-11-26), ohne Anmeldung | Kapitel und Seite stehen im Pfad: `/wissen/<Kapitel>/<Seite>`, je Kapitel ein Tab; der Stand jeder Herleitung als Parameter, z. B. `?xCoordinateStep=2&radiusStep=2` (REPLACE: Blättern in der geöffneten Ansicht, Schritt 1 lässt den Parameter weg) | Seite aus der Übersicht des Kapitels mit „Zurück zu <Kapitel>“ (der Knopf im Header erscheint nur angemeldet) |
+| Wissensmanager, Reiter „Gliederung“ (2026-11-27) | `/knowledge-manager/section?rubric=MATHE&chapter=GRUNDLAGEN`: die gewählte Rubrik und das gewählte Kapitel (PUSH; eine andere Rubrik nimmt das Kapitel heraus) | – |
+| Wissensdatenbank (2026-11-26), ohne Anmeldung | Kapitel und Seite stehen im Pfad: `/wissen/<Kapitel>/<Seite>`, je Kapitel ein Tab; je Rechnung, ob ihr Rechenweg eingeblendet ist, z. B. `?xCoordinatePath=shown&radiusPath=shown` (seit 2026-11-27; REPLACE: ein Aufklappen innerhalb der Seite, ausgeblendet lässt den Parameter weg) | Seite aus der Übersicht des Kapitels mit „Zurück zu <Kapitel>“ (der Knopf im Header erscheint nur angemeldet) |
 
 **Uploads (Nutzer 2026-11-09):** Wer hochlädt, lässt die Seite offen; wer sie verlässt, bricht ab. Bis dahin liefen
 die Requests nach dem Verlassen unsichtbar weiter, die Warteschlange schob sogar alle eingereihten Dateien nach. Jetzt

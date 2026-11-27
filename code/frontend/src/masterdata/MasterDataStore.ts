@@ -13,6 +13,7 @@ import type { FileExtensionGroup } from '../file/FileExtensionGroup.ts'
 import type { FileAnalysisStatusValueSet } from '../file/FileAnalysisStatusValueSet.ts'
 import type { FileStatusValueSet } from '../file/FileStatusValueSet.ts'
 import type { FileSolrFieldNameSet } from '../file/FileSolrFieldNameSet.ts'
+import type { KnowledgeSection } from '../knowledge/section/KnowledgeSection.ts'
 
 /** Die Stammdaten: Dinge, die das Frontend einmal lädt und danach nur noch aus dem Cache nimmt. */
 export type MasterData = {
@@ -37,6 +38,8 @@ export type MasterData = {
   achievements: Achievement[]
   /** alle Tätigkeiten mit Punkten (Namen im Kontoauszug) */
   pointActivities: PointActivity[]
+  /** die Gliederung der Wissensdatenbank: Rubriken, Kapitel, Unterkapitel mit Anzeigename und Platz */
+  knowledgeSections: KnowledgeSection[]
 }
 
 /** Der Stand des Caches, so wie React ihn sieht. Ein neues Objekt gibt es nur bei einer Änderung. */
@@ -150,6 +153,10 @@ export class MasterDataStore {
       })
       const achievementsPromise = this.apiClient.send<Achievement[]>({ method: 'GET', path: '/api/achievement' })
       const pointActivitiesPromise = this.apiClient.send<PointActivity[]>({ method: 'GET', path: '/api/point-activity' })
+      const knowledgeSectionsPromise = this.apiClient.send<KnowledgeSection[]>({
+        method: 'GET',
+        path: '/api/share/knowledge-section',
+      })
       // Alle Requests laufen gleichzeitig.
       const allPromises = [
         accessRolesPromise,
@@ -165,6 +172,7 @@ export class MasterDataStore {
         fileStatusValueSetPromise,
         achievementsPromise,
         pointActivitiesPromise,
+        knowledgeSectionsPromise,
       ] as const
       const [
         accessRoles,
@@ -180,6 +188,7 @@ export class MasterDataStore {
         fileStatusValueSet,
         achievements,
         pointActivities,
+        knowledgeSections,
       ] = await Promise.all(allPromises)
 
       const loadedMasterData: MasterData = {
@@ -196,6 +205,7 @@ export class MasterDataStore {
         fileStatusValueSet,
         achievements,
         pointActivities,
+        knowledgeSections,
       }
       this.updateSnapshot({ masterData: loadedMasterData, isLoading: false, error: null })
     } catch (caughtError) {

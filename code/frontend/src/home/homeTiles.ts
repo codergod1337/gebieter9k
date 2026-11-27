@@ -4,6 +4,9 @@ import { FILE_MANAGER_PATH } from '../filemanager/fileManagerPaths.ts'
 import { KNOWLEDGE_ICON_CLASS_NAME } from '../knowledge/knowledgeIcon.ts'
 import { KNOWLEDGE_PATH } from '../knowledge/knowledgePaths.ts'
 import { KNOWLEDGE_TEXTS } from '../knowledge/knowledgeTexts.ts'
+import { KNOWLEDGE_MANAGER_ICON_CLASS_NAME } from '../knowledgemanager/knowledgeManagerIcon.ts'
+import { KNOWLEDGE_MANAGER_PATH } from '../knowledgemanager/knowledgeManagerPaths.ts'
+import { KNOWLEDGE_MANAGER_TEXTS } from '../knowledgemanager/knowledgeManagerTexts.ts'
 import { getTextInCurrentLanguage } from '../language/getTextInCurrentLanguage.ts'
 import { MARKET_PATH } from '../market/marketPaths.ts'
 import { MARKET_TEXTS } from '../market/marketTexts.ts'
@@ -41,6 +44,13 @@ export const HOME_TILES: HomeTile[] = [
     to: KNOWLEDGE_PATH,
     entryAccessRoleKeys: [],
     visibleWithoutLogin: true,
+  },
+  {
+    iconClassName: KNOWLEDGE_MANAGER_ICON_CLASS_NAME,
+    title: getTextInCurrentLanguage(KNOWLEDGE_MANAGER_TEXTS.moduleTitle),
+    to: KNOWLEDGE_MANAGER_PATH,
+    entryAccessRoleKeys: [adminAccessRoleKey],
+    visibleWithoutLogin: false,
   },
   {
     iconClassName: 'bi bi-shield-lock',

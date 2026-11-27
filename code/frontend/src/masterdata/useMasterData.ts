@@ -13,6 +13,7 @@ import type { FileExtensionGroup } from '../file/FileExtensionGroup.ts'
 import type { FileAnalysisStatusValueSet } from '../file/FileAnalysisStatusValueSet.ts'
 import type { FileStatusValueSet } from '../file/FileStatusValueSet.ts'
 import type { FileSolrFieldNameSet } from '../file/FileSolrFieldNameSet.ts'
+import type { KnowledgeSection } from '../knowledge/section/KnowledgeSection.ts'
 import { defaultMasterDataStore } from './defaultMasterDataStore.ts'
 
 /**
@@ -33,6 +34,7 @@ export type MasterDataHook = ApiHookState & {
   fileStatusValueSet: FileStatusValueSet | null
   achievements: Achievement[] | null
   pointActivities: PointActivity[] | null
+  knowledgeSections: KnowledgeSection[] | null
   reload: () => Promise<void>
 }
 
@@ -68,6 +70,7 @@ export function useMasterData(): MasterDataHook {
   let fileStatusValueSet: FileStatusValueSet | null = null
   let achievements: Achievement[] | null = null
   let pointActivities: PointActivity[] | null = null
+  let knowledgeSections: KnowledgeSection[] | null = null
   if (masterData !== null) {
     accessRoles = masterData.accessRoles
     accessRoleCollections = masterData.accessRoleCollections
@@ -82,6 +85,7 @@ export function useMasterData(): MasterDataHook {
     fileStatusValueSet = masterData.fileStatusValueSet
     achievements = masterData.achievements
     pointActivities = masterData.pointActivities
+    knowledgeSections = masterData.knowledgeSections
   }
 
   return {
@@ -100,6 +104,7 @@ export function useMasterData(): MasterDataHook {
     fileStatusValueSet,
     achievements,
     pointActivities,
+    knowledgeSections,
     reload,
   }
 }

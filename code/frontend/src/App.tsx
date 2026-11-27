@@ -70,6 +70,9 @@ import { KnowledgeChapterPage } from './knowledge/KnowledgeChapterPage.tsx'
 import { KnowledgePageContent } from './knowledge/KnowledgePageContent.tsx'
 import { KNOWLEDGE_PATH } from './knowledge/knowledgePaths.ts'
 import { KnowledgeStartPage } from './knowledge/KnowledgeStartPage.tsx'
+import { KnowledgeManager } from './knowledgemanager/KnowledgeManager.tsx'
+import { KNOWLEDGE_MANAGER_PATH } from './knowledgemanager/knowledgeManagerPaths.ts'
+import { KnowledgeSectionTab } from './knowledgemanager/section/KnowledgeSectionTab.tsx'
 import { ScrollMemory } from './navigation/ScrollMemory.tsx'
 import { TikaTest } from './tikatest/TikaTest.tsx'
 
@@ -108,7 +111,7 @@ function AppLayout() {
 /**
  * Die Bestätigungsseite der 2FA geht immer, sie öffnet sich in einem neuen Fenster; ebenso die Besucherseite einer
  * Galerie-Freigabe (`/share/galerie/<token>`) und die Wissensdatenbank (`/wissen/…`). Ohne Anmeldung gibt es sonst nur
- * Login und Registrierung, angemeldet die Module. Administration, SolrManager, Tika-Test und Icon-Manager stehen
+ * Login und Registrierung, angemeldet die Module. Administration, Wissensmanager, SolrManager, Tika-Test und Icon-Manager stehen
  * zusätzlich hinter dem Admin-Wächter, ihre Tabs sind Routen.
  */
 function AppRoutes() {
@@ -226,6 +229,16 @@ function LoggedInRoutes() {
         <Route path="point-activity/new" element={<NewPointActivityTab />} />
         <Route path="point-activity/edit/:pointActivityKey" element={<EditPointActivityTab />} />
         <Route path="shop-category" element={<ShopCategoryTab />} />
+      </Route>
+      <Route
+        path={KNOWLEDGE_MANAGER_PATH}
+        element={
+          <RequireAdmin>
+            <KnowledgeManager />
+          </RequireAdmin>
+        }>
+        <Route index element={<Navigate to="section" replace />} />
+        <Route path="section" element={<KnowledgeSectionTab />} />
       </Route>
       <Route path="/market" element={<Market />}>
         <Route index element={<MarketStartTab />} />

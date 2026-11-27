@@ -28,6 +28,7 @@ zurück (Javadoc der Entity und der Controller, Kommentar am Frontend-Typ). Erze
 - [GuestbookReaction](GuestbookReaction.md): Ein Smiley auf einen Gästebucheintrag oder einen seiner Kommentare (Vorgabe des Nutzers 2026-11-09): nur in eine Richtung, nicht zurücknehmbar.
 - [PointActivity](PointActivity.md): Eine Tätigkeit, für die es Punkte gibt (Nutzer 2026-11-09), z.
 - [Rank](Rank.md): Ein Rang der Rangleiter, von Stufe 1 (Leibeigener) bis Stufe 50 (General des Schreckens).
+- [KnowledgeSection](KnowledgeSection.md): Ein Punkt der Gliederung der Wissensdatenbank: Rubrik, Kapitel oder Unterkapitel mit Anzeigename und Platz; die Seiten im Solr-Kern tragen nur die Keys.
 - [ShopCategory](ShopCategory.md): Eine Rubrik im Gebietermarkt, z. B. „Sticker“; jeder Artikel steht in genau einer, und jede Rubrik hat genau eine FileClass.
 - [ShopItem](ShopItem.md): Ein Artikel im Gebietermarkt: eine Datei aus dem Solr-Kern FILE, die in einer Rubrik zum Kauf steht.
 - [ShopOffer](ShopOffer.md): Ein Angebot im Gebietermarkt: zu welchem Preis, in welcher Form (dauerhaft oder Anzahl Nutzungen) und wie lange ein Artikel zu kaufen ist.

@@ -8,8 +8,8 @@ import type { DerivationStep } from './DerivationStep.ts'
  */
 export class Derivation {
   /**
-   * Die Kennung der Herleitung auf ihrer Seite, z. B. `xCoordinate`. Unter `<Kennung>Step` steht in der Adresse, wie
-   * viele Schritte gerade gezeigt sind.
+   * Die Kennung der Herleitung auf ihrer Seite, z. B. `xCoordinate`. Unter `<Kennung>Path` steht in der Adresse, ob
+   * ihr Rechenweg eingeblendet ist.
    */
   readonly key: string
 

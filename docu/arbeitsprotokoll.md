@@ -25,6 +25,238 @@ Nach dem 2026-12-03 diesen Abschnitt löschen (ebenso die Regel `interruptions-u
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-27 10:33 – Gliederung: Keys sollen änderbar sein; Claude schreibt Seiten unter dem Konto des Nutzers
+
+- Ansage, wörtlich: „na aber wir können doch keys ändern, wenn wir direkt nach einer änderung, also in der selben
+  transaktion durch alle wissensdokumente cursoriterieren und den jeweiligen key ändern. du kommst doch auf die
+  datenbank und ich lege sonst einen neuen 2fa key für meinen user in der .env an. dann postest du unter meinem user,
+  das ist mir sowieso am liebsten“
+- Damit entschieden (Nutzer):
+  1. **Keys der Gliederung sind änderbar.** Eine Änderung zieht alle Wissensdokumente nach, die den Key tragen
+     (Cursor durch den Kern). Meine Regel „Keys ändern sich nie“ ist damit falsch und kommt aus Code und Doku heraus.
+  2. **Rückfrage 2 beantwortet:** Claude schreibt Seiten über die normalen Admin-Endpunkte, angemeldet als der Nutzer
+     selbst (Passwort und 2FA-Schlüssel aus `code/.env`). Kein Einspielen aus Dateien im Repo.
+- Plan, ein Stück: Key eines Punkts ändern. Backend: `changeKnowledgeSectionKey` (der Punkt und alles darunter
+  bekommt den neuen Key, in EINER Postgres-Transaktion; eindeutig unter den Geschwistern), eigener Endpunkt, Spalten
+  nicht mehr `updatable = false`. Frontend: Klick auf den Key öffnet das kleine Popup. Den Kern gibt es noch nicht,
+  also auch noch keine Dokumente zum Nachziehen: Das Nachziehen kommt mit dem Kern in dieselbe Methode (nach der
+  Regel der Plattform: erst Solr, Postgres zuletzt, neu startbar; eine gemeinsame Transaktion über Solr und Postgres
+  gibt es nicht).
+- Backend fertig (10:37), kompiliert sauber: `KnowledgeSection` (Keys nicht mehr `updatable = false`, Setter),
+  `KnowledgeSectionService.changeKnowledgeSectionKey`, `dto/KnowledgeSectionKeyChange.java`,
+  `PUT /api/admin/knowledge-section/key`.
+- **Fertig (10:40), lokal, nicht committet; Backend kompiliert sauber, `npx tsc -b` und `npm run build` ohne Fehler:**
+  - Frontend: `knowledge/section/useKnowledgeSection.ts` (`changeKnowledgeSectionKey`),
+    `knowledgemanager/section/KnowledgeSectionLevelBox.tsx` (Klick auf den Key öffnet `EditTextPopup`),
+    `KnowledgeSectionTab.tsx` (führt `?rubric=` bzw. `?chapter=` nach, wenn sich der Key des gewählten Punkts
+    ändert), `knowledgeSectionTexts.ts` („Ändert sich nie“ ist überall heraus).
+  - Im Firefox gegen das nachgestellte Backend geprüft: `MATHE` → `MATHEMATIK` (Adresse wird
+    `?rubric=MATHEMATIK&chapter=GRUNDLAGEN`, beide Kapitel bleiben), `GRUNDLAGEN` → `BASICS`, `KOORDINATEN` →
+    `KOORDINATENSYSTEME`, ein vergebener Key → Meldung bleibt im Popup. Keine Fehler der Seite.
+  - Unterwegs: Ein Änderungsskript brach an einer Prüfung ab und ließ Box und Reiter unverändert; bemerkt am Zählen
+    der Fundstellen, nachgeholt.
+  - Doku: `entities/KnowledgeSection.md`, `konzept-wissensdatenbank.md` 3c, Regel `knowledge-base-module`.
+- NICHT geprüft: der echte Endpunkt (kein Start gegen die Pi-DB). Das Nachziehen der Dokumente gibt es noch nicht,
+  weil es den Kern noch nicht gibt; es ist Pflicht, sobald er steht (Konzept 3c).
+- Zum Anmelden unter dem Konto des Nutzers gelesen: je User genau ein `UsersTotp` (Geheimnis AES-GCM-verschlüsselt,
+  Schlüssel aus der `.env`); ein Code gilt je 30-Sekunden-Schritt nur einmal; Sperre nach falschen Codes. Dem Nutzer
+  gesagt, was ich in der `.env` brauche (Passwort und 2FA-Schlüssel des Kontos), mit Vorschlag für die Zeile.
+- **Nichts angefangen, nichts halb.** Als Nächstes: Push des Nutzers → Bau auf dem Pi (Backend UND Frontend, siehe
+  Hinweis im Eintrag 10:18).
+
+## 2026-11-27 10:18 – Gliederung der Wissensdatenbank: Keys → Anzeigetext in Postgres, Endpunkte, Wissensmanager
+
+- Ansage, wörtlich: „ja das sieht gut aus. dann machen wir das mapping der ganzen keys zum anzeigetext in postgres,
+  dazu bracuhen wir dann auch noch endpunkte und einen edit bereich im wissensmanager machen, das wir dann als
+  stammdaten laden und im frontend verfügbar machen“
+- Damit bestätigt (Nutzer): der Feldvorschlag für den Kern (Konzept 3c) und Rückfrage 1 (Namen in Postgres).
+  Rückfrage 2 (wie Claude Seiten schreibt) ist NICHT beantwortet, bleibt offen.
+- So verstanden: eine Tabelle, die jeden Key der Gliederung (Rubrik, Kapitel, Unterkapitel) auf seinen Anzeigetext
+  und seinen Platz abbildet; lesen ohne Anmeldung (Besucher brauchen die Namen), schreiben nur ADMIN; ein neues
+  Admin-Modul „Wissensmanager“ mit einem Bereich zum Anlegen und Ändern; im Frontend als Stammdaten verfügbar.
+- Stücke, jedes für sich fertig:
+  - **Stück 1, Backend:** Entity `KnowledgeSection` (ein Punkt der Gliederung: `rubricKey`, dazu bei einem Kapitel
+    `chapterKey`, bei einem Unterkapitel auch `subChapterKey`; `displayName` mehrsprachig, `listingPosition`),
+    Repository, Service, `KnowledgeSectionAdminController` (`/api/admin/…`), `KnowledgeSectionShareController`
+    (`/api/share/…`, Liste ohne Token), Doku `entities/KnowledgeSection.md`. Nur kompilieren; KEIN Start gegen die
+    Pi-DB (die Tabelle entsteht erst beim Bau auf dem Pi nach dem Push).
+  - **Stück 2, Frontend:** Typ und Hook, als Stammdaten laden; Modul „Wissensmanager“ (Kachel nur ADMIN) mit dem
+    Reiter „Gliederung“: Tabelle, Anlegen geführt im Popup, Ändern in der Zeile.
+- Kein Löschen in diesem Schritt (Reihenfolge beim Löschen erst klären, sobald Seiten im Kern auf die Keys zeigen).
+- **Stück 1 fertig (10:22), lokal, nicht committet; `./mvnw -q -o -DskipTests clean compile` ohne Fehler:**
+  - Neu im Backend, Paket `de.gebiter.knowledge`: `model/KnowledgeSection.java` (Tabelle `knowledge_section`: `id`,
+    `rubric_key` Pflicht, `chapter_key`, `sub_chapter_key`, `display_name` jsonb, `listing_position`),
+    `repository/KnowledgeSectionRepository.java`, `service/KnowledgeSectionService.java`,
+    `controller/KnowledgeSectionAdminController.java` (POST, GET `/{id}`, PUT, PUT `/listing-position` unter
+    `/api/admin/knowledge-section`), `controller/KnowledgeSectionShareController.java` (GET
+    `/api/share/knowledge-section`, ohne Token), `dto/KnowledgeSectionListingOrder.java`.
+  - Eindeutigkeit der drei Keys prüft der Service (Postgres hält zwei NULL in einer Eindeutigkeitsregel für
+    verschieden). Kein neuer YAML-Wert. Kein Löschen.
+  - Doku: `entities/KnowledgeSection.md` (neu), `entities/README.md`.
+  - NICHT gemacht: kein Start gegen die Pi-DB, kein Test der Endpunkte. Vor dem Bau auf dem Pi: Kontextstart
+    (`Gebiter9kApplicationTests`), dabei legt Hibernate die Tabelle an.
+- **Stück 2 fertig (10:29), lokal, nicht committet; `npx tsc -b` und `npm run build` ohne Fehler:**
+  - Neu im Frontend: `knowledge/section/` (`KnowledgeSection.ts`, `useKnowledgeSection.ts`,
+    `knowledgeSectionTree.ts`), `knowledgemanager/` (`KnowledgeManager.tsx`, `knowledgeManagerPaths.ts`,
+    `knowledgeManagerTexts.ts`, `knowledgeManagerIcon.ts`, `section/KnowledgeSectionTab.tsx`,
+    `section/KnowledgeSectionLevelBox.tsx`, `section/knowledgeSectionTexts.ts`). Geändert:
+    `masterdata/MasterDataStore.ts` und `useMasterData.ts` (`knowledgeSections`), `home/homeTiles.ts` (Kachel
+    „Wissensmanager“, nur ADMIN), `App.tsx` (Route `/knowledge-manager` hinter `RequireAdmin`), `base.css`, Theme.
+  - Im Firefox gegen ein nachgestelltes Backend geprüft: Kachel, Reiter „Gliederung“, je Ebene anlegen, über „Darin“
+    wählen (`?rubric=MATHE&chapter=GRUNDLAGEN`), doppelter Key → Meldung im Popup, umbenennen, andere Rubrik wählen,
+    „Zurück“ im Browser, Reihenfolge am Griff tauschen. Keine Fehler der Seite.
+  - Unterwegs geändert: die drei Boxen stehen untereinander statt nebeneinander (nebeneinander war zu eng, der Key fiel
+    weg).
+  - Doku: `entities/KnowledgeSection.md` (Frontend, Tests), `konzept-wissensdatenbank.md` 3c (bestätigt, Gliederung
+    gebaut), `konzept-navigation.md` (Zeile Wissensmanager), Regel `knowledge-base-module`.
+- **BEIDE STÜCKE FERTIG (10:29). Nichts angefangen, nichts halb.**
+- **Achtung für den Bau auf dem Pi (nach dem Push des Nutzers):** Diesmal ist auch das Backend geändert. Reihenfolge:
+  Tunnel mit allen drei Ports, lokal `./mvnw -o -DskipTests clean compile`, Kontextstart `Gebiter9kApplicationTests`
+  (dabei legt Hibernate `knowledge_section` in der Pi-DB an), dann auf dem Pi `backend` UND `frontend` bauen, erst
+  danach starten. Das neue Frontend braucht das neue Backend: Die Stammdaten laden jetzt auch
+  `/api/share/knowledge-section`; fehlt der Endpunkt, scheitert das Laden aller Stammdaten.
+- Offen beim Nutzer: Rückfrage 2 vom 10:10 (wie Claude Seiten schreibt). Noch nicht gebaut: der Kern `KNOWLEDGE`
+  selbst, die Seiten, der Editor; das öffentliche Modul `/wissen` zeigt weiter das Demo mit fest eingebautem Kapitel.
+
+## 2026-11-27 10:10 – Wissens-Kern: Vorschlag für die Felder (nur Vorschlag, kein Code)
+
+- Ansage, wörtlich: „ja dann könen wir glaube ich schon loslegen, schlage mal einen solr kern vor, also alle felder
+  die wir brauchen, ich würde auch ein feld language einfügen das vorerst nur de bietet, später will ich aber die
+  architektur so haben, dass wir weitere sprachen ergänzen können. ich würde dann auch immer die ganze seite in einem
+  langen string speichern, den würde ich dann bei einer suche nicht verwenden, sondern aufbereitetete schlagworte
+  daraus, das könnenen wir aber auch in einem späteren gang machen, wichtig ist mir ersst mal dass die architektur
+  solide ist und wir auch die einzelnen seiten gut bearbeiten können. in der regel wirst du die erst mal bearbeiten so
+  wie ich es dir beschreibe ;) wir benötigen aber dann dennnoch einen editor wo ich auch selber seiten anlegen und
+  editieren kann. so zu sagen wie ein mini wikipedia aber nur der admin schreibt und alle dürfen lesen“
+- Stand davor (geprüft 10:10): Die drei Stücke von 09:40 liegen fertig in der Arbeitskopie, vom Nutzer noch nicht
+  committet (`HEAD` = `0380fab`). Der Pi steht auf `0380fab`.
+- Gelesen: `solr/model/SolrFieldType.java` (Typen STRING, BOOLEAN, LONG, DOUBLE, DATE, TEXT_EDGE, TEXT_SUCHE = Volltext
+  deutsch), `solr/model/SolrField.java` („Wer liest“ = genau ein Recht, „vom Client“, Suchgewicht, Zwillinge).
+- Der Vorschlag steht in `konzept-wissensdatenbank.md`, Abschnitt 3c (Feldtabelle, Beispiel-Dokument, Grundsätze).
+- Dem Nutzer vorgelegt, zwei Rückfragen: 1. Namen und Reihenfolge von Rubriken und Kapiteln als Stammdaten in
+  Postgres? 2. Wie schreibe ICH Seiten (Anmeldung geht wegen 2FA nicht): Dateien im Repo, die das Backend einspielt?
+  **Wartet auf seine Antwort. Nichts gebaut, nichts angefangen.**
+
+## 2026-11-27 09:49 – Nachricht während der Arbeit: Hierarchie und Architektur des Wissens-Kerns (nur festgehalten)
+
+- Ansage, wörtlich (kam mitten in Stück B):
+  „und bedenke, ich will später die wissensdatenbank in einem solr kern ablegen. sprich wir müssen uns noch überlegen
+  wie wir da die hirarchieen abbilden ich will ja später rubrik = mathe, physik, ML, Code etc haben, je rubrik dann
+  unterrubriken mit grundlagen sowas wir was ist metrik, was ist ein kreuzprodukt, koordinatentrafos, in mathe dann
+  analysis 1 und 2 lin alg was es halt alles so gibt, ich hatte das alles mal an der uni und will es nicht komplett
+  vergessen, das ist so mein antrieb, eben alles was man in einem psysik machelor studium so lernt und in einem
+  softwaretechnikstudium, das würde ich step by step dann mit dir erarbeiten und digital verewigen, und in solr dass
+  wir danach super suchen können. ich tendiere dazu dann kapitel und unterkapitel als solr doc felder zu nutzen und so
+  eine verlinkung zu erzeugen. die struktur habe ich dir ja schon genannt, anfangen würde ich mit mathe grundlagen,
+  und physik grundlagen,aber wir gesagt bevor es richtigen inhalt gibt, sollten wir die architektur des wissens
+  datenbank kernes klären. denn ich will ja auch die seiten wieder finden können“
+- Kein Auftrag zum Bauen. Festgehalten in `konzept-wissensdatenbank.md` (Abschnitt 3b) und in der Regel
+  `knowledge-base-module`. Die Architektur des Kerns wird ein eigenes Gespräch, bevor echter Inhalt entsteht.
+- Folge für das Demo, noch NICHT umgesetzt: Heute ist „Grundlagen“ ein Reiter. Nach dieser Ansage wäre die oberste
+  Ebene die Rubrik (Mathe, Physik, ML, Code), darunter die Unterrubrik (Grundlagen, Analysis 1, Lin Alg), darunter
+  die Seite.
+- Ich mache mit Stück B weiter (siehe Eintrag 09:40).
+
+## 2026-11-27 09:40 – Wissensdatenbank feilen: Rechenweg einblendbar, Umformungen mit Bedeutung, Skizzen mit Details
+
+- Ansage, wörtlich: „ich stelle mir das so vor wenn wir einen mathematischen rechenweg oder generell eine umformung
+  haben. wir haben immer den formelausgang und den formel endzustand angezeigt, und bei bedarf will ich dann den genauen
+  rechenweg mit allen äquivalenzumformungen eiblenden können. ja mehr details für skizzen, jede skizze hat einen
+  nullpunkt und eine 1 reinskaliert. jeder punkt soll als hoverlay mindestens seine koordinaten angezeigt haben. für
+  einen winkel wäre es schön wenn man die beiden achsen des winkels als "hoverlay" dann highlighten würde, so dass ich
+  weiss was das überhaupt für ein winkel ist.“
+- Drei Stücke, jedes für sich fertig (Typprüfung, Bau, im Firefox ansehen, Protokoll), in dieser Reihenfolge:
+  - **Stück A, Rechenweg einblendbar:** Jede Rechnung zeigt immer Ausgang und Ergebnis; ein Knopf blendet den ganzen
+    Rechenweg mit allen Umformungen ein und wieder aus (Zustand in der Adresse). „Nächster Schritt“ und „Schritt
+    zurück“ fallen weg. Jede Umformung lässt sich im eingeblendeten Rechenweg einzeln noch einmal abspielen.
+  - **Stück B, Umformungen mit Bedeutung,** zuerst nur an der Rechnung „x aus r und φ“: „· r“ erscheint auf beiden
+    Seiten, das Kürzen wird durchgestrichen und bleibt in der Zeile stehen, ein Seitenwechsel läuft auf einem Bogen.
+  - **Stück C, Skizze:** Nullpunkt und die 1 an beiden Achsen, jeder Punkt mit Hoverlay (Koordinaten), der Winkel
+    hebt beim Zeigen seine beiden Schenkel hervor.
+- **Stück A fertig (09:45), lokal, nicht committet; Typprüfung und Bau grün:**
+  - Neu: `components/PlayButton.tsx`, `derivation/useDerivationPathVisibility.ts`, `derivation/useDerivationFlight.ts`.
+    Gelöscht: `derivation/useDerivationProgress.ts`, `derivation/useDerivationStepFlight.ts`. Geändert:
+    `DerivationBox`, `DerivationStepRow`, `DerivationOperationNote`, `Derivation.ts` (Kommentar), `derivationTexts.ts`,
+    `coordinateTransformationTexts.ts` (Einleitung), `base.css`, Theme.
+  - Im Firefox geprüft: ausgeblendet 2 Zeilen („Ausgang“, „Ergebnis“) mit drei Punkten dazwischen und „2 Umformungen“;
+    „Rechenweg einblenden“ zeigt 3 Zeilen mit Erklärungen und 2 Abspiel-Knöpfen, Adresse `?xCoordinatePath=shown`
+    (REPLACE); Abspielen lässt 4 Kopien wandern, alle Zeilen bleiben stehen, auch bei mehrfachem Abspielen
+    durcheinander; Neuladen mit der Adresse bleibt eingeblendet; „ausblenden“ nimmt den Parameter heraus.
+  - Doku zu A noch offen (kommt nach Stück C in einem Zug): `konzept-wissensdatenbank.md` Abschnitt 3,
+    `konzept-navigation.md` (Parameter heißt jetzt `<Kennung>Path=shown`), Regel `frontend-structure` (`PlayButton`).
+- **Stück B fertig (09:53), lokal, nicht committet; Typprüfung und Bau grün:**
+  - Neu: `math/TermRoles.ts`. Geändert: `math/MathTermReactRenderer.tsx` (Attribute `data-cancelled`,
+    `data-flight-origin`), `math/MathTermView.tsx`, `derivation/DerivationOperation.ts` (bringt/kürzt),
+    `derivation/TermFlightAnimator.ts` (neu geschrieben: Notiz leuchtet auf → durchstreichen → wandern; Träger +
+    Kopie, Bogen beim Seitenwechsel), `DerivationStepRow`, `DerivationOperationNote`, alle vier Rechnungen der Seite,
+    `coordinateTransformationTexts.ts`, `base.css` (`.math-cancelled`, `.math-flight-carrier`), Theme
+    (`--math-cancel-color`).
+  - Die vier Rechnungen jetzt: x und y je 3 Umformungen („· r“ auf beiden Seiten → „kürzen“ → „Seiten tauschen“),
+    r und φ je 2 („√“ bzw. „arctan“ auf beiden Seiten → „hebt sich auf“).
+  - Im Firefox geprüft: Zeile 2 von x ist `r · cos φ = r · x / r` mit den beiden gekürzten r durchgestrichen
+    (bleibt stehen); „· r“ abspielen lässt zwei r aus der Notiz auf beide Seiten wandern; „kürzen“ zieht erst die
+    Striche, dann entsteht die nächste Zeile; „Seiten tauschen“ läuft auf Bögen; ausgeblendet kein Strich; danach
+    keine Kopien übrig, keine Fehler der Seite.
+  - Doku zu B noch offen (kommt nach Stück C in einem Zug, zusammen mit A).
+- **Stück C fertig (09:57), lokal, nicht committet; Typprüfung und Bau grün:**
+  - Neu: `knowledge/sketch/` (`SketchCoordinateSystem.ts`, `SketchPosition.ts`, `formatSketchNumber.ts`, `Sketch.tsx`,
+    `SketchAxes.tsx`, `SketchPoint.tsx`, `SketchSegment.tsx`, `SketchAngle.tsx`). Geändert:
+    `CoordinateTransformationSketch.tsx` (aus den Bausteinen, P bei (4 | 3)), `coordinateTransformationTexts.ts`,
+    `base.css` (Abschnitt Skizze neu), Theme (Skizze neu).
+  - Im Firefox mit echter Maus geprüft: an den Achsen „0“, „1“, „1“, 9 Rasterlinien, 9 Teilstriche; Zeigen auf P →
+    „P (4 | 3) / polar: r = 5, φ ≈ 36,87°“, auf den Ursprung → „Ursprung (0 | 0)“, auf den Fußpunkt → „Fußpunkt des
+    Lots von P auf die x-Achse (4 | 0)“; Zeigen auf den Winkel → Hoverlay „Winkel φ zwischen der x-Achse und der
+    Strecke r, hier etwa 36,87°“, beide Schenkel leuchten auf (Deckkraft 0,4), die Strecken treten zurück (0,35);
+    Zeiger weg → alles wie vorher. Keine Fehler der Seite.
+- **ALLE DREI STÜCKE FERTIG (09:57). Doku nachgezogen:** `konzept-wissensdatenbank.md` (Abschnitt 3 neu, 3a als
+  umgesetzt), `konzept-navigation.md` (Parameter `<Kennung>Path=shown`), Regeln `frontend-structure` (`PlayButton`)
+  und `knowledge-base-module`.
+- Nichts angefangen, nichts halb. Als Nächstes: Der Nutzer committet und pusht, danach `git pull` und Bau des
+  Frontends auf dem Pi. Danach, laut seiner Nachricht von 09:49: die Architektur des Wissens-Kerns klären (Konzept 3b),
+  bevor echter Inhalt entsteht.
+
+## 2026-11-27 09:33 – Rückmeldung zum Demo der Wissensdatenbank (nur festgehalten, kein Code)
+
+- Ansage, wörtlich: „der viewer gefällt mir gut, also für die bilder in groß, dafür erhälst du ein offizielles lob ;)
+  wissensdatenbank naja da müssen wir noch feilen. also ich möchte die äquivalenzumformungen besser und sauberer
+  dargestellt haben, es geht primär nicht nur darum, dass sich einfach was nutzlos bewegt, aber es soll eben es besser
+  einprägbar machen, wenn etwas die gleichungsseite wechselt, gekürzt wird oder vom zähler in den nenner wandert. das
+  prägt sich für ein menschenhirn besser durch eine bewegung ein und auch wenn man sieht wo etwas gekürzt wird! auch die
+  skizzen müssen wir überarbeiten! die sind mir eine nummer zu lieblos und haben zu wenige details. was ich auch eher
+  weniger möchte ist: wenn wir eine umformung haben, und die einen nächster schritt button hast, dann ist ja das
+  problem, dass man die umformung davor nicht mehr sieht, das ist ein problem, denn gerade bei einem etwas
+  komplizierteren thema muss man als mensch ja oft noch mal 2 schritte zurück um was kurz nachzuschauen und dann wieder
+  vorhüpfen wenn die unklarheiten beseitigt sind. verstehst du was ich da für einen ansatz habe?“
+- Der große Bild-Viewer ist damit abgenommen (so lassen).
+- Festgehalten in `konzept-wissensdatenbank.md` (neuer Abschnitt „Rückmeldung zum Demo“) und in der Regel
+  `knowledge-base-module`. Am Code nichts geändert.
+- Dem Nutzer geantwortet, wie ich es verstanden habe, mit dem ersten Stück, das ich bauen würde (die Rechnung „x aus r
+  und φ“ neu: „· r“ erscheint auf beiden Seiten, rechts wird sichtbar gekürzt). **Wartet auf sein Ja oder seine
+  Berichtigung. Nichts angefangen.**
+
+## 2026-11-27 09:16 – Push `0380fab` auf den Pi bringen (pull, Frontend bauen, prüfen)
+
+- Ansage: „aktueller stand in git soeben gepusht“
+- Geprüft 09:16: lokal = `origin/main` = `0380fab` („doku update2 admin userfix“), Arbeitskopie sauber. Seit dem Stand
+  des Pi (`a51c6ae`) 10 Dateien im Frontend, nichts im Backend, `compose.yaml` unverändert. Kein geheimer Wert aus
+  `code/.env` in den neuen Commits (7 geprüft). SSH-Port 6969 offen.
+- Schritte, jeder für sich: (1) Lage des Pi ansehen. (2) Bau als abgekoppeltes Skript: Images sichern, `git pull
+  --ff-only`, `frontend` bauen, erst dann starten. (3) Hilfsdateien auf dem Pi löschen, Verbindung schließen.
+  (4) Von außen prüfen. (5) `setup.md` 5.16 und dieser Eintrag.
+- Schritt 1 fertig (09:18): Pi ruhig (Last 0,00, 12 GiB RAM verfügbar, Platte 12 %, 42,8 °C, nicht gedrosselt), keine
+  Reste in `/tmp`.
+- Schritt 2 fertig (09:19): Pull von `a51c6ae` auf `0380fab`, Klon sauber; Images als `:vorher` gesichert; Bau
+  `frontend` 8 s, Start unter 2 s, alle 5 Container laufen, Backend unberührt; über nginx 200 / 200 / 401.
+- Schritt 3 fertig (09:19): Hilfsdateien auf dem Pi gelöscht, Verbindung geschlossen.
+- Schritt 4 fertig (09:22): Von außen `index-0X6XhiPm.js` und `index-DOv4EH20.css` mit den neuen Stellen, Theme
+  bytegleich mit lokal. Die echte Login-Seite im Firefox: Kachel „Wissensdatenbank“ unter „Ohne Anmeldung ansehen“,
+  Klick öffnet `/wissen/grundlagen` ohne Login-Maske, kein Fehler.
+- Schritt 5 fertig (09:22): `setup.md` 5.16 nachgetragen.
+- **FERTIG, alles auf dem Pi. Nichts angefangen, nichts offen.** NICHT gesehen auf dem Pi (Anmeldung nötig): Kachel
+  auf der Startseite, Link im Reiter „User“. Nicht committet: nur dieses Protokoll.
+- Nur noch zum Nachlesen, der Hinweis für einen Abriss in Schritt 2: Auf dem Pi nachsehen, ob `/tmp/gebieter-bau.log` existiert und was
+  darin steht; steht dort „FERTIG“, nur noch Schritt 3 bis 5.
+
 ## 2026-11-27 09:12 – Arbeitsweise für die nächsten 6 Tage: Unterbrechungen (nur Regel und Protokoll, kein Code)
 
 - Ansage: „das gild aber nur für die kommenden 6 tage, und zwar bin ich gerade auf einer insel bei der öfters strom

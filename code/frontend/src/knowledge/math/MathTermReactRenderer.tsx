@@ -14,6 +14,10 @@ import type { RootTerm } from './RootTerm.ts'
 import type { SumTerm } from './SumTerm.ts'
 import type { SymbolTerm } from './SymbolTerm.ts'
 import type { TermMark } from './TermMark.ts'
+import type { TermRoles } from './TermRoles.ts'
+
+/** Die Attribute am Element eines Terms: seine Klassen und, mit Marke, was die Herleitung über ihn wissen muss. */
+type MarkAttributes = Record<string, string | undefined>
 
 /**
  * Zeichnet den Baum einer Formel als HTML: je Art von Term eine Methode, jeder Term wird ein eigenes Element. Den Satz
@@ -22,9 +26,18 @@ import type { TermMark } from './TermMark.ts'
  *
  * Weil jeder Term ein eigenes Element ist, lässt er sich einzeln färben und bewegen. Ein markierter Term trägt seine
  * Kennung im Attribut `data-tracking-key` (siehe `trackedTerm.ts`); daran findet die Herleitung ihn in zwei Schritten
- * wieder.
+ * wieder. Hat er in seiner Zeile eine besondere Rolle ({@link TermRoles}), steht auch die am Element: `data-cancelled`
+ * (gekürzt, durchgestrichen) bzw. `data-flight-origin="cause"` (von der Umformung gebracht).
+ *
+ * Ein Zeichner gilt für eine Zeile: Er bekommt die Rollen der Terme dieser Zeile mit.
  */
 export class MathTermReactRenderer implements MathTermVisitor<ReactNode> {
+  private readonly termRoles: TermRoles
+
+  constructor(termRoles: TermRoles) {
+    this.termRoles = termRoles
+  }
+
   visitSymbolTerm(symbolTerm: SymbolTerm): ReactNode {
     return <span className="math-symbol">{symbolTerm.symbol}</span>
   }
@@ -65,14 +78,13 @@ export class MathTermReactRenderer implements MathTermVisitor<ReactNode> {
 
   visitRootTerm(rootTerm: RootTerm): ReactNode {
     const renderedRadicand = rootTerm.radicand.accept(this)
-    const highlightClassName = this.getHighlightClassName(rootTerm.signMark)
-    const trackingKey = this.getTrackingKey(rootTerm.signMark)
+    const signAttributes = this.createMarkAttributes('math-root-sign', rootTerm.signMark)
     // Haken und Linie über dem Radikanden tragen dieselbe Farbe; der Radikand selbst steht wieder in der Schriftfarbe
-    const signClassName = this.joinClassNames('math-root-sign', highlightClassName)
+    const highlightClassName = this.getHighlightClassName(rootTerm.signMark)
     const lineClassName = this.joinClassNames('math-root-line', highlightClassName)
     return (
       <span className="math-root">
-        <span className={signClassName} data-tracking-key={trackingKey}>
+        <span {...signAttributes}>
           <MathStretchySign shape="ROOT" />
         </span>
         <span className={lineClassName}>
@@ -84,14 +96,10 @@ export class MathTermReactRenderer implements MathTermVisitor<ReactNode> {
 
   visitFunctionTerm(functionTerm: FunctionTerm): ReactNode {
     const renderedArgument = functionTerm.argument.accept(this)
-    const highlightClassName = this.getHighlightClassName(functionTerm.nameMark)
-    const trackingKey = this.getTrackingKey(functionTerm.nameMark)
-    const nameClassName = this.joinClassNames('math-function-name', highlightClassName)
+    const nameAttributes = this.createMarkAttributes('math-function-name', functionTerm.nameMark)
     return (
       <span className="math-function">
-        <span className={nameClassName} data-tracking-key={trackingKey}>
-          {functionTerm.functionName}
-        </span>
+        <span {...nameAttributes}>{functionTerm.functionName}</span>
         <span className="math-function-argument">{renderedArgument}</span>
       </span>
     )
@@ -114,14 +122,8 @@ export class MathTermReactRenderer implements MathTermVisitor<ReactNode> {
 
   visitMarkedTerm(markedTerm: MarkedTerm): ReactNode {
     const renderedTerm = markedTerm.term.accept(this)
-    const highlightClassName = this.getHighlightClassName(markedTerm.termMark)
-    const trackingKey = this.getTrackingKey(markedTerm.termMark)
-    const markClassName = this.joinClassNames('math-mark', highlightClassName)
-    return (
-      <span className={markClassName} data-tracking-key={trackingKey}>
-        {renderedTerm}
-      </span>
-    )
+    const markAttributes = this.createMarkAttributes('math-mark', markedTerm.termMark)
+    return <span {...markAttributes}>{renderedTerm}</span>
   }
 
   /** Mehrere Terme nebeneinander, dazwischen je einmal das Rechenzeichen, z. B. `x² + y²`. */
@@ -151,12 +153,32 @@ export class MathTermReactRenderer implements MathTermVisitor<ReactNode> {
     return getMathHighlightClassName(termMark.highlightKey)
   }
 
-  /** Die Kennung einer Marke fürs Attribut; ohne Marke `undefined`, dann schreibt React das Attribut nicht. */
-  private getTrackingKey(termMark: TermMark | null): string | undefined {
+  /**
+   * Die Attribute für das Element eines Terms, der eine Marke tragen kann: seine Klassen (Grundklasse, Farbe der Marke,
+   * `math-cancelled` wenn er gekürzt wird), seine Kennung und seine Rolle in der Zeile. Ein Attribut mit `undefined`
+   * schreibt React nicht.
+   */
+  private createMarkAttributes(baseClassName: string, termMark: TermMark | null): MarkAttributes {
     if (termMark === null) {
-      return undefined
+      return { className: baseClassName }
     }
-    return termMark.trackingKey
+    const highlightClassName = this.getHighlightClassName(termMark)
+    let className = this.joinClassNames(baseClassName, highlightClassName)
+    let cancelledAttribute: string | undefined = undefined
+    if (this.termRoles.isCancelled(termMark.trackingKey)) {
+      className = className + ' math-cancelled'
+      cancelledAttribute = 'true'
+    }
+    let flightOriginAttribute: string | undefined = undefined
+    if (this.termRoles.isApplied(termMark.trackingKey)) {
+      flightOriginAttribute = 'cause'
+    }
+    return {
+      className,
+      'data-tracking-key': termMark.trackingKey,
+      'data-cancelled': cancelledAttribute,
+      'data-flight-origin': flightOriginAttribute,
+    }
   }
 
   private joinClassNames(baseClassName: string, addedClassName: string): string {

@@ -4387,6 +4387,8 @@
     --math-font-size: 1.5rem;
     /* Dicke von Bruchstrich, Wurzellinie und den Zeichen, die mit ihrem Inhalt wachsen */
     --math-stroke-width: 0.06em;
+    /* halbe Dicke des Strichs durch einen gekürzten Term */
+    --math-cancel-stroke-half-width: 0.035em;
   }
 
   .math {
@@ -4502,14 +4504,14 @@
   }
 
   /*
-   * ===== Herleitung (knowledge/derivation): die Schritte untereinander, die Gleichheitszeichen in einer Spalte (linke
-   * Seite, „=“, rechte Seite, Umformung). Der Bereich ist zugleich die Ebene, in der die wandernden Terme fliegen
-   * (TermFlightAnimator). =====
+   * ===== Herleitung (knowledge/derivation): die Schritte untereinander, die Gleichheitszeichen in einer Spalte
+   * (Beschriftung, linke Seite, „=“, rechte Seite, Umformung). Der Bereich ist zugleich die Ebene, in der die
+   * wandernden Terme fliegen (TermFlightAnimator). =====
    */
   .derivation-steps {
     position: relative;
     display: grid;
-    grid-template-columns: max-content max-content max-content 1fr;
+    grid-template-columns: max-content max-content max-content max-content 1fr;
     row-gap: 1.5rem;
     padding-block: 0.5rem;
     overflow-x: auto;
@@ -4522,12 +4524,41 @@
     align-items: center;
   }
 
+  /* „Ausgang“ und „Ergebnis“ vor ihrer Zeile */
+  .derivation-step-label {
+    margin-right: 1.5rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
   .derivation-step-left {
     justify-self: end;
   }
 
   .derivation-step-operation {
     margin-left: 2.5rem;
+  }
+
+  /* Die Notiz der Umformung und daneben ihr Abspiel-Knopf */
+  .derivation-operation-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  /* Ausgeblendeter Rechenweg: drei Punkte unter dem Gleichheitszeichen, zwischen Ausgang und Ergebnis */
+  .derivation-gap {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+  }
+
+  .derivation-gap-dots {
+    grid-column: 3;
+    justify-self: center;
+    font-size: 1.25rem;
+    line-height: 1;
   }
 
   .derivation-operation {
@@ -4543,7 +4574,7 @@
   }
 
   .derivation-step-explanation {
-    grid-column: 1 / -1;
+    grid-column: 2 / -1;
     max-width: 46rem;
     margin: 0.6rem 0 0;
     font-size: 0.95rem;
@@ -4560,18 +4591,59 @@
     white-space: nowrap;
   }
 
-  .derivation-progress {
+  .derivation-count {
     margin-right: auto;
   }
 
-  /* Die Kopie eines wandernden Terms: liegt über den Zeilen, Lage und Größe setzt der Animator */
-  .math-flight-ghost {
+  /*
+   * Ein wandernder Term: Der Träger liegt über den Zeilen und bewegt sich zur Seite, die Kopie darin bewegt sich in der
+   * Höhe (so entsteht der Bogen beim Seitenwechsel). Lage und Größe setzt der Animator.
+   */
+  .math-flight-carrier {
     position: absolute;
     z-index: 1;
+    pointer-events: none;
+  }
+
+  .math-flight-ghost {
     display: block;
+    width: 100%;
+    height: 100%;
     margin: 0;
     text-align: center;
+  }
+
+  /*
+   * Ein gekürzter Term: ein schräger Strich von links unten nach rechts oben, etwas über den Term hinaus. Der Strich
+   * ist ein eigenes Stück (::after), damit ihn der Animator beim Abspielen aufdecken kann; danach bleibt er stehen.
+   */
+  .math-cancelled {
+    position: relative;
+  }
+
+  /* Der gekürzte Term selbst tritt zurück, der Strich bleibt kräftig */
+  .math-cancelled > * {
+    opacity: 0.5;
+  }
+
+  .math-cancelled::after {
+    position: absolute;
+    inset: -0.04em -0.2em;
+    background: linear-gradient(
+      to bottom right,
+      transparent calc(50% - var(--math-cancel-stroke-half-width)),
+      var(--math-cancel-color) calc(50% - var(--math-cancel-stroke-half-width)),
+      var(--math-cancel-color) calc(50% + var(--math-cancel-stroke-half-width)),
+      transparent calc(50% + var(--math-cancel-stroke-half-width))
+    );
+    content: '';
     pointer-events: none;
+  }
+
+  /* ===== Wissensmanager, Reiter „Gliederung“: der erklärende Satz über den drei Boxen ===== */
+  .knowledge-section-intro {
+    max-width: 60rem;
+    font-size: 0.95rem;
   }
 
   /* ===== Login-Seite: die Kacheln für Besucher ohne Konto (VisitorTiles), unter Login und Registrierung ===== */
@@ -4632,29 +4704,60 @@
     margin-bottom: 0;
   }
 
-  /* ===== Skizze (SVG) einer Seite der Wissensdatenbank: Strichstärken und Schriftgrößen in den Einheiten der Skizze ===== */
+  /*
+   * ===== Skizze (knowledge/sketch): ein SVG aus Bausteinen (Achsen, Punkte, Strecken, Winkel). Strichstärken und
+   * Schriftgrößen in den Einheiten der Skizze; Farben und das Hervorheben beim Zeigen macht das Theme. =====
+   */
   .sketch {
     display: block;
     width: 100%;
-    max-width: 22rem;
+    max-width: 24rem;
     height: auto;
     justify-self: center;
     overflow: visible;
   }
 
+  .sketch-grid-line,
   .sketch-axis,
+  .sketch-axis-tick,
   .sketch-helper-line,
   .sketch-quantity-line,
-  .sketch-quantity-arc {
+  .sketch-quantity-arc,
+  .sketch-angle-leg {
     fill: none;
+  }
+
+  .sketch-grid-line {
+    stroke-width: 1;
   }
 
   .sketch-axis {
     stroke-width: 1.5;
   }
 
+  .sketch-axis-tick,
   .sketch-helper-line {
     stroke-width: 1.2;
+  }
+
+  .sketch-axis-name,
+  .sketch-axis-number,
+  .sketch-quantity-label {
+    text-anchor: middle;
+  }
+
+  .sketch-axis-name {
+    font-size: 15px;
+    font-style: italic;
+  }
+
+  .sketch-axis-number {
+    font-size: 13px;
+  }
+
+  /* Eine Strecke fängt keine Maus: Darunter liegt die Fläche des Winkels, auf die man zeigen will */
+  .sketch-quantity {
+    pointer-events: none;
   }
 
   .sketch-quantity-line {
@@ -4667,22 +4770,44 @@
     stroke-linecap: round;
   }
 
-  .sketch-quantity-label,
-  .sketch-axis-label {
-    text-anchor: middle;
-    font-style: italic;
-  }
-
   .sketch-quantity-label {
     font-size: 21px;
+    font-style: italic;
     font-weight: 600;
   }
 
-  .sketch-axis-label {
-    font-size: 15px;
+  /* Die unsichtbare Fläche, auf die man zeigt: um einen Punkt herum bzw. der Sektor eines Winkels */
+  .sketch-hit-area {
+    fill: transparent;
+    stroke: none;
+    pointer-events: all;
+  }
+
+  .sketch-point,
+  .sketch-angle-sector {
+    cursor: help;
+  }
+
+  .sketch-point-dot {
+    transform-box: fill-box;
+    transform-origin: center;
   }
 
   .sketch-point-label {
     font-size: 18px;
+  }
+
+  /* Die Schenkel eines Winkels: breite Bänder über seinen beiden Schenkeln, sichtbar erst beim Zeigen (Theme) */
+  .sketch-angle-leg {
+    stroke-width: 9;
+    stroke-linecap: round;
+    pointer-events: none;
+  }
+
+  /* Der Inhalt eines Hoverlays in einer Skizze: Zeilen untereinander */
+  .sketch-hint {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
   }
 }

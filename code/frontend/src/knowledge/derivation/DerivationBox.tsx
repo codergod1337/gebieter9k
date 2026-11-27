@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import Button from 'react-bootstrap/Button'
 import { ContentBox } from '../../components/ContentBox.tsx'
 import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguage.ts'
@@ -6,8 +7,8 @@ import type { Derivation } from './Derivation.ts'
 import type { DerivationOperation } from './DerivationOperation.ts'
 import { DerivationStepRow } from './DerivationStepRow.tsx'
 import { DERIVATION_TEXTS } from './derivationTexts.ts'
-import { useDerivationProgress } from './useDerivationProgress.ts'
-import { useDerivationStepFlight } from './useDerivationStepFlight.ts'
+import { useDerivationFlight } from './useDerivationFlight.ts'
+import { useDerivationPathVisibility } from './useDerivationPathVisibility.ts'
 
 type DerivationBoxProps = {
   title: string
@@ -15,57 +16,93 @@ type DerivationBoxProps = {
 }
 
 /**
- * Eine Herleitung zum Durchklicken, in einer ContentBox: Zu sehen sind die Schritte bis zum aktuellen, jede Umformung
- * in einer eigenen Zeile. „Nächster Schritt“ zeigt genau eine Umformung mehr; dabei wandern die markierten Terme
- * sichtbar von ihrer Stelle in der alten Zeile an ihre Stelle in der neuen. Im Fuß stehen der Stand und die Knöpfe.
+ * Eine Herleitung in einer ContentBox (Nutzer 2026-11-27): Immer zu sehen sind ihr Ausgang und ihr Ergebnis. Der Knopf
+ * im Fuß blendet bei Bedarf den ganzen Rechenweg dazwischen ein, mit allen Äquivalenzumformungen, jede in ihrer eigenen
+ * Zeile samt Erklärung, und wieder aus. Im eingeblendeten Rechenweg bleibt alles stehen: Man schaut zwei Zeilen zurück
+ * und liest weiter, ohne dass etwas verschwindet. Jede Umformung hat einen Abspiel-Knopf, der zeigt, wie aus ihrer Zeile
+ * die nächste wird; die markierten Terme wandern dabei sichtbar an ihre neue Stelle.
  */
 export function DerivationBox({ title, derivation }: DerivationBoxProps) {
-  const derivationProgress = useDerivationProgress(derivation)
-  const shownStepCount = derivationProgress.shownStepCount
-  const stepsContainerRef = useDerivationStepFlight(shownStepCount)
-  const shownSteps = derivation.steps.slice(0, shownStepCount)
+  const pathVisibility = useDerivationPathVisibility(derivation)
+  const derivationFlight = useDerivationFlight()
+  const pathShown = pathVisibility.pathShown
+  const steps = derivation.steps
+  const lastStepIndex = steps.length - 1
+  const transformationCount = lastStepIndex
+  const startLabel = getTextInCurrentLanguage(DERIVATION_TEXTS.startLabel)
+  const resultLabel = getTextInCurrentLanguage(DERIVATION_TEXTS.resultLabel)
 
-  const progressText = getTextInCurrentLanguageWithValues(DERIVATION_TEXTS.stepProgress, {
-    step: String(shownStepCount),
-    stepCount: String(derivation.steps.length),
+  const rows: ReactNode[] = []
+  steps.forEach((derivationStep, stepIndex) => {
+    const isStart = stepIndex === 0
+    const isResult = stepIndex === lastStepIndex
+    const betweenStartAndResult = !isStart && !isResult
+    if (betweenStartAndResult && !pathShown) {
+      return
+    }
+    let label: string | null = null
+    if (isStart) {
+      label = startLabel
+    } else if (isResult) {
+      label = resultLabel
+    }
+    let followingOperation: DerivationOperation | null = null
+    const followingStepIndex = stepIndex + 1
+    if (!isResult) {
+      followingOperation = steps[followingStepIndex].operation
+    }
+    rows.push(
+      <DerivationStepRow
+        key={stepIndex}
+        stepIndex={stepIndex}
+        derivationStep={derivationStep}
+        label={label}
+        pathShown={pathShown}
+        followingOperation={followingOperation}
+        onPlayFollowingTransformation={() => derivationFlight.playTransformationInto(followingStepIndex)}
+      />,
+    )
+    // Ausgeblendet steht zwischen Ausgang und Ergebnis ein Zeichen dafür, dass dazwischen etwas liegt
+    if (isStart && !pathShown && transformationCount > 0) {
+      rows.push(
+        <div key="gap" className="derivation-gap" aria-hidden="true">
+          <span className="derivation-gap-dots">⋮</span>
+        </div>,
+      )
+    }
   })
+
+  let transformationCountText = getTextInCurrentLanguageWithValues(DERIVATION_TEXTS.transformationCountMany, {
+    transformationCount: String(transformationCount),
+  })
+  if (transformationCount === 1) {
+    transformationCountText = getTextInCurrentLanguage(DERIVATION_TEXTS.transformationCountOne)
+  }
+  let pathButton = (
+    <Button size="sm" variant="primary" onClick={pathVisibility.showPath}>
+      <i className="bi bi-chevron-down me-1" aria-hidden="true"></i>
+      {getTextInCurrentLanguage(DERIVATION_TEXTS.showPath)}
+    </Button>
+  )
+  if (pathShown) {
+    pathButton = (
+      <Button size="sm" variant="outline-secondary" onClick={pathVisibility.hidePath}>
+        <i className="bi bi-chevron-up me-1" aria-hidden="true"></i>
+        {getTextInCurrentLanguage(DERIVATION_TEXTS.hidePath)}
+      </Button>
+    )
+  }
   const footer = (
     <div className="derivation-controls">
-      <span className="derivation-progress">{progressText}</span>
-      <Button
-        size="sm"
-        variant="outline-secondary"
-        disabled={!derivationProgress.hasPreviousStep}
-        onClick={derivationProgress.showPreviousStep}>
-        <i className="bi bi-arrow-up me-1" aria-hidden="true"></i>
-        {getTextInCurrentLanguage(DERIVATION_TEXTS.showPreviousStep)}
-      </Button>
-      <Button size="sm" variant="primary" disabled={!derivationProgress.hasNextStep} onClick={derivationProgress.showNextStep}>
-        <i className="bi bi-arrow-down me-1" aria-hidden="true"></i>
-        {getTextInCurrentLanguage(DERIVATION_TEXTS.showNextStep)}
-      </Button>
+      <span className="derivation-count">{transformationCountText}</span>
+      {transformationCount > 0 && pathButton}
     </div>
   )
 
   return (
     <ContentBox title={title} footer={footer}>
-      <div ref={stepsContainerRef} className="derivation-steps">
-        {shownSteps.map((derivationStep, stepIndex) => {
-          // Die Umformung steht am Ende der Zeile, auf die sie angewendet wird, sobald die nächste Zeile zu sehen ist
-          let followingOperation: DerivationOperation | null = null
-          const followingStepIndex = stepIndex + 1
-          if (followingStepIndex < shownSteps.length) {
-            followingOperation = shownSteps[followingStepIndex].operation
-          }
-          return (
-            <DerivationStepRow
-              key={stepIndex}
-              stepIndex={stepIndex}
-              derivationStep={derivationStep}
-              followingOperation={followingOperation}
-            />
-          )
-        })}
+      <div ref={derivationFlight.stepsContainerRef} className="derivation-steps">
+        {rows}
       </div>
     </ContentBox>
   )
