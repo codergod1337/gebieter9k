@@ -4,6 +4,7 @@ import type { AccessRoleCollection } from '../../auth/access/AccessRoleCollectio
 import { AccessRoleCollectionBadge } from '../../auth/access/AccessRoleCollectionBadge.tsx'
 import { DeleteButton } from '../../components/DeleteButton.tsx'
 import { EditButton } from '../../components/EditButton.tsx'
+import { UsersProfileLink } from '../../components/UsersProfileLink.tsx'
 import type { Users } from '../../users/Users.ts'
 
 type UsersTableRowProps = {
@@ -16,7 +17,10 @@ type UsersTableRowProps = {
   onDelete: (users: Users) => void
 }
 
-/** Eine Zeile im Tab „User“, ganz rechts die Aktionen Bearbeiten und Löschen. */
+/**
+ * Eine Zeile im Tab „User“, ganz rechts die Aktionen Bearbeiten und Löschen. Der Username führt auf das Profil des
+ * Users (Nutzer 2026-11-27), mit dem Tab als Origin („Zurück zu User“).
+ */
 export function UsersTableRow({ users, assignedAccessRoles, accessRoleCollection, onEdit, onDelete }: UsersTableRowProps) {
   function handleEditClick() {
     onEdit(users)
@@ -41,7 +45,11 @@ export function UsersTableRow({ users, assignedAccessRoles, accessRoleCollection
           <AccessRoleBadge key={accessRole.key} accessRole={accessRole} />
         ))}
       </td>
-      <td>{users.username}</td>
+      <td>
+        <UsersProfileLink usersGuid={users.guid} originLabel="User">
+          {users.username}
+        </UsersProfileLink>
+      </td>
       <td className="text-end text-nowrap">
         <EditButton label={editLabel} onClick={handleEditClick} />
         <DeleteButton label={deleteLabel} onClick={handleDeleteClick} />

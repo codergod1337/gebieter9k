@@ -2471,3 +2471,8 @@ body {
 .sketch-point-label {
   fill: var(--ink);
 }
+
+/* Login-Seite: die Zeile über den Kacheln für Besucher ohne Konto, gedämpft */
+.visitor-tiles-heading {
+  color: var(--ink-muted);
+}

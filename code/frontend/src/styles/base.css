@@ -4574,6 +4574,17 @@
     pointer-events: none;
   }
 
+  /* ===== Login-Seite: die Kacheln für Besucher ohne Konto (VisitorTiles), unter Login und Registrierung ===== */
+  .visitor-tiles {
+    margin-top: 2.5rem;
+  }
+
+  .visitor-tiles-heading {
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+    text-align: center;
+  }
+
   /* ===== Wissensdatenbank (knowledge): Übersicht eines Kapitels, Text neben Skizze, Zusammenfassung ===== */
   .knowledge-page-entry-title {
     font-weight: 600;

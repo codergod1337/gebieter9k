@@ -91,7 +91,7 @@ Aus den Feldern mit Getter; die Werte sind erfunden. Geheimes (Passwort, Schlüs
 - [`code/frontend/src/admin/users/EditUsersTab.tsx`](../../code/frontend/src/admin/users/EditUsersTab.tsx): (Typ)
 - [`code/frontend/src/admin/users/NewUsersPopup.tsx`](../../code/frontend/src/admin/users/NewUsersPopup.tsx): `NewUsersPopup`, `handleCreate`, `handleUsernameChange`, `handleEmailChange`, `handlePasswordChange`, `handleRepeatedPasswordChange`, `handleGuidChange` (Popup „Neuer User“ der Administration; Texte in `newUsersTexts.ts`)
 - [`code/frontend/src/admin/users/UsersTab.tsx`](../../code/frontend/src/admin/users/UsersTab.tsx): `UsersTab`, `getAssignedAccessRoles`, `getAccessRoleCollection`, `handleEdit`, `handleUsersCreated`
-- [`code/frontend/src/admin/users/UsersTableRow.tsx`](../../code/frontend/src/admin/users/UsersTableRow.tsx): (Typ)
+- [`code/frontend/src/admin/users/UsersTableRow.tsx`](../../code/frontend/src/admin/users/UsersTableRow.tsx): (Typ); der Username ist ein Link auf das Profil des Users (`UsersProfileLink`, „Zurück zu User“)
 - [`code/frontend/src/admin/users/UsersTotpBox.tsx`](../../code/frontend/src/admin/users/UsersTotpBox.tsx): (Typ)
 - [`code/frontend/src/auth/login/SessionContext.ts`](../../code/frontend/src/auth/login/SessionContext.ts): (Typ)
 - [`code/frontend/src/auth/login/SessionInfo.ts`](../../code/frontend/src/auth/login/SessionInfo.ts): (Typ)

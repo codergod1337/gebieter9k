@@ -6,12 +6,74 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
 - Nach jedem Schritt: Stand nachziehen (geänderte Dateien, was als Nächstes kommt).
 - Fertiges bleibt als eine Zeile stehen. Einzelheiten stehen in `setup.md` (Bau auf dem Pi) und in den Konzepten.
 
+## Bis einschließlich 2026-12-03: Unterbrechungen einplanen (Nutzer, 2026-11-27 09:12)
+
+Der Nutzer ist auf einer Insel, auf der Strom und Internet öfter ausfallen, ohne Vorwarnung. Deshalb bis dahin:
+
+- kleine Stücke, jedes für sich fertig (danach läuft die Typprüfung bzw. kompiliert das Backend);
+- VOR jedem Stück hier eintragen, was jetzt kommt, NACH jedem Stück, was fertig ist und was als Nächstes kommt;
+- zu Beginn einer Sitzung zuerst nachsehen, ob der oberste Eintrag einen angefangenen Schritt nennt, und den Stand an
+  Dateien und Git belegen;
+- auf dem Pi nur Schritte, die für sich stehen (Bau abgekoppelt, erst bauen, dann starten).
+
+Nach dem 2026-12-03 diesen Abschnitt löschen (ebenso die Regel `interruptions-until-2026-12-03`).
+
 ## Reihenfolge der nächsten Arbeiten (Nutzer, 2026-11-11 14:20)
 
 1. Markt (Shop) bauen.
 2. Rechte der FileClass updaten (`WRITER` wird „darf hochladen“, dazu „Metadaten bearbeiten“).
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
+
+## 2026-11-27 09:12 – Arbeitsweise für die nächsten 6 Tage: Unterbrechungen (nur Regel und Protokoll, kein Code)
+
+- Ansage: „das gild aber nur für die kommenden 6 tage, und zwar bin ich gerade auf einer insel bei der öfters strom
+  unt unternet unterbrochen ist. arbeite also bitte in kleineren schritten und auch so, dass du jederzeit wieder
+  weiternmachen kannst wenn du an irgendeiner stelle unterbrochen wurdest […]“
+- Festgehalten: Regel `Vollidiot/interruptions-until-2026-12-03.md` (mit Zeile in `MEMORY.md`), Abschnitt oben in
+  diesem Protokoll. Beides nach dem 2026-12-03 löschen.
+- **Wo es weitergeht (Stand 09:12):** Kachel „Wissensdatenbank“ und der Link im Reiter „User“ sind fertig und
+  geprüft, lokal, NICHT committet (siehe Eintrag 09:06). Nächster Schritt: Der Nutzer committet und pusht; danach
+  `git pull` und Bau des Frontends auf dem Pi. Sonst ist nichts angefangen.
+
+## 2026-11-27 09:06 – Kachel für die Wissensdatenbank; Admin, Reiter „User“: Username als Link aufs Profil
+
+- Ansage: „ja du volldepp hast haber eine kachel für die wissensdatenbank vergessel lol! denk dran wissensdatenbank
+  soll auch für anonym verfügbar sein zum ANSEHEN schreiben erst mal nur über admin endpunkte. schreiben machen wir aber
+  erst wenn wir alle feinheiten am dummy test modul dafür geklärt haben! weiterer hotfix im adminmodul will ich bei dem
+  usertab den username verlinkt haben auf das jeweilige userprofil“
+- Damit entschieden (Nutzer): Ansehen der Wissensdatenbank auch ohne Anmeldung; Schreiben später, nur über
+  Admin-Endpunkte (`/api/admin/…`), und erst, wenn am Demo-Modul alle Feinheiten geklärt sind. Jetzt also KEIN Schreiben.
+- Plan: 1. Kachel „Wissensdatenbank“ auf der Startseite, ohne Recht (jeder Angemeldete). 2. Einstieg auch für
+  Besucher ohne Konto: dieselbe Kachel auf der Login-Seite (sonst findet ein Anonymer die Wissensdatenbank nur über
+  die Adresse). 3. Admin, Reiter „User“: Username über `UsersProfileLink` aufs Profil, mit „Zurück zu User“.
+  4. Typprüfung, Bau, im Firefox ansehen, Doku. Kein Commit ohne Ansage.
+- **Stand 09:11, fertig (lokal, nicht committet, nicht auf dem Pi):**
+  - Neu: `home/homeTiles.ts` (die Liste der Kacheln, neu mit `visibleWithoutLogin`; kam aus `Home.tsx`),
+    `home/VisitorTiles.tsx`, `home/visitorTilesTexts.ts`, `knowledge/knowledgeIcon.ts`. Geändert: `home/Home.tsx`,
+    `App.tsx` (Login-Seite zeigt darunter `VisitorTiles`), `knowledge/Knowledge.tsx` (Symbol aus der Konstante),
+    `admin/users/UsersTableRow.tsx` (`UsersProfileLink`), `styles/base.css` und `themes/default.css` (`.visitor-tiles`).
+  - `npx tsc -b` und `npm run build` ohne Fehler.
+  - Im Firefox ohne Fenster mit nachgestelltem Backend geprüft. Ohne Anmeldung: Login-Maske, darunter „Ohne
+    Anmeldung ansehen“ mit der Kachel „Wissensdatenbank“, Klick → `/wissen/grundlagen` ohne Login-Maske. Als Admin:
+    Startseite mit 8 Kacheln, „Wissensdatenbank“ an zweiter Stelle; Reiter „User“ mit alice und bob als Links auf
+    `/profile/<guid>`; Klick auf bob öffnet sein Profil, im Header „Zurück zu User“, der führt zurück in den Reiter.
+  - Doku: `konzept-wissensdatenbank.md` (Entscheidung Lesen/Schreiben, Einstieg, Fragen 5 und 7),
+    `konzept-navigation.md` (Zeile Administration), `entities/Users.md`, Regel `knowledge-base-module`.
+- Nicht angefasst, mir aufgefallen: Im Reiter „User“ steht der Status als roher Wert („ACTIVE“).
+- Als Nächstes: Der Nutzer committet und pusht; danach baue ich auf dem Pi (nur Frontend).
+
+## 2026-11-27 09:02 – Stand durchgeben (nur gelesen, nichts geändert)
+
+- Ansage: „so gib mal den aktuellen stand durch, mit viewer wissensdatenbank und was auf dem pi released ist und was
+  noch nicht“
+- Geprüft um 09:02: lokal = `origin/main` = `407bbc6` („doku update“). Seit `a51c6ae` ist kein Code dazugekommen, weder
+  committet noch in der Arbeitskopie; nicht committet sind nur Zeilen dieses Protokolls.
+- Der Pi liefert von außen `index-B1dkbBCQ.js` und `index-DwJ73LE-.css` aus, also genau den Bau vom 2026-11-26 20:56
+  (`a51c6ae`); Startseite 200, `/wissen/grundlagen/koordinatentransformation` 200, `/api/session` ohne Anmeldung 401.
+  Per SSH war ich heute nicht auf dem Pi.
+- Ergebnis: Aller Code ist auf dem Pi. Nicht dort ist nur der Doku-Commit `407bbc6` (ändert an der App nichts).
+- Dem Nutzer genannt, was fertig ist, was ich nicht gesehen habe und was noch nicht gebaut ist. Wartet auf seine Ansage.
 
 ## 2026-11-26 20:55 – Push `a51c6ae` auf den Pi bringen (pull, Frontend bauen, prüfen)
 
@@ -22,6 +84,19 @@ Woran Claude gerade arbeitet. Nach einem Absturz steht hier, wo es weitergeht. D
 - Plan (feste Regel: nach dem Push bauen, ohne zu fragen): Commit auf Zugangsdaten prüfen; Pi erreichen, Lage ansehen,
   Images sichern, `git pull --ff-only`, nur `frontend` bauen (im Commit ist kein Backend-Code), erst dann starten;
   von außen prüfen (Bundle, `/wissen/…` im Firefox).
+- **Stand 20:58, fertig und auf dem Pi** (Einzelheiten in `setup.md` 5.16):
+  - Im Commit kein geheimer Wert aus `code/.env` (7 geprüft). Kein Backend-Code, `compose.yaml` unverändert.
+  - Pi vorher Last 0,00, 12 GiB RAM verfügbar, 44,4 °C; Images als `:vorher` gesichert; Pull von `7b0992f` auf
+    `a51c6ae`, Klon sauber; Bau `frontend` 7 s, Start unter 2 s, alle 5 Container laufen, Backend unberührt.
+  - Von außen: neues Bundle `index-B1dkbBCQ.js` mit den neuen Texten, das alte Popup ist weg. Die echte Seite
+    `/wissen/grundlagen/koordinatentransformation` im Firefox: ohne Login, „Nächster Schritt“ lässt die Terme wandern,
+    kein Fehler.
+  - Hilfsdateien auf dem Pi gelöscht, Verbindung geschlossen, keine Hilfsprozesse auf dem Laptop.
+- NICHT gesehen auf dem Pi: das große Bild der Galerie (Anmeldung oder Freigabelink nötig). Der Nutzer sieht es sich an.
+- 20:56 hat der Nutzer auch die Doku committet und gepusht (`407bbc6` „doku update“: `konzept-galerie.md`, drei
+  Entity-Dokus, Protokoll). Nur Doku, also kein weiterer Bau; der Klon auf dem Pi steht auf `a51c6ae` und holt
+  `407bbc6` beim nächsten Bau mit. Nicht committet sind nur die letzten Zeilen dieses Protokolls; `setup.md` liegt
+  ohnehin nicht im Repo.
 
 ## 2026-11-26 20:43 – Galerie: Bild nicht mehr im Popup, sondern unter dem Subheader, mit Lupe, Zoom und Ziehen
 

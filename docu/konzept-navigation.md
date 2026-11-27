@@ -80,7 +80,7 @@ Stand 2026-11-09, gebaut und auf dem Pi 5. Vorgabe des Nutzers am selben Tag:
 | File-Manager, Tab „Hochladen“ | „Zuletzt hochgeladen“ bleibt in `useSessionState` | Datei mit „Zurück zu Hochladen“ |
 | Datei | – | Bearbeiten und Viewer mit „Zurück zu <Dateiname>“; Löschen springt zum Origin |
 | Viewer | – | „Details“ springt zurück, wenn man von der Datei kam, sonst öffnet er sie mit „Zurück zu Viewer“ |
-| Administration | – | Alle Bearbeiten- und Neu-Seiten mit „Zurück zu <Tab>“, Abbrechen und Speichern springen zurück; Reiter „Freigaben“ (2026-11-20): Profil des Besitzers und Galerie mit „Zurück zu Freigaben“ |
+| Administration | – | Alle Bearbeiten- und Neu-Seiten mit „Zurück zu <Tab>“, Abbrechen und Speichern springen zurück; Reiter „Freigaben“ (2026-11-20): Profil des Besitzers und Galerie mit „Zurück zu Freigaben“; Reiter „User“ (2026-11-27): Der Username öffnet das Profil des Users mit „Zurück zu User“ |
 | Profil, Gästebuch | `?guestbookPage=…`, 10 Einträge je Seite, `PageNavigation` | – |
 | Icon-Manager | `?q=…&view=…&page=…&symbol=…` | – |
 | Galerien, Liste auf dem Handy (2026-11-20) | – | Galerie und Reiter „Freigabe“ aus der Tabelle mit „Zurück zu Galerien“ |

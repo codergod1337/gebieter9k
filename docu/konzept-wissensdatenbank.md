@@ -1,6 +1,7 @@
 # Konzept: Wissensdatenbank
 
-Stand 2026-11-26: Das Modul steht im Frontend, mit einem Demokapitel („Grundlagen“, Seite „Koordinatentransformation“).
+Stand 2026-11-27: Das Modul steht im Frontend, mit einem Demokapitel („Grundlagen“, Seite „Koordinatentransformation“)
+und seiner Kachel auf Startseite und Login-Seite.
 Die Inhalte stehen dafür im Code. Der eigene Solr-Kern ist die Richtung, aber noch nicht begonnen (Abschnitt 4).
 
 ## 1. Was es werden soll (Nutzer, 2026-11-24 und 2026-11-26)
@@ -27,13 +28,18 @@ Nicht verwechseln: Jupyter-Notebooks kommen nicht in die App (Entscheidung vom 2
 | Erstes Kapitel „Grundlagen“ | Nutzer, 2026-11-24 | Koordinatensysteme und die Bewegung eines Körpers. |
 | Inhalte kommen in einen **eigenen Solr-Kern** | Nutzer, 2026-11-26 | „ein solr wissens kern dokument pro seite“; wie fein eine Seite geschnitten ist (je Unterpunkt, gröber, feiner), ist bewusst offen. Dazu Referenzen (bei uns der Name für die Hooks der Vorlage), Status und Schlagwörter. Löst „Inhalte stehen im Code“ und „kein Backend“ vom 2026-11-24 ab. |
 | **Kein Rich-Text** als Format des Inhalts | Nutzer, 2026-11-26 | „maximale freiheit“ für Formeln, „maybe auch mini svg“, damit sich Äquivalenzumformungen eindeutig animieren lassen („wo welcher wert hingeht“). Wie genau abgelegt wird, ist offen. |
+| **Ansehen auch ohne Anmeldung, Schreiben nur über Admin-Endpunkte** | Nutzer, 2026-11-27 | „wissensdatenbank soll auch für anonym verfügbar sein zum ANSEHEN schreiben erst mal nur über admin endpunkte. schreiben machen wir aber erst wenn wir alle feinheiten am dummy test modul dafür geklärt haben!“ Also: Lesen über `/api/share/…`, Schreiben über `/api/admin/…` (nur ADMIN), und das Schreiben wird erst gebaut, wenn am Demo-Modul alles geklärt ist. |
 | Erst ein **Demo ohne Solr-Kern** | Nutzer, 2026-11-26 | „ein wissensdatenbank modul […] noch ohne solr kern einfach mit einem demokapitel und zwar grundlagen/ koordinaten transformation“. Gebaut, siehe Abschnitt 3. |
 
 ## 3. Was gebaut ist (2026-11-26, nur Frontend)
 
 Adresse, ohne Anmeldung: `/wissen` → `/wissen/grundlagen` (Übersicht des Kapitels) →
-`/wissen/grundlagen/koordinatentransformation`. Es gibt noch keinen Link dorthin (keine Kachel, nichts auf der
-Login-Seite): Man ruft die Adresse auf.
+`/wissen/grundlagen/koordinatentransformation`.
+
+**Einstieg (2026-11-27):** die Kachel „Wissensdatenbank“. Angemeldet steht sie auf der Startseite (jeder Angemeldete,
+kein Recht nötig), für Besucher ohne Konto dieselbe Kachel auf der Login-Seite unter „Ohne Anmeldung ansehen“
+(`home/VisitorTiles`). Beide kommen aus einer Liste: `home/homeTiles.ts`, dort trägt die Kachel
+`visibleWithoutLogin: true`.
 
 **Die Seite „Koordinatentransformation“:** Einleitung mit Skizze (Achsenkreuz, Punkt P, Dreieck aus x, y, r, Winkel φ),
 vier Herleitungen zum Durchklicken (x und y aus r und φ; r und φ aus x und y), Zusammenfassung mit dem Hinweis zu
@@ -94,7 +100,8 @@ Noch nicht committet, nicht auf dem Pi.
 3. **Referenzen:** Welche? Eine Referenz ist bei uns automatisch ein Feld in JEDEM Kern (wie `wtf`); was nur im
    Wissenskern gilt (z. B. „gehört zu Kapitel“), wäre ein normales Feld dieses Kerns.
 4. **Status:** Welche (Entwurf, veröffentlicht, gelöscht)? Der Nutzer sprach von „Statusfeldern“ in der Mehrzahl.
-5. **Wer schreibt die Seiten, und wo** (im Browser, per Einspielen)?
+5. **Wie geschrieben wird:** Entschieden ist (2026-11-27): nur über Admin-Endpunkte, und erst nach dem Klären am
+   Demo-Modul. Offen: im Browser (Editor) oder per Einspielen?
 6. **Sicherung:** Der Text läge nur in Solr. Den Export eines Kerns gibt es per Knopf, das Einspielen ist nicht gebaut.
-7. **Einstieg:** Link für Besucher (Login-Seite?), Kachel für angemeldete User?
+7. **Einstieg:** erledigt am 2026-11-27 (Kachel auf Startseite und Login-Seite, Abschnitt 3).
 8. **Was steuert der Slider** in der späteren Bewegungsansicht: die Zeit entlang einer Bahn oder direkt die Koordinaten?

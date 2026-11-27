@@ -47,6 +47,7 @@ import { FILE_MANAGER_ENTRY_ACCESS_ROLE_KEYS } from './filemanager/fileManagerEn
 import { FileDocumentListTab } from './filemanager/files/FileDocumentListTab.tsx'
 import { FileUploadTab } from './filemanager/upload/FileUploadTab.tsx'
 import { Home } from './home/Home.tsx'
+import { VisitorTiles } from './home/VisitorTiles.tsx'
 import { AppFooter } from './layout/AppFooter.tsx'
 import { AppHeader } from './layout/AppHeader.tsx'
 import { useMasterData } from './masterdata/useMasterData.ts'
@@ -136,11 +137,12 @@ function AppRoutes() {
   )
 }
 
-/** Login oder Registrierung, mittig. */
+/** Login oder Registrierung, mittig; darunter die Kacheln der Module, die auch ohne Anmeldung gehen. */
 function LoginPage() {
   return (
     <div className="main-content">
       <LoginOrRegistration />
+      <VisitorTiles />
     </div>
   )
 }

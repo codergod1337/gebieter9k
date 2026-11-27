@@ -2,13 +2,15 @@ import { Outlet } from 'react-router'
 import { Subheader, type SubheaderTab } from '../components/Subheader.tsx'
 import { getTextInCurrentLanguage } from '../language/getTextInCurrentLanguage.ts'
 import { KNOWLEDGE_CHAPTERS } from './knowledgeChapters.ts'
+import { KNOWLEDGE_ICON_CLASS_NAME } from './knowledgeIcon.ts'
 import { getKnowledgeChapterPath } from './knowledgePaths.ts'
 import { KNOWLEDGE_TEXTS } from './knowledgeTexts.ts'
 
 /**
  * Das Modul „Wissensdatenbank“ (Konzept `docu/konzept-wissensdatenbank.md`): ein interaktives Lernskript, OHNE
  * Anmeldung erreichbar unter `/wissen`. Im Subheader steht je Kapitel ein Reiter, darunter die Übersicht des Kapitels
- * oder eine seiner Seiten.
+ * oder eine seiner Seiten. Hinein führt die Kachel „Wissensdatenbank“: auf der Startseite und, für Besucher ohne Konto,
+ * auf der Login-Seite (`home/homeTiles.ts`).
  *
  * Die Kapitel und ihre Seiten stehen vorerst im Code ({@link KNOWLEDGE_CHAPTERS}); später kommen die Seiten aus einem
  * eigenen Solr-Kern.
@@ -20,9 +22,10 @@ export function Knowledge() {
     const chapterPath = getKnowledgeChapterPath(knowledgeChapter.pathSegment)
     tabs.push({ label: chapterLabel, iconClassName: knowledgeChapter.iconClassName, to: chapterPath })
   }
+  const subheaderIconClasses = KNOWLEDGE_ICON_CLASS_NAME + ' me-2'
   const subheaderStatus = (
     <>
-      <i className="bi bi-mortarboard me-2"></i>
+      <i className={subheaderIconClasses}></i>
       {getTextInCurrentLanguage(KNOWLEDGE_TEXTS.moduleTitle)}
     </>
   )
