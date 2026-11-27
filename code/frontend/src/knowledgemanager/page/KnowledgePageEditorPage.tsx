@@ -20,7 +20,7 @@ type LoadedKnowledgePage = {
 
 /**
  * Der Editor einer Wissensseite unter `/knowledge-manager/page/<id>` (nur ADMIN): oben die Felder der Seite
- * ({@link KnowledgePageFieldsBox}), darunter ihr Inhalt als JSON-Text mit Vorschau ({@link KnowledgePageContentEditor}).
+ * ({@link KnowledgePageFieldsBox}), darunter ihr Inhalt im Editor, über die ganze Breite ({@link KnowledgePageContentEditor}).
  * Jede Änderung geht einzeln an `PUT /api/admin/knowledge-page` (nur die genannten Felder) und kommt als ganze Seite
  * zurück. Lesen und Speichern laufen über getrennte Hooks: So steht ein Fehler des Speicherns dort, wo gespeichert
  * wurde, und nicht an der Ladeanzeige.

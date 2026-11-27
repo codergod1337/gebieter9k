@@ -25,6 +25,38 @@ Nach dem 2026-12-03 diesen Abschnitt löschen (ebenso die Regel `interruptions-u
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-27 15:23 – Editor umbauen: je ContentBox links ihre Definition, rechts sie selbst; ein Scrollbalken; „Kasten“ heißt ContentBox
+
+- Ansage (nach dem Ansehen auf dem Pi): „darstellung viel besser ich will aber im editor kein inbox gescrolle! wir
+  zeigen beim bearbeiten immer contenbox NENNE DEN GOTTVERDAMMTEN KASTEN AUCH CONTENTBOX!!! und eine kontentbox rechts
+  hat links davon den code/ bzw den inhalt der sie definiert. wir machen nur einen scrollbalken auf der hauptansicht.
+  den editor will ich selbst nicht in einer contenbox angezeigt haben, denn da wollen wir den maximalen platz, da wir
+  ja die contentboxen in der "vorschau" haben so wie den code dazu je box. also hoffe du hast die aufgabe nun verstanden“
+- So verstanden: (a) überall „ContentBox“ statt „Kasten“ (Oberfläche, Format `CONTENT_BOX` statt `BOX`, Code, Doku);
+  (b) der Editor ist eine Folge von Zeilen: je Element der obersten Ebene links seine Definition (Ansicht „Elemente“:
+  seine Karte; Ansicht „JSON“: sein Code), rechts es selbst, so wie die Seite es zeigt; (c) kein eigener Scrollbereich
+  mehr, nur die Seite rollt; (d) der Editor steht nicht in einer ContentBox und nutzt die volle Breite; Speichern,
+  Ansichten und „Animationen“ in einer Leiste, die oben stehen bleibt.
+- Stücke: 1. Umbenennen `BOX` → `CONTENT_BOX`, „Kasten“ → „ContentBox“; 2. Zeilen-Editor, JSON je Element, Leiste,
+  volle Breite; 3. lokal im Firefox prüfen; 4. Doku, Regeln; 5. nach dem Push: Pi bauen und die Seite mit
+  `CONTENT_BOX` neu schreiben (sonst zeigt sie „unbekanntes Element BOX“).
+- Stück 1 fertig (15:25): Format `CONTENT_BOX`, Oberfläche „ContentBox“ / „Neue ContentBox“, Code
+  `ContentBoxElement`, `ContentBoxElementView.tsx`, `ContentBoxElementEditor.tsx`, Kommentare; `tsc` grün.
+- Stück 2 fertig (15:27): `BlockContentFrame.tsx` (Rahmen für Formeln und Animationen, von Seite und Editor benutzt),
+  `editor/ElementCardEditor.tsx`, `AddElementDropdown.tsx`, `ElementEditorScope.tsx` (statt `ElementsEditor.tsx`),
+  `JsonValueEditor.tsx` (Code eines Elements, so hoch wie sein Text), `BlockContentEditor.tsx` neu (Leiste, Zeilen,
+  `actions`), `KnowledgePageContentEditor.tsx` ohne ContentBox mit `main-wide`; CSS in `base.css` und `default.css`.
+- Stück 3 fertig (15:28): `npm run build` grün; im Firefox gegen das nachgestellte Backend: Editor nicht in einer
+  ContentBox, 1640 von 1700 px breit, kein eigener Scrollbereich, Leiste bleibt oben, 8 Zeilen (links Karte, rechts
+  ContentBox), id vergeben, neue ContentBox mit Gleichung getippt, Ansicht JSON mit 10 Code-Feldern (halb getippt,
+  gültig, unbekannte Art), Popup, Speichern. Keine Fehler.
+- Stück 4 fertig (15:30): `docu/blockcontent.md`, `KNOWLEDGE.md`, Konzept; Regeln `wording-contentbox`,
+  `editor-rows-one-scrollbar`, `MEMORY.md`.
+- **Stand 15:30: lokal fertig, vorgemerkt, NICHT committet (macht der Nutzer). Als Nächstes Stück 5, sobald er gepusht
+  hat:** Pi `git pull`, NUR frontend bauen und starten (Backend unverändert), DANN sofort die Seite mit `CONTENT_BOX`
+  neu schreiben (PUT, `…/scratchpad/seiten/koordinatentransformation-v2.json`; die alte mit `BOX` zeigt sonst
+  „unbekanntes Element BOX“).
+
 ## 2026-11-27 15:07 – Push auf den Pi bringen: Inhalt Fassung 2 (Stück 5 des Eintrags 14:30)
 
 - Ansage: „ist gepusht bau fertig dann schau ich mir deinen pfusch an“

@@ -3,8 +3,8 @@ import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguag
 import type { MultilingualText } from '../../language/MultilingualText.ts'
 import type { ElementJsonOfType, ElementType } from '../elements/ElementJson.ts'
 import { BLOCK_CONTENT_EDITOR_TEXTS } from './blockContentEditorTexts.ts'
-import { BoxElementEditor } from './BoxElementEditor.tsx'
 import { CollapsibleElementEditor } from './CollapsibleElementEditor.tsx'
+import { ContentBoxElementEditor } from './ContentBoxElementEditor.tsx'
 import type { ElementEditorProps } from './ElementEditorProps.ts'
 import { EquationElementEditor } from './EquationElementEditor.tsx'
 import { HeadingElementEditor } from './HeadingElementEditor.tsx'
@@ -21,7 +21,7 @@ export type ElementKind<Type extends ElementType> = {
   type: Type
   /** Wie die Art im Editor heißt, z. B. „Gleichung“. */
   label: MultilingualText
-  /** Ob das Element nur auf oberster Ebene stehen darf (der Kasten). */
+  /** Ob das Element nur auf oberster Ebene stehen darf (die ContentBox). */
   topLevelOnly: boolean
   /** Ein neues, noch leeres Element dieser Art. */
   createElement: (createFreeId: FreeIdCreator) => ElementJsonOfType<Type>
@@ -43,15 +43,15 @@ const COLLAPSIBLE_ID_PREFIX = 'c'
  * den vorhandenen ändert sich dafür nichts.
  */
 export const ELEMENT_KINDS: ElementKinds = {
-  BOX: {
-    type: 'BOX',
-    label: BLOCK_CONTENT_EDITOR_TEXTS.boxLabel,
+  CONTENT_BOX: {
+    type: 'CONTENT_BOX',
+    label: BLOCK_CONTENT_EDITOR_TEXTS.contentBoxLabel,
     topLevelOnly: true,
     createElement: () => {
-      const title = getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.newBoxTitle)
-      return { type: 'BOX', title, elements: [{ type: 'PARAGRAPH', text: '' }] }
+      const title = getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.newContentBoxTitle)
+      return { type: 'CONTENT_BOX', title, elements: [{ type: 'PARAGRAPH', text: '' }] }
     },
-    Editor: BoxElementEditor,
+    Editor: ContentBoxElementEditor,
   },
   HEADING: {
     type: 'HEADING',
@@ -115,4 +115,4 @@ export const ELEMENT_KINDS: ElementKinds = {
 }
 
 /** In dieser Reihenfolge bietet der Editor die Arten zum Anlegen an. */
-export const ELEMENT_KIND_ORDER: ElementType[] = ['BOX', 'HEADING', 'PARAGRAPH', 'LIST', 'HINT', 'EQUATION', 'COLLAPSIBLE', 'SKETCH']
+export const ELEMENT_KIND_ORDER: ElementType[] = ['CONTENT_BOX', 'HEADING', 'PARAGRAPH', 'LIST', 'HINT', 'EQUATION', 'COLLAPSIBLE', 'SKETCH']

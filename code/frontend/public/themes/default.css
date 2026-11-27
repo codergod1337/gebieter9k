@@ -2585,6 +2585,23 @@ body {
   color: var(--bs-secondary-color);
 }
 
+/* Editor für Inhalte: die Leiste, die oben stehen bleibt, als schwebende Fläche wie eine ContentBox */
+.blockcontent-editor-bar {
+  border: 1px solid var(--contentbox-border);
+  border-radius: var(--bs-border-radius);
+  background: var(--contentbox-bg);
+  box-shadow: 0 0.25rem 0.75rem var(--bordeaux-shadow);
+}
+
+.blockcontent-editor-problem,
+.blockcontent-editor-json-problem {
+  color: var(--bs-danger-text-emphasis);
+}
+
+.blockcontent-editor-json-heading {
+  color: var(--bs-secondary-color);
+}
+
 /* Editor für Inhalte: Karten mit zartem Rahmen, ihr Kopf abgesetzt; Hilfetexte und Arten zurückgenommen */
 .blockcontent-editor-card {
   border: 1px solid var(--bs-border-color);

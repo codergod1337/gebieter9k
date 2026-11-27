@@ -3,8 +3,8 @@ import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguag
 import { BLOCK_CONTENT_EDITOR_TEXTS } from './blockContentEditorTexts.ts'
 import type { ElementEditorProps } from './ElementEditorProps.ts'
 
-/** Ein Kasten im Editor: sein Titel, darunter seine Elemente. */
-export function BoxElementEditor({ element, onChange, children }: ElementEditorProps<'BOX'>) {
+/** Eine ContentBox im Editor: ihr Titel, darunter ihre Elemente. */
+export function ContentBoxElementEditor({ element, onChange, children }: ElementEditorProps<'CONTENT_BOX'>) {
   const titleLabel = getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.titleLabel)
   return (
     <>

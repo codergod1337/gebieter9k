@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
-import { BoxElementView } from './BoxElementView.tsx'
 import { CollapsibleElementView } from './CollapsibleElementView.tsx'
+import { ContentBoxElementView } from './ContentBoxElementView.tsx'
 import type { ContentElement } from './ContentElement.ts'
 import type { ElementViewProps } from './ElementViewProps.ts'
 import { EquationElementView } from './EquationElementView.tsx'
@@ -20,7 +20,7 @@ type ElementViews = {
  * vorhandenen Anzeigen ändert sich dafür nichts.
  */
 export const ELEMENT_VIEWS: ElementViews = {
-  BOX: BoxElementView,
+  CONTENT_BOX: ContentBoxElementView,
   COLLAPSIBLE: CollapsibleElementView,
   HEADING: HeadingElementView,
   PARAGRAPH: ParagraphElementView,

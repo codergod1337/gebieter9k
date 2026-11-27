@@ -7,7 +7,7 @@ import { findKnowledgeChapter, findKnowledgeRubric } from './knowledgePaths.ts'
 import { KNOWLEDGE_TEXTS } from './knowledgeTexts.ts'
 
 /**
- * Die Übersicht eines Kapitels unter `/wissen/<Rubrik>/<Kapitel>`, z. B. `/wissen/mathe/grundlagen`: der Kasten des
+ * Die Übersicht eines Kapitels unter `/wissen/<Rubrik>/<Kapitel>`, z. B. `/wissen/mathe/grundlagen`: die ContentBox des
  * Kapitels mit seinen Seiten. Das Kapitel geht als Origin mit, wenn man eine Seite öffnet.
  */
 export function KnowledgeChapterPage() {

@@ -31,14 +31,14 @@ Nicht verwechseln: Jupyter-Notebooks kommen nicht in die App (Entscheidung vom 2
 | Inhalte kommen in einen **eigenen Solr-Kern** | Nutzer, 2026-11-26 | „ein solr wissens kern dokument pro seite“; wie fein eine Seite geschnitten ist (je Unterpunkt, gröber, feiner), ist bewusst offen. Dazu Referenzen (bei uns der Name für die Hooks der Vorlage), Status und Schlagwörter. Löst „Inhalte stehen im Code“ und „kein Backend“ vom 2026-11-24 ab. |
 | **Kein Rich-Text** als Format des Inhalts | Nutzer, 2026-11-26 | „maximale freiheit“ für Formeln, „maybe auch mini svg“, damit sich Äquivalenzumformungen eindeutig animieren lassen („wo welcher wert hingeht“). Wie genau abgelegt wird, ist offen. |
 | Das Format **nicht aus dem Inhalt einer Seite ableiten** | Nutzer, 2026-11-27 | „du sollst nicht ein modell anhand des inhalts entwerfen“; „wir wollen da später formaln und herleitungen aus der elektrodynamik und quantenmechanik abbilden, da funktioniert das mit deiner […] eingabe so nicht mehr“. Trifft Fassung 1: Der Term-Baum (`blockcontent/math/`) und die getippte Schreibweise (`blockcontent/formulatext/`) kennen nur, was die Koordinatentransformation braucht. Dazu am selben Tag: „normales latex hilf uns nichts, denn wir sollten jedem element eine id mitgeben KÖNNEN, genau dann wenn es in eine animation muss […] ich will das rad auch nciht neu erfinden müssen. ich stelle mir vielleicht einen formeleditor innerhalb vom richtexteditor vor. dann haben wir auch eine übersicht wie viele gleichungen wir auf einer seite haben, latex style“. Gebaut am 2026-11-27 mit dem Formel-Editor MathLive (0.111.4, MIT): abgelegt wird LaTeX, ein Teil bekommt per Markieren seine id (`\htmlData{id=…}{…}`), jede Gleichung hat ihre laufende Nummer; siehe [`blockcontent.md`](blockcontent.md). |
-| **Die ganze Seite in EINEM Dokument; Editor nur Elemente und ids; Animationen als eigenes Modul** | Nutzer, 2026-11-27 | „wir definieren immer die ganze seite in einem solr wissens dokument! sprich contentboxen und zwischen abschnitte oder sonstiges muss auch im richtext abbildbar sein“; „wir haben formeln und eine hand voll html elemente die animationen benötigen wir ja in einem separaten modul. sprich wir müssen ja nur die gleichungsnummer angeben und dann welches element mit welcher id sich wie in der nächsten gleichungsnummer verhält, das hat aber nichts im editor zu suchen, dort definiere ich nur die ids der elemente und animationen stelle ich mir in einem popup vor“. Gebaut am 2026-11-27 (Antwort des Nutzers: „ja bau es endlich […] deinen dreck sehe ich erst wenn der editor funktioniert, also ob dein neuer vorschlag brauchbar ist“): Fassung 2, `elements` und getrennt `animations` im selben Dokument, Formeln über MathLive, Ordner `formula/`, `elements/`, `editor/`, `animation/`; siehe [`blockcontent.md`](blockcontent.md). Dazu: „alles was mit animation zu tun hat bitte in eine eigene animation.css, das will ich weder in base noch in default css haben“. Ob der Vorschlag brauchbar ist, sagt der Nutzer nach dem Testen. |
+| **Die ganze Seite in EINEM Dokument; Editor nur Elemente und ids; Animationen als eigenes Modul** | Nutzer, 2026-11-27 | „wir definieren immer die ganze seite in einem solr wissens dokument! sprich contentboxen und zwischen abschnitte oder sonstiges muss auch im richtext abbildbar sein“; „wir haben formeln und eine hand voll html elemente die animationen benötigen wir ja in einem separaten modul. sprich wir müssen ja nur die gleichungsnummer angeben und dann welches element mit welcher id sich wie in der nächsten gleichungsnummer verhält, das hat aber nichts im editor zu suchen, dort definiere ich nur die ids der elemente und animationen stelle ich mir in einem popup vor“. Gebaut am 2026-11-27 (Antwort des Nutzers: „ja bau es endlich […] deinen dreck sehe ich erst wenn der editor funktioniert, also ob dein neuer vorschlag brauchbar ist“): Fassung 2, `elements` und getrennt `animations` im selben Dokument, Formeln über MathLive, Ordner `formula/`, `elements/`, `editor/`, `animation/`; siehe [`blockcontent.md`](blockcontent.md). Dazu: „alles was mit animation zu tun hat bitte in eine eigene animation.css, das will ich weder in base noch in default css haben“. Nach dem Testen (2026-11-27): „darstellung viel besser ich will aber im editor kein inbox gescrolle! wir zeigen beim bearbeiten immer contenbox NENNE DEN […] KASTEN AUCH CONTENTBOX!!! und eine kontentbox rechts hat links davon den code/ bzw den inhalt der sie definiert. wir machen nur einen scrollbalken auf der hauptansicht. den editor will ich selbst nicht in einer contenbox angezeigt haben, denn da wollen wir den maximalen platz“; so umgebaut am selben Tag. |
 | **Ansehen auch ohne Anmeldung, Schreiben nur über Admin-Endpunkte** | Nutzer, 2026-11-27 | „wissensdatenbank soll auch für anonym verfügbar sein zum ANSEHEN schreiben erst mal nur über admin endpunkte. schreiben machen wir aber erst wenn wir alle feinheiten am dummy test modul dafür geklärt haben!“ Also: Lesen über `/api/share/…`, Schreiben über `/api/admin/…` (nur ADMIN), und das Schreiben wird erst gebaut, wenn am Demo-Modul alles geklärt ist. |
 | Erst ein **Demo ohne Solr-Kern** | Nutzer, 2026-11-26 | „ein wissensdatenbank modul […] noch ohne solr kern einfach mit einem demokapitel und zwar grundlagen/ koordinaten transformation“. Gebaut, siehe Abschnitt 3. |
 
 ## 3. Was gebaut ist
 
 Adresse, ohne Anmeldung (seit 2026-11-27 aus der Gliederung): `/wissen` → `/wissen/mathe` (Übersicht der Rubrik: je
-Kapitel ein Kasten mit seinen Seiten) → `/wissen/mathe/grundlagen` (ein Kapitel) →
+Kapitel eine ContentBox mit seinen Seiten) → `/wissen/mathe/grundlagen` (ein Kapitel) →
 `/wissen/mathe/grundlagen/koordinatentransformation` (die Seite). Je Rubrik ein Reiter. Bis zum 2026-11-27 stand die
 Demoseite fest im Code unter `/wissen/grundlagen/koordinatentransformation`; diese Fassung ist gelöscht, ihr Inhalt ist
 jetzt ein Dokument im Kern.
@@ -48,9 +48,9 @@ kein Recht nötig), für Besucher ohne Konto dieselbe Kachel auf der Login-Seite
 (`home/VisitorTiles`). Beide kommen aus einer Liste: `home/homeTiles.ts`, dort trägt die Kachel
 `visibleWithoutLogin: true`.
 
-**Die Seite „Koordinatentransformation“ (seit 2026-11-27 in Fassung 2 des Inhalts):** ein Kasten Einleitung mit Skizze,
-Zwischenüberschrift „Von polar nach kartesisch“, zwei Kästen (x und y aus r und φ), Zwischenüberschrift „Von kartesisch
-nach polar“, zwei Kästen (r und φ aus x und y), ein Kasten Zusammenfassung mit dem Hinweis zu `atan2`. 18 nummerierte
+**Die Seite „Koordinatentransformation“ (seit 2026-11-27 in Fassung 2 des Inhalts):** eine ContentBox Einleitung mit Skizze,
+Zwischenüberschrift „Von polar nach kartesisch“, zwei ContentBoxen (x und y aus r und φ), Zwischenüberschrift „Von kartesisch
+nach polar“, zwei ContentBoxen (r und φ aus x und y), eine ContentBox Zusammenfassung mit dem Hinweis zu `atan2`. 18 nummerierte
 Gleichungen, 4 Aufklapper „Rechenweg“, 10 Animationen. Alles steht in EINEM Dokument.
 
 **Eine Rechnung** ist kein eigener Baustein mehr, sondern Gleichungen untereinander: der Ausgang, ein Aufklapper
@@ -92,7 +92,7 @@ Adressen entstehen daraus von selbst.
 - Jede Größe trägt dauerhaft ihre Farbe; beim Abspielen wandern alle markierten Terme.
 - Das Paket ist fest in der App (kein Nachladen): Mit den Inhalten in Solr bleibt es klein.
 - Ein- und Ausblenden des Rechenwegs ersetzt den Eintrag im Verlauf (REPLACE), damit „Zurück“ im Browser die Seite
-  verlässt und nicht Kasten für Kasten zuklappt.
+  verlässt und nicht ContentBox für ContentBox zuklappt.
 - P liegt in der Skizze bei (4 | 3): damit ist r genau 5.
 
 Geprüft am 2026-11-27: Typprüfung und Bau ohne Fehler; im Firefox ohne Fenster mit echter Maus durchgeklickt und

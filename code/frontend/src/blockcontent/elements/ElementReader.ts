@@ -22,7 +22,7 @@ export class ElementReader {
   /** Die festen Kennungen, die schon vergeben sind (Gleichungen und Aufklapper teilen sich einen Raum). */
   private readonly takenIds: string[] = []
 
-  /** Die Elemente der obersten Ebene; nur dort darf ein Kasten stehen. */
+  /** Die Elemente der obersten Ebene; nur dort darf eine ContentBox stehen. */
   readTopLevelElements(elementsValue: unknown, elementsPath: string): ContentElement[] {
     return this.readElements(elementsValue, elementsPath, true)
   }
@@ -47,14 +47,14 @@ export class ElementReader {
     const elementObject = requireObject(elementValue, elementPath)
     const elementType = requireText(elementObject.type, elementPath + '.type')
     switch (elementType) {
-      case 'BOX': {
+      case 'CONTENT_BOX': {
         if (!onTopLevel) {
-          throw new BlockContentError(elementPath + ': Ein Kasten steht nur auf oberster Ebene, nicht in einem Kasten oder Aufklapper.')
+          throw new BlockContentError(elementPath + ': Eine ContentBox steht nur auf oberster Ebene, nicht in einer ContentBox oder einem Aufklapper.')
         }
         // ein leerer Titel oder Text ist erlaubt: Im Editor entsteht das Element, bevor man es füllt
         const title = requireTextOrEmpty(elementObject.title, elementPath + '.title')
         const elements = this.readElements(elementObject.elements, elementPath + '.elements', false)
-        return { type: 'BOX', title, elements }
+        return { type: 'CONTENT_BOX', title, elements }
       }
       case 'COLLAPSIBLE': {
         const id = this.readFreeId(elementObject, elementPath)

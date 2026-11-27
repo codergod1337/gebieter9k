@@ -4,7 +4,7 @@ import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguag
 import { BLOCK_CONTENT_EDITOR_TEXTS } from './blockContentEditorTexts.ts'
 
 type EditorCardProps = {
-  /** Was die Karte ist, z. B. „Kasten“ oder „Rechnung“. */
+  /** Was die Karte ist, z. B. „ContentBox“ oder „Gleichung (3)“. */
   kindLabel: string
   /** Rechts neben der Art, z. B. das Feld für den Titel. */
   header?: ReactNode

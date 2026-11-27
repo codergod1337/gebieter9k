@@ -8,7 +8,7 @@ import { KNOWLEDGE_TEXTS } from './knowledgeTexts.ts'
 import { getKnowledgeChapters } from './section/knowledgeSectionTree.ts'
 
 /**
- * Die Übersicht einer Rubrik unter `/wissen/<Rubrik>`, z. B. `/wissen/mathe`: je Kapitel ein Kasten mit seinen Seiten.
+ * Die Übersicht einer Rubrik unter `/wissen/<Rubrik>`, z. B. `/wissen/mathe`: je Kapitel eine ContentBox mit seinen Seiten.
  * Die Rubrik geht als Origin mit, wenn man eine Seite öffnet („Zurück zu Mathe“ im Header).
  */
 export function KnowledgeRubricPage() {

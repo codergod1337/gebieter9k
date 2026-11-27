@@ -297,6 +297,14 @@
     padding-inline: max(var(--main-padding), calc((100% - var(--main-max-width)) / 2));
   }
 
+  /*
+   * Eine Seite, die die ganze Breite des Fensters braucht (z. B. ein Editor mit Definition links und Ergebnis rechts),
+   * trägt irgendwo in ihrem Inhalt die Klasse `main-wide`: Dann bleibt nur der schmale Rand.
+   */
+  .main-content:has(.main-wide) {
+    padding-inline: var(--main-padding);
+  }
+
   /* Immer da, unabhängig vom Modul, am Ende der Seite */
   .footer {
     position: relative;
@@ -4553,11 +4561,54 @@
   }
 
   /*
-   * ===== Editor für Inhalte (blockcontent/editor), allgemein: links bearbeiten (Elemente oder JSON), rechts die
-   * Vorschau; beide Hälften gleich hoch, jede rollt für sich. Auf schmalen Schirmen untereinander. =====
+   * ===== Editor für Inhalte (blockcontent/editor), allgemein: eine Folge von Zeilen, je Element links seine Definition
+   * (Karte oder Code), rechts das Element selbst. Nichts rollt für sich, nur die Seite; die Leiste bleibt oben stehen.
+   * Auf schmalen Schirmen steht die Definition über dem Element. =====
    */
   .blockcontent-editor {
-    --blockcontent-editor-pane-height: 72vh;
+    /* so hoch ist die Leiste etwa; so weit darunter bleibt das Element rechts stehen, wenn seine Definition länger ist */
+    --blockcontent-editor-bar-height: 3.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .blockcontent-editor-bar {
+    position: sticky;
+    top: var(--main-sticky-top);
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: var(--blockcontent-editor-bar-height);
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* rechts in der Leiste: was der Aufrufer dazutut (Stand, Verwerfen, Speichern) */
+  .blockcontent-editor-bar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+
+  .blockcontent-editor-equation-count {
+    font-size: 0.85rem;
+  }
+
+  .blockcontent-editor-problem {
+    margin: 0;
+  }
+
+  .blockcontent-editor-pairs {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .blockcontent-editor-pair {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: start;
@@ -4565,63 +4616,48 @@
   }
 
   @media (max-width: 1199.98px) {
-    .blockcontent-editor {
+    .blockcontent-editor-pair {
       grid-template-columns: minmax(0, 1fr);
     }
   }
 
-  .blockcontent-editor-source,
-  .blockcontent-editor-preview {
+  .blockcontent-editor-definition,
+  .blockcontent-editor-result {
     min-width: 0;
   }
 
-  .blockcontent-editor-views {
-    margin-bottom: 0.75rem;
+  /* ist die Definition länger als ihr Element, bleibt das Element unter der Leiste im Blick */
+  .blockcontent-editor-result {
+    position: sticky;
+    top: calc(var(--main-sticky-top) + var(--blockcontent-editor-bar-height) + 1rem);
   }
 
-  /* rechts neben den Reitern: wie viele Gleichungen der Inhalt hat und der Weg zu den Animationen */
-  .blockcontent-editor-views-extra {
+  /* der Code eines Elements: ein Textfeld, so hoch wie sein Text (JsonValueEditor), ohne eigenen Scrollbalken */
+  .blockcontent-editor-json {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-left: auto;
-    padding-bottom: 0.3rem;
+    flex-direction: column;
+    gap: 0.25rem;
   }
 
-  .blockcontent-editor-equation-count {
-    font-size: 0.85rem;
-  }
-
-  /* die Zeile über der Vorschau ist so hoch wie die Reiter links: So beginnen beide Hälften auf derselben Höhe */
-  .blockcontent-editor-preview-label {
-    display: flex;
-    align-items: flex-end;
-    min-height: 2.6rem;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.4rem;
-    font-weight: 600;
-  }
-
-  .blockcontent-editor-pane {
-    height: var(--blockcontent-editor-pane-height);
-    overflow-y: auto;
-    padding-right: 0.5rem;
-  }
-
-  .blockcontent-editor-textarea {
-    height: 100%;
+  .blockcontent-editor-json-text {
+    overflow: hidden;
     font-family: var(--bs-font-monospace);
     font-size: 0.8rem;
     line-height: 1.35;
-    white-space: pre;
-    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
     resize: none;
   }
 
-  .blockcontent-editor-elements {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  .blockcontent-editor-json-problem,
+  .blockcontent-editor-json-heading {
+    font-size: 0.8rem;
+  }
+
+  .blockcontent-editor-json-heading {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
   /* eine Liste von Elementen: ihre Karten untereinander, darunter der Knopf für ein neues Element */
@@ -4750,21 +4786,14 @@
     flex: 0 0 auto;
   }
 
-  .knowledge-editor-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.5rem;
-  }
-
+  /* Editor einer Wissensseite: der Stand des Inhalts in der Leiste des Editors, vor „Verwerfen“ und „Speichern“ */
   .knowledge-editor-state {
-    margin-right: auto;
+    font-size: 0.85rem;
   }
 
   /*
-   * ===== Elemente eines Inhalts (blockcontent/elements): von oben nach unten, mit Abstand dazwischen; in einem Kasten
-   * genauso wie zwischen den Kästen. =====
+   * ===== Elemente eines Inhalts (blockcontent/elements): von oben nach unten, mit Abstand dazwischen; in einer
+   * ContentBox genauso wie zwischen den ContentBoxen. =====
    */
   .blockcontent-elements {
     display: flex;
@@ -4773,7 +4802,7 @@
     min-width: 0;
   }
 
-  /* den Abstand zwischen den Kästen macht die Liste, nicht der Kasten */
+  /* den Abstand zwischen den ContentBoxen macht die Liste, nicht die ContentBox */
   .blockcontent-elements > .contentbox {
     margin-bottom: 0;
   }

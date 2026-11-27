@@ -16,12 +16,12 @@ type KnowledgeChapterBoxProps = {
   knowledgeBase: KnowledgeBase
   /** Das Kapitel (ein Punkt der Gliederung mit `chapterKey`). */
   knowledgeChapter: KnowledgeSection
-  /** Wie die Seite heißt, auf der der Kasten steht: Dorthin führt „Zurück zu …“ von einer geöffneten Seite. */
+  /** Wie die Seite heißt, auf der die ContentBox steht: Dorthin führt „Zurück zu …“ von einer geöffneten Seite. */
   originLabel: string
 }
 
 /**
- * Ein Kapitel der Wissensdatenbank als Kasten: seine veröffentlichten Seiten als Liste, je Seite der Titel und ein
+ * Ein Kapitel der Wissensdatenbank als ContentBox: seine veröffentlichten Seiten als Liste, je Seite der Titel und ein
  * Satz, worum es geht. Zuerst die Seiten, die direkt im Kapitel stehen, dann je Unterkapitel seine Seiten unter seinem
  * Namen. Ein Klick öffnet die Seite.
  */

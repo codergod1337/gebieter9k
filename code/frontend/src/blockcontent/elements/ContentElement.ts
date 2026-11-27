@@ -1,9 +1,9 @@
 import type { InlineNode } from '../inline/InlineNode.ts'
 import type { SketchContent } from '../sketch/SketchContent.ts'
 
-/** Ein Kasten mit Titel: seine Elemente untereinander. */
-export type BoxElement = {
-  type: 'BOX'
+/** Eine ContentBox mit Titel: ihre Elemente untereinander. */
+export type ContentBoxElement = {
+  type: 'CONTENT_BOX'
   title: string
   elements: ContentElement[]
 }
@@ -64,7 +64,7 @@ export type SketchContentElement = {
 
 /** Ein Element eines Inhalts, fertig zum Zeichnen. Es entsteht aus seinem JSON ({@link ElementReader}). */
 export type ContentElement =
-  | BoxElement
+  | ContentBoxElement
   | CollapsibleElement
   | HeadingElement
   | ParagraphElement

@@ -46,7 +46,7 @@ export function getVisibleEquationIds(elements: ContentElement[], openCollapsibl
   for (const element of elements) {
     if (element.type === 'EQUATION') {
       visibleEquationIds.push(element.id)
-    } else if (element.type === 'BOX') {
+    } else if (element.type === 'CONTENT_BOX') {
       const nestedEquationIds = getVisibleEquationIds(element.elements, openCollapsibleIds)
       visibleEquationIds.push(...nestedEquationIds)
     } else if (element.type === 'COLLAPSIBLE' && openCollapsibleIds.includes(element.id)) {

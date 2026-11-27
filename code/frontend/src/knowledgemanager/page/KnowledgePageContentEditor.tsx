@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import Button from 'react-bootstrap/Button'
 import { BlockContentEditor, formatBlockContentText, readBlockContentProblem } from '../../blockcontent/editor/BlockContentEditor.tsx'
-import { ContentBox } from '../../components/ContentBox.tsx'
 import { ErrorAlert } from '../../components/ErrorAlert.tsx'
 import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguage.ts'
 import { getTextInCurrentLanguageWithValues } from '../../language/getTextInCurrentLanguageWithValues.ts'
@@ -29,10 +28,12 @@ function formatContentText(contentText: string): string {
 
 /**
  * Der Inhalt einer Wissensseite zum Ansehen und Ändern (Nutzer 2026-11-27: „ich muss ja sehen was du da … gebaut
- * hast“): der allgemeine Editor für Inhalte aus Bausteinen ({@link BlockContentEditor}: Karten oder JSON, Vorschau
- * daneben) in einem Kasten, mit dem, was nur zur Wissensseite gehört: der Stand (gespeichert oder geändert),
- * „Änderungen verwerfen“ und „Inhalt speichern“. Lässt sich der Inhalt nicht lesen, ist Speichern gesperrt: So kommt
- * kein kaputter Inhalt in die Seite.
+ * hast“): der allgemeine Editor für Inhalte ({@link BlockContentEditor}) mit dem, was nur zur Wissensseite gehört und
+ * rechts in seiner Leiste steht: der Stand (gespeichert oder geändert), „Änderungen verwerfen“ und „Inhalt speichern“.
+ * Der Editor steht in KEINER ContentBox und nimmt die ganze Breite des Fensters (Nutzer 2026-11-27: „den editor will ich
+ * selbst nicht in einer contenbox angezeigt haben, denn da wollen wir den maximalen platz“); die Klasse `main-wide`
+ * sagt der Seite, dass sie dafür ihren Rand hergibt. Lässt sich der Inhalt nicht lesen, ist Speichern gesperrt: So
+ * kommt kein kaputter Inhalt in die Seite.
  */
 export function KnowledgePageContentEditor({ savedContentText, isSaving, errorMessage, onSave }: KnowledgePageContentEditorProps) {
   const [editedContentText, setEditedContentText] = useState(() => formatContentText(savedContentText))
@@ -59,8 +60,8 @@ export function KnowledgePageContentEditor({ savedContentText, isSaving, errorMe
   if (changed) {
     stateText = getTextInCurrentLanguage(KNOWLEDGE_PAGE_TEXTS.contentChanged)
   }
-  const footer = (
-    <div className="knowledge-editor-controls">
+  const actions = (
+    <>
       <span className="knowledge-editor-state">{stateText}</span>
       <Button size="sm" variant="outline-secondary" disabled={!changed || isSaving} onClick={handleReset}>
         {getTextInCurrentLanguage(KNOWLEDGE_PAGE_TEXTS.contentReset)}
@@ -68,13 +69,13 @@ export function KnowledgePageContentEditor({ savedContentText, isSaving, errorMe
       <Button size="sm" variant="primary" disabled={!changed || !readable || isSaving} onClick={() => void handleSave()}>
         {getTextInCurrentLanguage(KNOWLEDGE_PAGE_TEXTS.contentSave)}
       </Button>
-    </div>
+    </>
   )
 
   return (
-    <ContentBox title={getTextInCurrentLanguage(KNOWLEDGE_PAGE_TEXTS.contentTitle)} footer={footer}>
+    <section className="knowledge-editor-content main-wide" aria-label={getTextInCurrentLanguage(KNOWLEDGE_PAGE_TEXTS.contentTitle)}>
       <ErrorAlert message={errorMessage} />
-      <BlockContentEditor contentText={editedContentText} onContentTextChange={setEditedContentText} />
-    </ContentBox>
+      <BlockContentEditor contentText={editedContentText} onContentTextChange={setEditedContentText} actions={actions} />
+    </section>
   )
 }

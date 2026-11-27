@@ -8,7 +8,7 @@ import type { ContentElement, EquationElement } from './elements/ContentElement.
 export type BlockContent = {
   /** Die Elemente von oben nach unten. */
   elements: ContentElement[]
-  /** Alle Gleichungen in der Reihenfolge des Inhalts, auch die in Kästen und Aufklappern. */
+  /** Alle Gleichungen in der Reihenfolge des Inhalts, auch die in ContentBoxen und Aufklappern. */
   equations: EquationElement[]
   /** Die Animationen der Übergänge zwischen den Gleichungen. */
   animations: EquationAnimation[]

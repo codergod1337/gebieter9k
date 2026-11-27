@@ -2,13 +2,20 @@ import type { MultilingualText } from '../../language/MultilingualText.ts'
 
 /** Die Texte des Editors für Inhalte aus Bausteinen, mehrsprachig angelegt. */
 export const BLOCK_CONTENT_EDITOR_TEXTS = {
-  /** Die beiden Ansichten und die Vorschau. */
+  /** Die Leiste: wie die linke Seite ein Element zeigt. */
+  viewChoiceLabel: { de: 'Linke Seite zeigt' },
   viewElements: { de: 'Elemente' },
   viewJson: { de: 'JSON' },
-  previewLabel: { de: 'Vorschau' },
-  jsonInputLabel: { de: 'Der Inhalt als JSON' },
   unreadable: { de: 'So lässt sich der Inhalt nicht anzeigen: {reason}' },
-  elementsUnavailable: { de: 'Der Text ist kein lesbares JSON mit Elementen. Bitte in der Ansicht „JSON“ berichtigen.' },
+  /** Der Code eines Elements bzw. der Animationen. */
+  jsonElementLabel: { de: 'Der Code dieses Elements' },
+  jsonAnimationsLabel: { de: 'Animationen (Code)' },
+  jsonInvalid: { de: 'Noch kein gültiges JSON.' },
+  jsonElementProblem: { de: 'Ein Element ist ein Objekt mit "type".' },
+  jsonAnimationsProblem: { de: 'Die Animationen sind eine Liste.' },
+  /** Der gespeicherte Inhalt ist kein JSON-Objekt mit Elementen: Dann lässt er sich nur als Ganzes berichtigen. */
+  contentUnavailable: { de: 'Der gespeicherte Text ist kein lesbares JSON mit Elementen. Bitte hier berichtigen.' },
+  jsonInputLabel: { de: 'Der Inhalt als JSON' },
   equationCountOne: { de: '1 Gleichung' },
   equationCountMany: { de: '{equationCount} Gleichungen' },
   /** Die Liste der Elemente. */
@@ -16,9 +23,8 @@ export const BLOCK_CONTENT_EDITOR_TEXTS = {
   moveDown: { de: 'nach unten' },
   remove: { de: 'entfernen' },
   addElement: { de: 'Element' },
-  emptyList: { de: 'Noch kein Element.' },
   /** Die Arten der Elemente. */
-  boxLabel: { de: 'Kasten' },
+  contentBoxLabel: { de: 'ContentBox' },
   collapsibleLabel: { de: 'Aufklapper' },
   headingLabel: { de: 'Überschrift' },
   paragraphLabel: { de: 'Absatz' },
@@ -28,7 +34,7 @@ export const BLOCK_CONTENT_EDITOR_TEXTS = {
   sketchLabel: { de: 'Skizze' },
   /** Felder der Elemente. */
   titleLabel: { de: 'Titel' },
-  newBoxTitle: { de: 'Neuer Kasten' },
+  newContentBoxTitle: { de: 'Neue ContentBox' },
   newCollapsibleTitle: { de: 'Rechenweg' },
   headingText: { de: 'Text der Überschrift' },
   listOrdered: { de: 'nummeriert' },
