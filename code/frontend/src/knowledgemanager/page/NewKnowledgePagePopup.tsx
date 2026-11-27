@@ -20,7 +20,7 @@ type NewKnowledgePagePopupProps = {
 }
 
 /** Der Inhalt einer neuen Seite: noch kein Baustein. */
-const EMPTY_CONTENT_TEXT = '{"blocks":[]}'
+const EMPTY_CONTENT_TEXT = '{"elements":[]}'
 
 /** Was in einem Key aus einem Umlaut wird. */
 const KEY_LETTER_REPLACEMENTS: Record<string, string> = { Ä: 'AE', Ö: 'OE', Ü: 'UE', ẞ: 'SS', ß: 'SS' }

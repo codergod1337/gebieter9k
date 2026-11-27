@@ -113,6 +113,12 @@ export function KnowledgePageView() {
       })
       return { content: null, problem }
     }
+    if (typeof contentFormatVersion === 'number' && contentFormatVersion < BLOCK_CONTENT_FORMAT_VERSION) {
+      const problem = getTextInCurrentLanguageWithValues(KNOWLEDGE_TEXTS.outdatedContentFormat, {
+        version: String(contentFormatVersion),
+      })
+      return { content: null, problem }
+    }
     const contentText = getKnowledgePageText(shownKnowledgePageDocument, contentFieldName) ?? ''
     const knowledgeContentReader = new BlockContentReader()
     try {

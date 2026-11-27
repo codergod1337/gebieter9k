@@ -34,7 +34,7 @@ Stand 2026-11-27 (`solr_field` ids 44–61, dazu die Referenz `wtf`).
 | 8 | `listingPosition` | LONG | ja | ja |  | ja |  |  |  |  | -1 | ANY | Platz | Reihenfolge der Seiten in ihrem Kapitel. Setzt das Backend. |
 | 9 | `title` | TEXT_EDGE | ja | ja |  |  | ja |  | ja | ja | 5 | ANY | Titel | Überschrift der Seite, wird beim Tippen gefunden. |
 | 10 | `summary` | TEXT_SUCHE | ja | ja |  |  |  |  |  | ja | 3 | ANY | Zusammenfassung | Ein Satz für die Übersicht des Kapitels und für Treffer der Suche. |
-| 11 | `content` | STRING |  | ja |  |  | ja |  |  | ja | -1 | ANY | Inhalt | Die ganze Seite als ein langer JSON-Text aus Bausteinen (Text, Rechnungen, Skizzen). Nur gespeichert, wird nie durchsucht. |
+| 11 | `content` | STRING |  | ja |  |  | ja |  |  | ja | -1 | ANY | Inhalt | Die ganze Seite als ein langer JSON-Text: Elemente (Kästen, Text, Gleichungen, Skizzen) und Animationen. Nur gespeichert, wird nie durchsucht. |
 | 12 | `contentFormatVersion` | LONG | ja | ja |  | ja |  |  |  |  | -1 | ANY | Format-Fassung | In welcher Fassung des Formats der Inhalt geschrieben ist. Setzt das Backend. |
 | 13 | `tags` | STRING | ja | ja | ja | ja |  | ja |  | ja | 4 | ANY | Tags | Schlagwörter von Hand, ohne Raute, je Tag ein Wert. |
 | 14 | `status` | STRING | ja | ja |  | ja | ja |  |  | ja | -1 | ADMIN | Status | DRAFT (Entwurf, nur der Admin sieht die Seite), PUBLISHED (veröffentlicht, alle sehen sie) oder DELETED (weich gelöscht). |
@@ -60,8 +60,8 @@ So liefert `GET /api/share/knowledge-page/{id}` die Seite an einen Besucher ohne
   "listingPosition": 1,
   "title": "Koordinatentransformation",
   "summary": "Kartesische Koordinaten und Polarkoordinaten ineinander umrechnen, jede Umformung einzeln.",
-  "content": "{\"quantities\":{\"radius\":{\"symbol\":\"r\",\"highlight\":\"THIRD\"}},\"blocks\":[…]}",
-  "contentFormatVersion": 1,
+  "content": "{\"elements\":[{\"type\":\"BOX\",\"title\":\"x aus r und φ\",\"elements\":[…]}],\"animations\":[…]}",
+  "contentFormatVersion": 2,
   "tags": ["polarkoordinaten", "pythagoras"],
   "createdAt": "2026-11-27T11:00:00Z",
   "lastChangedAt": "2026-11-27T11:00:00Z"
@@ -109,16 +109,16 @@ Beispiele: Anlegen `{"fieldValuesByFieldName": {"language": "de", "rubricKey": "
 - [`knowledge/page/useKnowledgePage.ts`](../../code/frontend/src/knowledge/page/useKnowledgePage.ts): `getKnowledgeSolrFieldNameSet`, `getPublishedKnowledgePage`, `resolvePublishedKnowledgePages`
 - [`knowledge/Knowledge.tsx`](../../code/frontend/src/knowledge/Knowledge.tsx): lädt einmal Gliederung, Feldnamen und die Liste der veröffentlichten Seiten ohne Inhalt ([`KnowledgeBase.ts`](../../code/frontend/src/knowledge/KnowledgeBase.ts)); Reiter je Rubrik
 - [`KnowledgeRubricPage.tsx`](../../code/frontend/src/knowledge/KnowledgeRubricPage.tsx), [`KnowledgeChapterPage.tsx`](../../code/frontend/src/knowledge/KnowledgeChapterPage.tsx), [`KnowledgeChapterBox.tsx`](../../code/frontend/src/knowledge/KnowledgeChapterBox.tsx): die Übersichten; [`KnowledgePageView.tsx`](../../code/frontend/src/knowledge/KnowledgePageView.tsx): holt die Seite und zeichnet ihren Inhalt
-- [`blockcontent/`](../../code/frontend/src/blockcontent/) (global, seit 2026-11-27; vorher `knowledge/content`, `knowledge/math`, `knowledge/derivation`, `knowledge/sketch`): Leser, Anzeige und Editor des Inhalts, siehe [`docu/blockcontent.md`](../blockcontent.md)
+- [`blockcontent/`](../../code/frontend/src/blockcontent/) (global): Leser, Anzeige und Editor des Inhalts, siehe [`docu/blockcontent.md`](../blockcontent.md)
 - [`knowledge/page/useKnowledgePage.ts`](../../code/frontend/src/knowledge/page/useKnowledgePage.ts) auch für die Pflege (nur ADMIN): `getKnowledgePage`, `resolveKnowledgePages`, `changeKnowledgePage`
 - Wissensmanager, Reiter „Seiten“ (seit 2026-11-27, [`code/frontend/src/knowledgemanager/page/`](../../code/frontend/src/knowledgemanager/page/)): [`KnowledgePageTab.tsx`](../../code/frontend/src/knowledgemanager/page/KnowledgePageTab.tsx) (alle Seiten in jedem Status: Titel, wo sie steht, Key, Status, geändert), [`KnowledgePageEditorPage.tsx`](../../code/frontend/src/knowledgemanager/page/KnowledgePageEditorPage.tsx) (`/knowledge-manager/page/<id>`) mit [`KnowledgePageFieldsBox.tsx`](../../code/frontend/src/knowledgemanager/page/KnowledgePageFieldsBox.tsx) (Titel, Zusammenfassung, Key, Schlagwörter per Klick im Popup, Status per Knopf, „Seite ansehen“) und [`KnowledgePageContentEditor.tsx`](../../code/frontend/src/knowledgemanager/page/KnowledgePageContentEditor.tsx) (der allgemeine Editor `BlockContentEditor`: Bausteine als Karten oder JSON, daneben sofort die Vorschau; lässt sich der Inhalt nicht lesen, steht dort die Stelle und Speichern ist gesperrt). Jede Änderung ist ein `PUT` mit nur dem einen Feld.
 - Auf jeder Wissensseite sieht der Admin über dem Inhalt „Seite bearbeiten“ ([`KnowledgePageView.tsx`](../../code/frontend/src/knowledge/KnowledgePageView.tsx), seit 2026-11-27; Nutzer: „auf jeder seite will ich die verlinkt haben“): führt in den Editor der Seite, von dort „Zurück zu <Titel>“; im Editor führt „Seite ansehen“ zur Seite („Zurück zu Editor“). Besucher und andere User sehen den Link nicht.
 - Neue Seite anlegen (seit 2026-11-27): Knopf „neue Seite“ im Reiter „Seiten“, geführt in [`NewKnowledgePagePopup.tsx`](../../code/frontend/src/knowledgemanager/page/NewKnowledgePagePopup.tsx): Rubrik → Kapitel → (Unterkapitel, wenn das Kapitel welche hat) → Titel und Key (Vorschlag aus dem Titel, z. B. „Was ist eine Metrik? (Übung 2)“ → `WAS_IST_EINE_METRIK_UEBUNG`). Die Seite entsteht als Entwurf ohne Inhalt (`POST /api/admin/knowledge-page`), danach öffnet sich ihr Editor. `useKnowledgePage.createKnowledgePage`.
 - Noch NICHT gebaut: eine Seite in ein anderes Kapitel verschieben (das Backend kann es, im Editor fehlt das Feld), die Reihenfolge der Seiten ändern.
 
-## Format des Inhalts (`content`, Fassung 1)
+## Format des Inhalts (`content`, Fassung 2)
 
-Der Inhalt ist ein „Inhalt aus Bausteinen“, das allgemeine Format der Plattform (nicht nur für Wissensseiten). Format, Formel-Schreibweise und Editor stehen in [`docu/blockcontent.md`](../blockcontent.md).
+Der Inhalt ist das allgemeine Format der Plattform für Inhalte aus Elementen (nicht nur für Wissensseiten): `elements` (Kästen, Abschnitte dazwischen, Absätze, nummerierte Gleichungen als LaTeX, Aufklapper, Skizzen) und getrennt davon `animations` (je Gleichung der Übergang zur nächsten). Format, Formeln, Animationen und Editor stehen in [`docu/blockcontent.md`](../blockcontent.md). `contentFormatVersion` trägt das Backend beim Anlegen und bei jeder Änderung des Inhalts ein (`gebiter.knowledge.content-format-version`, seit 2026-11-27 `2`); eine Seite mit einer älteren Fassung zeigt statt ihres Inhalts den Hinweis, dass sie neu geschrieben werden muss.
 
 ## Getestet
 
@@ -139,3 +139,5 @@ Der Inhalt ist ein „Inhalt aus Bausteinen“, das allgemeine Format der Plattf
 2026-11-27, auf dem Pi (Stand `a8f5df2`), über HTTP: angemeldet unter dem Konto des Nutzers `POST /api/admin/knowledge-page/resolve` 200 (leer), `POST /api/admin/knowledge-page` 201 (die Seite „Koordinatentransformation“, `01a21cbe-11d0-7889-ad8d-b0bb58994255_de`, Rubrik `MATHE`, Kapitel `GRUNDLAGEN`, veröffentlicht, Inhalt 10 386 Zeichen), dieselbe Seite noch einmal 409, `GET /api/admin/knowledge-page/{id}` 200 mit `status` und `authorUsersGuid`; ohne Anmeldung `GET /api/share/knowledge-page/{id}` 200 ohne diese beiden Felder, Inhalt Zeichen für Zeichen gleich, `POST /api/share/knowledge-page/resolve` 200 mit der Seite ohne Inhalt, `GET …/field-name-set` 200, `PUT` und `POST` unter `/api/admin/knowledge-page` ohne Anmeldung 401. Im Firefox ohne Fenster, ohne Anmeldung: Login-Seite → Kachel „Wissensdatenbank“ → `/wissen/mathe` (Reiter „Mathe“, Kasten „Grundlagen“ mit der Seite) → `/wissen/mathe/grundlagen/koordinatentransformation` aus dem Dokument: 6 Kästen, Skizze mit 0, 1, 1, drei Punkten, Winkel und rechtem Winkel, 4 Rechnungen; Rechenweg einblenden, nach „√“ kein Strich, nach „hebt sich auf“ zwei; keine Fehler.
 
 2026-11-27, 13:12, auf dem Pi: `PUT /api/admin/knowledge-page` nur mit `content` → 200 (Inhalt ohne die Wörter „kürzen“, „Seiten tauschen“, „hebt sich auf“; Titel, Status, Platz und `createdAt` unverändert, `lastChangedAt` neu); kaputter Inhalt 400, leerer Titel 400, unbekannte id 404.
+
+2026-11-27, 15:00, Fassung 2 des Inhalts: Seite, Abspielen, Editor und Popup „Animationen“ im Firefox ohne Fenster gegen ein nachgestelltes Backend geprüft; Einzelheiten in [`docu/blockcontent.md`](../blockcontent.md), Abschnitt „Getestet“.

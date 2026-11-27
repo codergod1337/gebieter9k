@@ -1,123 +1,136 @@
-# Inhalte aus Bausteinen (`blockcontent`)
+# Inhalte aus Elementen (`blockcontent`)
 
-> Von Hand geschrieben am 2026-11-27, zusammen mit dem Code.
+> Von Hand geschrieben am 2026-11-27, zusammen mit dem Code. Fassung 2 des Formats (am selben Tag hat sie Fassung 1 abgelöst).
 
-Das allgemeine Format der Plattform für Inhalte, die mehr sind als Text: Kästen mit Absätzen, Gleichungen und Hinweisen,
-Rechnungen mit einzeln abspielbaren Umformungen, Skizzen. Dazu der Leser, die Anzeige und der Editor. Entstanden für die
-Wissensdatenbank, aber bewusst unabhängig von ihr (Nutzer 2026-11-27: „ich würde das gerne als allgemeinen richtext
-editor nutzen wollen, wenn wir uns schon die mühe machen so ein ding anzulegen dann gleich richtig“).
+Das allgemeine Format der Plattform für Inhalte, die mehr sind als Text: Kästen, Abschnitte dazwischen, Absätze, Listen, Hinweise, nummerierte Gleichungen, Aufklapper, Skizzen, dazu Animationen zwischen den Gleichungen. Mit Leser, Anzeige und Editor. Entstanden für die Wissensdatenbank, aber bewusst unabhängig von ihr.
 
-- **Paket:** [`code/frontend/src/blockcontent/`](../code/frontend/src/blockcontent/) (global; bis zum 2026-11-27 unter `knowledge/`)
-- **Gespeichert** wird ein Inhalt als ein JSON-Text. Das Backend prüft nur, dass er ein JSON-Objekt ist; gelesen und gezeichnet wird er im Frontend. Kein HTML: Der Zeichner setzt nur Text und eigene Bausteine, es gibt nichts zu bereinigen.
-- **Genutzt von:** den Seiten der Wissensdatenbank (Feld `content` im Kern [`KNOWLEDGE`](solr-cores/KNOWLEDGE.md)), Editor im Wissensmanager.
+- **Paket:** [`code/frontend/src/blockcontent/`](../code/frontend/src/blockcontent/) (global)
+- **Gespeichert** wird ein Inhalt als EIN JSON-Text. Das Backend prüft nur, dass er ein JSON-Objekt ist; gelesen und gezeichnet wird er im Frontend.
+- **Genutzt von:** den Seiten der Wissensdatenbank (Feld `content` im Kern [`KNOWLEDGE`](solr-cores/KNOWLEDGE.md), `contentFormatVersion` 2), Editor im Wissensmanager.
+- **Formeln** setzt und bearbeitet die Bibliothek [MathLive](https://mathlive.io) (`mathlive` 0.111.4, MIT, exakt gepinnt in `package.json`). Sie steckt nur im Ordner `formula/`.
+
+## Vorgaben des Nutzers (2026-11-27, wörtlich)
+
+| Vorgabe | Was daraus folgt |
+|---|---|
+| „ich würde das gerne als allgemeinen richtext editor nutzen wollen, wenn wir uns schon die mühe machen so ein ding anzulegen dann gleich richtig“ | Paket global, nichts darin kennt die Wissensdatenbank. |
+| „du sollst nicht ein modell anhand des inhalts entwerfen“, „wir wollen da später formaln und herleitungen aus der elektrodynamik und quantenmechanik abbilden“ | Kein eigenes Formel-Modell: Eine Formel ist LaTeX. Fassung 1 (Term-Baum, eigene Tipp-Schreibweise, „Größen“, Baustein „Rechnung“) ist gelöscht. |
+| „normales latex hilf uns nichts, denn wir sollten jedem element eine id mitgeben KÖNNEN, genau dann wenn es in eine animation muss“, „ich will das rad auch nciht neu erfinden müssen“, „einen formeleditor innerhalb vom richtexteditor“ | MathLive als Formelfeld; ein Teil bekommt seine id über den Befehl `\htmlData{id=…}{…}`, den MathLive mitbringt. |
+| „eine übersicht wie viele gleichungen wir auf einer seite haben, latex style“ | Jede Gleichung hat ihre laufende Nummer (1), (2), …; der Editor zeigt die Zahl, das Popup „Animationen“ die Liste. |
+| „wir definieren immer die ganze seite in einem solr wissens dokument! sprich contentboxen und zwischen abschnitte oder sonstiges muss auch im richtext abbildbar sein“ | Kasten ist ein Element; was auf oberster Ebene nicht in einem Kasten steht, ist ein Abschnitt dazwischen. Elemente UND Animationen stehen im selben JSON. |
+| „wir haben formeln und eine hand voll html elemente die animationen benötigen wir ja in einem separaten modul. sprich wir müssen ja nur die gleichungsnummer angeben und dann welches element mit welcher id sich wie in der nächsten gleichungsnummer verhält, das hat aber nichts im editor zu suchen, dort definiere ich nur die ids der elemente und animationen stelle ich mir in einem popup vor“ | Ordner `animation/` für sich; die Elemente und ihr Editor wissen nichts von Animationen; festgelegt wird im Popup „Animationen“. |
+| „alles was mit animation zu tun hat bitte in eine eigene animation.css, das will ich weder in base noch in default css haben“ | [`src/styles/animation.css`](../code/frontend/src/styles/animation.css): Maße UND Farben des Animations-Moduls. |
 
 ## Aufbau des Pakets
 
-| Ort | Inhalt |
-|---|---|
-| `blockcontent/` | `BlockContentJson.ts` (die Form des JSON, wie der Editor es schreibt), `BlockContentReader.ts` (JSON-Text → Bausteine; nennt bei einem Fehler die Stelle), `BlockContent.ts` und `SketchContent.ts` (das Modell zum Zeichnen), `BlockContentError.ts`, `blockContentFormat.ts` (die Fassung, die das Frontend lesen kann), Anzeige: `BlockContentView.tsx`, `BoxBlockView.tsx`, `SketchContentView.tsx`. |
-| `blockcontent/math/` | Eine Formel als Baum aus Termen (`SymbolTerm`, `NumberTerm`, `SumTerm`, `ProductTerm`, `FractionTerm`, `PowerTerm`, `RootTerm`, `FunctionTerm`, `GroupTerm`, `MarkedTerm`, `TermMark`, `TermRoles`, `Equation`) und ihr Zeichner (`MathTermReactRenderer`, `MathTermView`, `EquationView`). |
-| `blockcontent/derivation/` | Eine Rechnung: `Derivation`, `DerivationStep`, `DerivationOperation`; Anzeige `DerivationBox` (Ausgang und Ergebnis, Rechenweg zum Einblenden), das Abspielen einer Umformung (`useDerivationFlight`, `TermFlightAnimator`), welche Zeile zeigt, was gekürzt wird (`useDerivationCancellations`). |
-| `blockcontent/sketch/` | Die Bausteine einer Skizze: Achsenkreuz, Punkt, Strecke, Winkel, rechter Winkel. |
-| `blockcontent/inline/` | Text mit Auszeichnung: `InlineMarkupParser.ts` (getippter Text → Stücke), `InlineNode.ts`, `InlineTextView.tsx` (zeichnet fett, kursiv, Links, Formeln im Satz). |
-| `blockcontent/formulatext/` | Formeln als getippter Text: `FormulaTextParser.ts` (Text → Term-JSON), `FormulaTextPrinter.ts` (Term-JSON → Text), `FormulaTextError.ts`, `formulaHighlights.ts`. |
-| `blockcontent/editor/` | Der Editor: `BlockContentEditor.tsx` (Ansichten „Bausteine“ und „JSON“, Vorschau daneben), `BlockContentCardsEditor.tsx`, die Karten `QuantitiesCard`, `BoxBlockCard`, `DerivationBlockCard`, `SketchEditor.tsx` (die Skizze als Elementliste), `FormulaInput.tsx`, `InlineTextArea.tsx` (Textfeld mit Leiste), `EditorCard.tsx`, `listChanges.ts`, `blockContentEditorTexts.ts`. |
+Jeder Ordner hat eine Aufgabe; die Pfeile zeigen, wer wen kennt.
 
-CSS: Lage und Maße in `src/styles/base.css` (`.blockcontent-…`, `.math-…`, `.derivation-…`, `.sketch-…`), Farben und Form im Theme.
+| Ordner | Aufgabe | kennt |
+|---|---|---|
+| `formula/` | Formel setzen (`FormulaView`), Formel tippen und einem Teil eine id geben (`FormulaField`, `FormulaPopup`), ids im LaTeX lesen und entfernen (`formulaIds.ts`), eine Gleichung an ihrem Relationszeichen teilen (`splitLatexAtRelation.ts`). MathLive steckt hinter `FormulaRenderer` (`MathLiveFormulaRenderer.ts`) und `MathLiveFormulaFieldModule.ts`; beides wird erst geladen, wenn die erste Formel bzw. das erste Formelfeld erscheint. | nichts aus dem Paket |
+| `inline/` | Text mit Auszeichnung lesen (`InlineMarkupParser`) und zeichnen (`InlineTextView`). | `formula/` |
+| `sketch/` | Skizze: JSON (`SketchJson.ts`), Leser (`SketchReader.ts`), Modell, Anzeige (`SketchContentView.tsx`) und ihre Bausteine. | `elements/jsonValues.ts` |
+| `elements/` | Die Elemente: JSON (`ElementJson.ts`), Modell (`ContentElement.ts`), Leser (`ElementReader.ts`), je Element genau eine Anzeige (`…ElementView.tsx`), die Liste der Anzeigen (`elementViews.ts`), die Liste zeichnen (`ElementListView.tsx`), Zustand der Aufklapper (`collapsibleState.ts`), Anhängepunkt an der Gleichung (`EquationAddition.ts`). | `formula/`, `inline/`, `sketch/` |
+| `animation/` | Animationen: JSON und Modell (`EquationAnimationJson.ts`, `EquationAnimation.ts`), Leser (`EquationAnimationReader.ts`), Abspieler (`useEquationAnimationPlayer.ts`, `FlightAnimator.ts`), Notiz mit Abspiel-Knopf (`EquationAnimationNote.tsx`), Anhängen an die Gleichungen (`EquationAnimationProvider.tsx`), Popup zum Festlegen (`EquationAnimationPopup.tsx`, `EquationAnimationEditor.tsx`, `equationAnimationChanges.ts`). | `elements/` (nur Gleichung und Anhängepunkt), `formula/` |
+| `editor/` | Je Element genau ein Bearbeiten-Teil (`…ElementEditor.tsx`), die Liste der Arten (`elementKinds.ts`), die Liste bearbeiten (`ElementListEditor.tsx`, `ElementsEditor.tsx`), Rahmen mit Vorschau und JSON-Ansicht (`BlockContentEditor.tsx`). Nur der Rahmen kennt das Popup der Animationen. | `elements/`, `formula/`, `sketch/` |
+| Wurzel | Setzt zusammen: `BlockContentJson.ts`, `BlockContent.ts`, `BlockContentReader.ts`, `BlockContentView.tsx`, `BlockContentError.ts`, `blockContentFormat.ts` (`BLOCK_CONTENT_FORMAT_VERSION = 2`). | alle |
 
-## Format (Fassung 1)
+**Ein neues Element** (z. B. Tabelle, Bild) heißt: ein Fall in `ElementJson.ts` und `ContentElement.ts`, ein Fall im `ElementReader`, eine Anzeige mit ihrer Zeile in `elementViews.ts`, ein Bearbeiten-Teil mit seinem Eintrag in `editor/elementKinds.ts`. An den vorhandenen Anzeigen und Bearbeiten-Teilen ändert sich nichts.
 
-Ein JSON-Objekt. Texte stehen in der Sprache der Seite.
+**Die Bibliothek tauschen** heißt: `formula/MathLiveFormulaRenderer.ts`, `MathLiveFormulaFieldModule.ts` und `FormulaField.tsx` neu; der Rest kennt nur `FormulaView`, `FormulaField` und `\htmlData{id=…}{…}` im gespeicherten LaTeX.
+
+## Format (Fassung 2)
 
 ```json
 {
-  "quantities": { "radius": { "symbol": "r", "highlight": "THIRD" }, "angle": { "symbol": "φ", "highlight": "FOURTH" } },
-  "blocks": [
-    { "type": "BOX", "title": "Worum es geht",
-      "parts": [ { "type": "PARAGRAPH", "text": "…" } ],
-      "sketch": { "width": 340, "height": 280, "originX": 52, "originY": 228, "unitLength": 48,
-                  "axisMaxX": 5.6, "axisMaxY": 4.3, "description": "…", "elements": [ … ] } },
-    { "type": "DERIVATION", "key": "xCoordinate", "title": "x aus r und φ",
-      "steps": [
-        { "equation": { "left": TERM, "right": TERM }, "explanation": "Woher der Ausgang kommt." },
-        { "operation": { "notation": "·", "operand": TERM, "applies": ["radiusFactor"], "cancels": [] },
-          "equation": { "left": TERM, "right": TERM } }
-      ] },
-    { "type": "BOX", "title": "Zusammenfassung",
-      "parts": [ { "type": "EQUATIONS", "heading": "Von polar nach kartesisch", "equations": [ { "resultOf": "xCoordinate" } ] },
-                 { "type": "HINT", "text": "…" } ] }
+  "elements": [
+    { "type": "BOX", "title": "x aus r und φ", "elements": [
+      { "type": "PARAGRAPH", "text": "Die Ankathete von $\\varphi$ ist $x$, die Hypotenuse ist $r$." },
+      { "type": "EQUATION", "id": "x1", "latex": "\\cos\\varphi = \\htmlData{id=bruch}{\\frac{x}{r}}" },
+      { "type": "COLLAPSIBLE", "id": "c1", "title": "Rechenweg", "elements": [
+        { "type": "EQUATION", "id": "x2", "latex": "\\htmlData{id=rLinks}{r}\\,\\cos\\varphi = \\htmlData{id=rRechts}{r}\\cdot\\htmlData{id=bruch}{\\frac{x}{\\htmlData{id=rNenner}{r}}}" }
+      ] }
+    ] },
+    { "type": "HEADING", "text": "Von kartesisch nach polar" }
+  ],
+  "animations": [
+    { "from": "x1", "note": "\\cdot \\htmlData{id=r}{r}",
+      "actions": [ { "id": "rLinks", "does": "APPEARS" }, { "id": "rRechts", "does": "APPEARS" }, { "id": "bruch", "does": "MOVES_TO", "target": "bruch" } ] }
   ]
 }
 ```
 
-- **`quantities`** (freiwillig): die Größen der Seite, je Kennung ihr Zeichen und ihre Farbe (`FIRST` bis `FIFTH` oder keine). Eine Größe trägt auf der ganzen Seite dieselbe Farbe, in den Formeln und in der Skizze.
-- **`BOX`**: ein Kasten mit `title` und `parts` von oben nach unten: `PARAGRAPH` (`text`), `LIST` (`ordered` freiwillig, `items`: je Punkt ein Text), `EQUATIONS` (`heading` freiwillig, `equations`; Gruppen, die aufeinander folgen, stehen nebeneinander), `HINT` (`text`). Der Text eines Absatzes, Hinweises oder Listenpunkts trägt Auszeichnung (unten). Mit `sketch` steht die Skizze neben den Teilen.
-- **`DERIVATION`**: eine Rechnung mit `key` (eindeutig auf der Seite; steht als `<key>Path=shown` in der Adresse), `title` und `steps`. Der erste Schritt ist der Ausgang, der letzte das Ergebnis; jeder weitere hat die `operation`, die ihn aus dem davor macht: freiwillig `notation` (das hinter dem Strich: Rechenschreibweise wie `·`, `√`, `arctan`; Worte sind möglich, aber nur für schwierige Schritte gedacht, Nutzer 2026-11-27: „wortbeschreibungen lassen wir optional aber nicht für solche PILLEPALLE OPERATIONEN“; ein einfacher Schritt wie Kürzen oder Seiten tauschen bekommt keine Notiz und zeigt nur den Abspiel-Knopf), freiwillig `operand` (ein Term), `applies` (Kennungen der Terme der NEUEN Zeile, die die Umformung bringt) und `cancels` (Kennungen der Terme der Zeile DAVOR, die sie kürzt). `explanation` nur, wo sie nötig ist (Nutzer 2026-11-27: „nicht ausformulieren“).
-- **Gleichung**: `{"left": TERM, "right": TERM}` oder `{"resultOf": "<key einer Rechnung>"}` (ihr Ergebnis).
-- **TERM**, ein Baum mit `type`: `QUANTITY` (`key`), `SYMBOL` (`text`), `NUMBER` (`text`), `SUM` (`terms`), `PRODUCT` (`factors`), `FRACTION` (`numerator`, `denominator`), `POWER` (`base`, `exponent`), `ROOT` (`radicand`), `FUNCTION` (`name`, `argument`), `GROUP` (`term`, Klammern), `NEGATIVE` (`term`, ein Minus davor; `a − b` ist die Summe aus `a` und `NEGATIVE` b). Eine `mark` (`{"key": "…", "highlight": "FIFTH" | null}`) macht einen Term über die Zeilen hinweg verfolgbar: dieselbe Kennung in zwei Zeilen ist derselbe Term. Bei `ROOT` gilt sie dem Wurzelzeichen, bei `FUNCTION` dem Namen. Eine `QUANTITY` trägt ihre Kennung von selbst.
-- **Skizze**: das Feld (`width`, `height`), das Achsenkreuz (`originX`, `originY`, `unitLength`: wo der Nullpunkt liegt und wie lang die Strecke von 0 bis 1 ist; `axisMaxX`, `axisMaxY`), `description` für Screenreader und `elements` in Zeichenreihenfolge: `POINT` (`position`, freiwillig `label`, `hintName`, `hintDetail`), `SEGMENT` (`from`, `to`, `label`, `labelSide` `LEFT`/`RIGHT`, freiwillig `quantity` für die Farbe), `ANGLE` (`vertex`, `firstLegEnd`, `secondLegEnd`, `label`, `hint`, freiwillig `quantity`), `RIGHT_ANGLE` (`vertex`, `firstLegEnd`, `secondLegEnd`). Positionen als `{"x": 4, "y": 3}` in den Einheiten des Achsenkreuzes.
-- Passt etwas nicht, zeigt die Seite statt des Inhalts die Stelle, z. B. „blocks[0].parts[0].type: unbekannter Teil "FOO"“. Eine höhere `contentFormatVersion`, als das Frontend kennt, zeigt den Hinweis, neu zu laden.
+### `elements`
 
-## Text mit Auszeichnung
+| `type` | Felder | Bedeutung |
+|---|---|---|
+| `BOX` | `title`, `elements` | Ein Kasten (die `ContentBox` der Plattform) mit Titel. Nur auf oberster Ebene. Alles, was dort nicht in einem Kasten steht, ist ein Abschnitt zwischen den Kästen. |
+| `COLLAPSIBLE` | `id`, `title`, `elements` | Ein Aufklapper: sein Titel als Knopf, sein Inhalt erst nach einem Klick. Offene Aufklapper stehen in der Adresse (`?open=c1,c3`, REPLACE). |
+| `HEADING` | `text` | Zwischenüberschrift. |
+| `PARAGRAPH`, `HINT` | `text` | Text mit Auszeichnung (unten); der Hinweis ist hervorgehoben. |
+| `LIST` | `ordered` (freiwillig), `items` | Punkte untereinander, jeder ein Text mit Auszeichnung. |
+| `EQUATION` | `id`, `latex` | Eine Gleichung in ihrer eigenen Zeile. Ihre Nummer ergibt sich aus der Reihenfolge im Inhalt (auch in Kästen und Aufklappern); `id` ist ihre feste Kennung, die bleibt, wenn sich die Nummer verschiebt. Hat sie auf oberster Ebene ein Relationszeichen (`=`, `<`, `\approx`, `\Rightarrow` …), steht es in der Mitte der Zeile, also in allen Zeilen untereinander. |
+| `SKETCH` | `sketch` | Eine Skizze: Feld, Achsenkreuz, Elemente `POINT`, `SEGMENT`, `ANGLE`, `RIGHT_ANGLE`; `highlight` ist ein Platz der Palette (`FIRST` … `FIFTH`). |
 
-In Absatz, Hinweis und Listenpunkt, getippt oder über die Leiste des Textfelds im Editor gesetzt. Nachsichtig: Was nicht geschlossen ist, bleibt Text. Kein HTML.
+Die Kennungen (`id`) von Gleichungen und Aufklappern sind im Inhalt eindeutig; der Editor vergibt sie (`e1`, `e2`, … bzw. `c1`, …). Ein leerer Titel oder Text ist erlaubt (im Editor entsteht das Element, bevor man es füllt) und wird nicht gezeichnet.
 
-| Schreibweise | Bedeutung |
+### Formeln und ids
+
+Eine Formel ist LaTeX, so wie MathLive es versteht. Ein Teil bekommt seine id als Hülle `\htmlData{id=r1}{…}`; im gesetzten Bild trägt sein Element dann `data-id="r1"`. Eine id gilt innerhalb EINER Formel und besteht aus Buchstaben und Ziffern (vorn ein Buchstabe). Vergeben wird sie nur, wo eine Animation den Teil braucht. Zu wissen: Eine Hülle ist für LaTeX eine Gruppe, der Abstand um sie kann sich ändern (`r\htmlData{…}{\cos\varphi}` steht enger als `r\cos\varphi`; dann `\,` davorsetzen).
+
+### Text mit Auszeichnung
+
+`**fett**`, `*kursiv*` (auch ineinander), `[Text](Adresse)` (nur `https://`, `http://`, `mailto:` und Adressen der App, die mit `/` beginnen), `$LaTeX$` für eine Formel im Satz, `\` vor einem dieser Zeichen nimmt ihm die Bedeutung. Was nicht geschlossen ist, bleibt Text. Ein Satzzeichen direkt hinter einer Formel bleibt an ihr hängen.
+
+### `animations`
+
+Eine Animation gehört zum Übergang von der Gleichung `from` (ihre feste Kennung) zur NÄCHSTEN Gleichung im Inhalt.
+
+| Feld | Bedeutung |
 |---|---|
-| `**fett**` | fett |
-| `*kursiv*` | kursiv (auch ineinander: `*kursiv mit **fett***`) |
-| `[Text](https://adresse)` | Link; erlaubt sind `https://`, `http://`, `mailto:` (neues Fenster, ohne Herkunft) und innerhalb der App `/wissen/mathe`; alles andere bleibt Text |
-| `$r · cos φ$` | eine Formel mitten im Satz, in der Schreibweise der getippten Formeln; lässt sie sich nicht lesen, bleibt ihr Text unterschlängelt stehen und sagt beim Zeigen, was nicht passt |
-| `\*` | ein `\` davor nimmt einem Zeichen die Bedeutung |
+| `from` | Die Kennung der Gleichung, von der der Übergang ausgeht. |
+| `note` | Freiwillig: die Notiz der Umformung als LaTeX, wie man sie hinter den Strich am Zeilenende schreibt (`\cdot r`, `\arctan`). Worte nur für schwierige Schritte, nie für Kleinkram wie Kürzen. |
+| `actions` | Je Teil, was geschieht: `{"id", "does": "MOVES_TO", "target"}` wandert an die Stelle des Teils `target` der nächsten Gleichung (wechselt er die Seite der Gleichung, auf einem Bogen); `{"id", "does": "CANCELLED"}` wird durchgestrichen, bevor die nächste Gleichung erscheint; `{"id", "does": "APPEARS"}` meint einen Teil der NÄCHSTEN Gleichung, der aus der Notiz kommt (aus ihrem ersten Teil mit id, sonst aus der ganzen Notiz). |
 
-## Formeln als getippter Text
-
-Im Editor tippt man eine Formel, statt ihren Baum als JSON zu schreiben. Leser und Schreiber sind genau gegengleich: Was der Schreiber ausgibt, liest der Leser wieder zum selben Baum.
-
-| Schreibweise | Bedeutung |
-|---|---|
-| `a + b` | Summe |
-| `a - b`, `-a`, `x^-1` | Differenz, negativ (auch mit dem echten Minuszeichen `−`); ein Minus ganz vorn gilt dem ersten Produkt, sonst dem nächsten Einzelstück |
-| `a · b` oder `a * b` | Produkt |
-| `a / b` | Bruch; bindet stärker als das Produkt: `r · x / r` ist r mal (x durch r) |
-| `a^2`, `x^(n + 1)` | Potenz |
-| `√(a + b)` oder `sqrt(a + b)` | Wurzel |
-| `cos φ`, `arctan(y / x)`, `f(x)` | Funktion: ein Name aus mindestens zwei Buchstaben vor einem Term, oder ein Buchstabe direkt vor einer Klammer |
-| `( … )` | sichtbare Klammern; als Zähler, Nenner, Exponent oder unter der Wurzel fallen sie weg (`(a + b) / c`), für sichtbare dort ein zweites Paar: `((a + b)) / c` |
-| `{ … }` | klammert, ohne dass man es sieht: `{a + b} · c` |
-| `x`, `r`, `φ` | ein Zeichen, das wie eine Größe der Seite aussieht, IST diese Größe und trägt ihre Farbe |
-| `r#weg` | Kennung (Marke): Daran verfolgt die Rechnung den Term von Zeile zu Zeile, und daran nennt eine Umformung, was sie bringt oder kürzt |
-| `2#quadrat:5` | Kennung mit Farbe: Ziffer 1 bis 5, `0` ausdrücklich keine; ohne Ziffer erbt ein Zeichen die Farbe der Größe, die so aussieht |
-| `cos#kosinus φ`, `√#wurzel(…)` | die Marke am Funktionsnamen bzw. am Wurzelzeichen |
-| `links = rechts` | Gleichung |
-| `@xCoordinate` | statt einer Gleichung: das Ergebnis der Rechnung mit dieser Kennung |
-
-Beispiele von der Seite „Koordinatentransformation“: `r#radiusFactor · cos#cosine φ = r#cancelledRadiusFactor · x / r`, `√#rootOfRadiusSquared:5(r^2#squareOfRadius:5) = √#rootOfSumOfSquares:5(x^2 + y^2)`.
-
-Noch nicht möglich, weil der Term-Baum es nicht kennt: Indizes, Vektoren, Integrale, Ungleichungen. Eine neue Schreibweise heißt: eine Term-Klasse, ein Fall im Zeichner, im `BlockContentReader`, im Leser und im Schreiber der Formeln.
+Angezeigt wird eine Animation am Ende der Zeile ihrer Gleichung: die Notiz hinter einem Strich und der Abspiel-Knopf, nur wenn die Gleichung und die nächste zu sehen sind (also nicht, solange die nächste in einem geschlossenen Aufklapper steckt). Jeder Übergang ist ein eigener Schritt: Durchgestrichen wird erst beim Abspielen, der Strich bleibt danach stehen. Der Leser prüft die Form, nicht, ob es Gleichung und ids noch gibt: Was fehlt, wird beim Abspielen übersprungen. Wer im System weniger Bewegung wünscht, bekommt kein Wandern.
 
 ## Editor
 
-`<BlockContentEditor contentText=… onContentTextChange=… />`: Er hält nichts selbst, bekommt den JSON-Text und meldet jede Änderung; gespeichert wird beim Aufrufer. Links wird bearbeitet, rechts steht sofort die Vorschau (derselbe Leser wie die fertige Seite); beide Hälften sind gleich hoch und rollen für sich.
+[`BlockContentEditor`](../code/frontend/src/blockcontent/editor/BlockContentEditor.tsx) bekommt den JSON-Text (`contentText`) und meldet jede Änderung (`onContentTextChange`); er speichert nichts selbst. Links wird bearbeitet, rechts steht die Vorschau, gezeichnet vom selben Leser wie die fertige Seite.
 
-- **Ansicht „Bausteine“** (Vorgabe): oben die Größen der Seite (Kennung, Zeichen, Farbe), darunter je Baustein eine Karte. Kasten: Titel; Absätze und Hinweise als Textfelder mit einer Leiste (fett, kursiv, Link, Formel im Satz: setzt die Zeichen um die Markierung); Listen (nummeriert oder nicht) mit ihren Punkten; Gleichungen als getippte Formeln; die Skizze als Liste ihrer Elemente (Punkt, Strecke, Winkel, rechter Winkel) mit Zahlenfeldern für jeden Ort, dazu Feld, Nullpunkt, Länge der 1 und Reichweite der Achsen. Rechnung: Titel, Kennung, je Zeile die getippte Gleichung; ab der zweiten Zeile die Umformung dorthin: Notiz (freiwillig), Term dahinter, „bringt“ und „kürzt“ als Kennungen, dazu eine Beschreibung (freiwillig). Karten und Zeilen lassen sich hinzufügen, verschieben und entfernen. Lässt sich eine getippte Formel nicht lesen, steht darunter, was nicht passt, und die gespeicherte Formel bleibt, wie sie war.
-- **Ansicht „JSON“** (`?editorView=json`, REPLACE): der ganze Inhalt als eingerückter Text, für alles, was die Karten noch nicht können.
-- Lässt sich der Inhalt nicht lesen, steht statt der Vorschau die Stelle im JSON; der Aufrufer sperrt dann das Speichern (`readBlockContentProblem`).
+- **Ansicht „Elemente“:** je Element eine Karte mit seiner Art, Verschieben, Entfernen und seinem Bearbeiten-Teil; Kasten und Aufklapper enthalten wieder eine Liste. „+ Element“ hängt an. Eine Gleichung zeigt ihre Nummer.
+- **Formelfeld:** tippen und dabei gesetzt sehen; Teil markieren, „id vergeben“, id eintippen; darunter die ids der Formel, jede zum Entfernen; Schalter „LaTeX“ zeigt den Text. Im Absatz öffnet der Knopf mit dem x² das Formelfeld als Popup und setzt `$…$` ein.
+- **Ansicht „JSON“** (`?editorView=json`): der Inhalt als eingerückter Text.
+- **Knopf „Animationen (n von m)“** neben den Reitern, davor die Zahl der Gleichungen: öffnet das Popup. Links alle Gleichungen mit Nummer (die mit Animation sind markiert), rechts der Übergang der gewählten zur nächsten: beide gesetzt, die Notiz als Formelfeld, je id der Gleichung „bleibt stehen / wird gestrichen / wandert zu …“, je id der nächsten „steht einfach da / kommt aus der Notiz“. Jede Änderung gilt sofort; gespeichert wird mit dem Inhalt. Entfernt man im Editor eine Gleichung, verschwindet die Animation, die von ihr ausging.
 
-Eingesetzt im Wissensmanager: [`knowledgemanager/page/KnowledgePageContentEditor.tsx`](../code/frontend/src/knowledgemanager/page/KnowledgePageContentEditor.tsx).
+## CSS
+
+- `src/styles/base.css`: Formel (`.formula…`), Formelfeld (`.formula-field…`), Elemente (`.blockcontent-…`), Editor (`.blockcontent-editor…`), Skizze (`.sketch…`).
+- `public/themes/default.css`: ihre Farben.
+- `src/styles/animation.css`: ALLES zur Animation, Maße und Farben (`.equation-animation…`, `.animation-flight-…`, der Strich `[data-cancelled]`, die Variablen `--animation-…`). Eingebunden von `EquationAnimationProvider.tsx` und `EquationAnimationPopup.tsx`.
+- Das CSS und die Schriften von MathLive kommen aus dem Paket (`mathlive/static.css`, `mathlive/fonts.css`), geladen mit dem Setzer.
 
 ## Offen (noch nicht gebaut)
 
-1. Den vorhandenen HTML-Editor (`components/RichTextEditor`, z. B. Profiltext) ablösen: eigener Schritt, dort sind Texte gespeichert.
-2. Weitere Schreibweisen in Formeln (Indizes, Vektoren, Integrale).
-3. Überschriften im Text, Bilder, Tabellen.
-4. Für Inhalte, die normale User schreiben: eine Prüfung der Bausteine im Backend und je Einsatzort die erlaubten Bausteine.
-5. Eine Größe umbenennen (Kennung), ohne dass ihre Verweise brechen; heute steht die Kennung fest.
+1. Farbe in Formeln: Fassung 1 färbte „Größen“ (x, y, r, φ) überall gleich; das ist mit den Größen entfallen. In LaTeX ginge `\textcolor{…}{…}` (auch über das Menü des Formelfelds), eine Lösung über das Theme gibt es nicht.
+2. Elemente nebeneinander (Text neben Skizze, zwei Spalten Gleichungen): in Fassung 1 fest eingebaut, jetzt steht alles untereinander.
+3. Ein Element an einer bestimmten Stelle einfügen oder in einen anderen Kasten ziehen: heute anhängen und mit den Pfeilen verschieben.
+4. Verweis im Text auf eine Gleichung („siehe (3)“), der mitwandert, wenn sich die Nummer verschiebt.
+5. Die Skizze ist noch die aus Fassung 1 (fünf feste Elementarten aus der einen Zeichnung); sie braucht dieselbe Frage wie die Formeln: allgemein statt aus dem Inhalt.
+6. Bilder, Tabellen.
+7. Den vorhandenen HTML-Editor (`components/RichTextEditor`, z. B. Profiltext) ablösen: eigener Schritt, dort sind Texte gespeichert.
+8. Bevor normale User Inhalte schreiben dürfen: eine Prüfung im Backend und je Einsatzort die erlaubten Elemente. MathLive schreibt Text und Attribute sicher ins HTML und weist `javascript:`-Adressen ab (2026-11-27 an fünf Schadeingaben geprüft); eine eigene Prüfung ersetzt das nicht.
 
 ## Getestet
 
-2026-11-27: Formeln als Text mit Node (Wegwerf-Skript): alle 20 Formeln der Seite „Koordinatentransformation“ als Text ausgegeben und wieder gelesen ergeben denselben Baum; 19 eigene Fälle stabil (`(a + b) / (c + d)`, `((a + b)) / c`, `{a + b} · c`, `x^(n + 1)`, `sin x^2`, `ln(x + 1)`, `f(x) + g(y)`, `{a / b}#bruch:2 · c`, `3,5 · x` …); abgelehnt mit Meldung: `a - b`, `a +`, `(a + b`, `a $ b`, `r#`, `x#n:9`, leer, `2x`, ein `=` im Term, eine Gleichung ohne `=`.
+2026-11-27, MathLive in einer Wegwerf-Kopie (Node und Firefox ohne Fenster): `\htmlData{id=r1}{r}` wird `data-id="r1"`; im Eingabefeld bleibt die id beim Laden und beim Weitertippen erhalten; eine Auswahl bekommt per `insert('\htmlData{id=…}{#@}')` ihre id; ohne Fehler gesetzt: `\nabla \times \vec{E} = -\frac{\partial \vec{B}}{\partial t}`, ein Ringintegral mit Grenzen, Schrödinger mit `\ket`, `\braket`, eine Pauli-Matrix, Indizes oben und unten, `\cancel`; ein unbekannter Befehl wird als Fehler gesetzt; `\href{javascript:…}` wirft (wird als „ließ sich nicht setzen“ gezeigt), HTML in `\text`, `\htmlData`, `\class`, `\cssId` wird maskiert.
 
-2026-11-27: Editor im Firefox ohne Fenster gegen ein nachgestelltes Backend: sieben Karten (Größen, zwei Kästen, vier Rechnungen), 28 Formelfelder; Formel ändern → Vorschau folgt; abgeschnittene Formel → Meldung unter dem Feld, Inhalt bleibt; Titel und Absatz ändern; Zeile und Kasten anhängen, verschieben, entfernen; Farbe einer Größe ändern → Vorschau färbt um; Ansicht „JSON“ und zurück; speichern (ein `PUT` mit `content`). Gegen das echte Backend noch nicht geprüft.
+2026-11-27, 15:00, Fassung 2 (Typprüfung und Bau ohne Fehler; Firefox ohne Fenster gegen ein nachgestelltes Backend; Seite „Koordinatentransformation“ mit 6 Kästen, 2 Zwischenüberschriften, 18 Gleichungen, 4 Aufklappern, 10 Animationen):
 
-2026-11-27, 13:45, die Ergänzungen (Firefox ohne Fenster, nachgestelltes Backend; Formeln zusätzlich mit Node, 57 Fälle, 0 falsch): Absatz `Das ist **fett**, das *kursiv mit **beidem***, ein [Link](https://example.org), intern [Mathe](/wissen/mathe), die Formel $x / r$ und kaputt $x / $` → zwei fett, ein kursiv, Link außen mit neuem Fenster, Link innen, ein Bruch im Satz, der kaputte Teil als Text mit Hinweis; Leiste „fett“ um eine Markierung; Liste mit zwei Punkten, nummeriert; `cos φ - 1 = -x / r` zeigt zwei Minuszeichen; Skizze: acht Elemente als Zeilen mit 37 Zahlenfeldern, Punkt P verschoben, Punkt angehängt (Vorschau folgt).
+- Seite: 6 Kästen, Nummern (1) … (18) (bei geschlossenen Aufklappern sichtbar (1), (4), (5), (8) …), 56 gesetzte Formeln ohne Fehler, Relationszeichen untereinander, auch über einen offenen Aufklapper hinweg; Aufklapper öffnen → `?open=c1`, zwei Gleichungen und drei Abspiel-Knöpfe mehr, Notiz „| · r“.
+- Abspielen: „mal r“ (zwei `r` kommen aus der Notiz, `cos φ` und der Bruch wandern), „kürzen“ (zwei `r` durchgestrichen, bleibt stehen), „Seiten tauschen“ (beide Seiten auf einem Bogen); der wandernde Bruch bleibt ein Bruch.
+- Editor: 42 Karten, 18 Formelfelder, „18 Gleichungen“, „Animationen (10 von 17)“; in `x = r\cos\varphi` das `x` markiert, id `links` vergeben → `\htmlData{id=links}{x}=r\cos\varphi`, Marke unter dem Feld, Element in der Vorschau; „+ Element“ → Gleichung (19), mit echten Tasten `E=mc^2` getippt → Vorschau folgt.
+- Popup „Animationen“: 19 Gleichungen, 10 markiert; Übergang (1) → (2) zeigt Notiz und je id das Verhalten; bei (15) „links: wird gestrichen“ gewählt und die Notiz `-x` mit echten Tasten getippt → Animation 11, in der Vorschau ein Abspiel-Knopf mehr.
+- JSON-Ansicht 14 811 Zeichen mit `elements` und `animations`; Speichern schickt den Inhalt (PUT), danach „Gespeichert“. Keine Fehler in der Konsole.
+
+NICHT geprüft: die Bildschirmtastatur und das Menü des Formelfelds mit der Maus (auch im Popup), ein Handy, Chrome.

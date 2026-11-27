@@ -1,10 +1,4 @@
-/** Ein Stück eines Texts mit Auszeichnung, so wie es getippt ist: Die Formel ist hier noch ihr Text. */
-export type InlineMarkupNode =
-  | { type: 'TEXT'; text: string }
-  | { type: 'BOLD'; children: InlineMarkupNode[] }
-  | { type: 'ITALIC'; children: InlineMarkupNode[] }
-  | { type: 'LINK'; address: string; children: InlineMarkupNode[] }
-  | { type: 'FORMULA'; formulaText: string }
+import type { InlineNode } from './InlineNode.ts'
 
 /** Das Zeichen, das dem nächsten Zeichen seine Bedeutung nimmt: `\*` ist ein Stern, kein Beginn von kursiv. */
 const ESCAPE_SIGN = '\\'
@@ -17,7 +11,7 @@ const FORMULA_MARKER = '$'
  *
  * - `**fett**`, `*kursiv*` (auch ineinander),
  * - `[Text](Adresse)` ein Link,
- * - `$r · cos φ$` eine Formel mitten im Satz, in der Schreibweise der getippten Formeln,
+ * - `$r \cos\varphi$` eine Formel mitten im Satz, als LaTeX,
  * - `\` vor einem dieser Zeichen nimmt ihm die Bedeutung.
  *
  * Nachsichtig: Was nicht geschlossen ist (ein einzelner Stern, eine offene Klammer), bleibt einfach Text. So zeigt die
@@ -25,8 +19,8 @@ const FORMULA_MARKER = '$'
  * Stücke, alles andere ist Text.
  */
 export class InlineMarkupParser {
-  parse(text: string): InlineMarkupNode[] {
-    const nodes: InlineMarkupNode[] = []
+  parse(text: string): InlineNode[] {
+    const nodes: InlineNode[] = []
     let plainText = ''
     let position = 0
 
@@ -49,8 +43,8 @@ export class InlineMarkupParser {
         const formulaEnd = this.findMarker(text, FORMULA_MARKER, position + 1)
         if (formulaEnd > position + 1) {
           closePlainText()
-          const formulaText = text.slice(position + 1, formulaEnd)
-          nodes.push({ type: 'FORMULA', formulaText })
+          const latex = text.slice(position + 1, formulaEnd)
+          nodes.push({ type: 'FORMULA', latex })
           position = formulaEnd + 1
           continue
         }

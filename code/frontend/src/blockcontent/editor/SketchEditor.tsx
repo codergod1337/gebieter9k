@@ -1,16 +1,16 @@
 import type { ReactNode } from 'react'
 import Form from 'react-bootstrap/Form'
 import { getTextInCurrentLanguage } from '../../language/getTextInCurrentLanguage.ts'
-import type { PositionJson, QuantitiesJson, SketchElementJson, SketchJson } from '../BlockContentJson.ts'
+import { getTextInCurrentLanguageWithValues } from '../../language/getTextInCurrentLanguageWithValues.ts'
+import { SKETCH_HIGHLIGHT_KEYS } from '../sketch/SketchHighlightKey.ts'
+import type { PositionJson, SketchElementJson, SketchJson } from '../sketch/SketchJson.ts'
 import { BLOCK_CONTENT_EDITOR_TEXTS } from './blockContentEditorTexts.ts'
 import { EditorAddButton, EditorRowButtons } from './EditorCard.tsx'
 import { moveListItem, removeListItem, replaceListItem } from './listChanges.ts'
 
 type SketchEditorProps = {
   sketch: SketchJson
-  quantities: QuantitiesJson
   onChange: (changedSketch: SketchJson) => void
-  onRemove: () => void
 }
 
 type NumberFieldProps = {
@@ -58,14 +58,14 @@ function PositionFields({ label, position, onChange }: PositionFieldsProps) {
 }
 
 /**
- * Die Skizze eines Kastens im Editor: ihr Feld und ihr Achsenkreuz (wo der Nullpunkt liegt, wie lang die Strecke von 0
+ * Eine Skizze im Editor: ihr Feld und ihr Achsenkreuz (wo der Nullpunkt liegt, wie lang die Strecke von 0
  * bis 1 ist, wie weit die Achsen reichen), ihre Beschreibung für Screenreader und ihre Elemente als Liste: Punkt,
  * Strecke, Winkel, rechter Winkel, jedes mit seinen Feldern. Die Reihenfolge ist die Zeichenreihenfolge (Späteres liegt
- * über Früherem). Eine Strecke oder ein Winkel nimmt die Farbe der Größe, zu der er gehört.
+ * über Früherem). Eine Strecke oder ein Winkel kann eine Farbe der Palette tragen. Der Rahmen darum (Art, Verschieben,
+ * Entfernen) kommt von der Liste der Elemente.
  */
-export function SketchEditor({ sketch, quantities, onChange, onRemove }: SketchEditorProps) {
+export function SketchEditor({ sketch, onChange }: SketchEditorProps) {
   const elements = sketch.elements
-  const quantityKeys = Object.keys(quantities)
 
   function changeElements(changedElements: SketchElementJson[]) {
     onChange({ ...sketch, elements: changedElements })
@@ -88,20 +88,20 @@ export function SketchEditor({ sketch, quantities, onChange, onRemove }: SketchE
     )
   }
 
-  function renderQuantitySelect(quantityKey: string | null | undefined, onQuantityChange: (changedQuantityKey: string | null) => void): ReactNode {
-    const label = getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.sketchQuantity)
+  function renderHighlightSelect(highlightKey: string | null | undefined, onHighlightChange: (changedHighlightKey: string | null) => void): ReactNode {
+    const label = getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.sketchHighlight)
     return (
       <Form.Select
         size="sm"
         className="blockcontent-editor-short-input"
         aria-label={label}
         title={label}
-        value={quantityKey ?? ''}
-        onChange={(changeEvent) => onQuantityChange(changeEvent.target.value === '' ? null : changeEvent.target.value)}>
-        <option value="">{getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.sketchNoQuantity)}</option>
-        {quantityKeys.map((offeredQuantityKey) => (
-          <option key={offeredQuantityKey} value={offeredQuantityKey}>
-            {quantities[offeredQuantityKey].symbol}
+        value={highlightKey ?? ''}
+        onChange={(changeEvent) => onHighlightChange(changeEvent.target.value === '' ? null : changeEvent.target.value)}>
+        <option value="">{getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.sketchNoHighlight)}</option>
+        {SKETCH_HIGHLIGHT_KEYS.map((offeredHighlightKey, highlightIndex) => (
+          <option key={offeredHighlightKey} value={offeredHighlightKey}>
+            {getTextInCurrentLanguageWithValues(BLOCK_CONTENT_EDITOR_TEXTS.sketchHighlightNumber, { number: String(highlightIndex + 1) })}
           </option>
         ))}
       </Form.Select>
@@ -159,7 +159,7 @@ export function SketchEditor({ sketch, quantities, onChange, onRemove }: SketchE
             <option value="LEFT">{getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.sketchSideLeft)}</option>
             <option value="RIGHT">{getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.sketchSideRight)}</option>
           </Form.Select>
-          {renderQuantitySelect(element.quantity, (changedQuantityKey) => changeElement(elementIndex, { ...element, quantity: changedQuantityKey }))}
+          {renderHighlightSelect(element.highlight, (changedHighlightKey) => changeElement(elementIndex, { ...element, highlight: changedHighlightKey }))}
         </>
       )
     }
@@ -192,7 +192,7 @@ export function SketchEditor({ sketch, quantities, onChange, onRemove }: SketchE
         {renderTextField(getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.sketchAngleHint), element.hint, (changedText) =>
           changeElement(elementIndex, { ...element, hint: changedText }),
         )}
-        {renderQuantitySelect(element.quantity, (changedQuantityKey) => changeElement(elementIndex, { ...element, quantity: changedQuantityKey }))}
+        {renderHighlightSelect(element.highlight, (changedHighlightKey) => changeElement(elementIndex, { ...element, highlight: changedHighlightKey }))}
       </>
     )
   }
@@ -210,13 +210,11 @@ export function SketchEditor({ sketch, quantities, onChange, onRemove }: SketchE
   return (
     <div className="blockcontent-editor-part blockcontent-editor-sketch">
       <div className="blockcontent-editor-row">
-        <span className="blockcontent-editor-part-kind">{getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.sketchTitle)}</span>
         {renderTextField(getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.sketchDescription), sketch.description, (changedText) =>
           onChange({ ...sketch, description: changedText }),
         )}
-        <EditorRowButtons onRemove={onRemove} />
       </div>
-      <div className="blockcontent-editor-row blockcontent-editor-row-indented blockcontent-editor-row-wrap">
+      <div className="blockcontent-editor-row blockcontent-editor-row-wrap">
         <span className="blockcontent-editor-position">
           <span className="blockcontent-editor-position-label">{getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.sketchField)}</span>
           <NumberField label={getTextInCurrentLanguage(BLOCK_CONTENT_EDITOR_TEXTS.sketchWidth)} value={sketch.width} onChange={(changedValue) => onChange({ ...sketch, width: changedValue })} />
@@ -238,7 +236,7 @@ export function SketchEditor({ sketch, quantities, onChange, onRemove }: SketchE
         </span>
       </div>
       {elements.map((element, elementIndex) => (
-        <div key={elementIndex} className="blockcontent-editor-row blockcontent-editor-row-indented blockcontent-editor-row-wrap blockcontent-editor-sketch-element">
+        <div key={elementIndex} className="blockcontent-editor-row blockcontent-editor-row-wrap blockcontent-editor-sketch-element">
           <span className="blockcontent-editor-sketch-kind">{elementKindLabels[element.type]}</span>
           {renderElementFields(element, elementIndex)}
           <EditorRowButtons
@@ -248,7 +246,7 @@ export function SketchEditor({ sketch, quantities, onChange, onRemove }: SketchE
           />
         </div>
       ))}
-      <div className="blockcontent-editor-row blockcontent-editor-row-indented blockcontent-editor-row-wrap">
+      <div className="blockcontent-editor-row blockcontent-editor-row-wrap">
         <EditorAddButton
           label={elementKindLabels.POINT}
           onClick={() => changeElements([...elements, { type: 'POINT', position: unitX, label: 'P', hintName: 'P' }])}

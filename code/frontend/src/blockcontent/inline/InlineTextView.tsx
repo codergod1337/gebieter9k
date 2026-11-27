@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { Hoverlay } from '../../components/Hoverlay.tsx'
-import { MathTermView } from '../math/MathTermView.tsx'
+import { FormulaView } from '../formula/FormulaView.tsx'
 import type { InlineNode } from './InlineNode.ts'
 
 type InlineTextViewProps = {
@@ -12,16 +11,25 @@ type InlineTextViewProps = {
 const EXTERNAL_ADDRESS_PREFIXES = ['https://', 'http://', 'mailto:']
 const INTERNAL_ADDRESS_PREFIX = '/'
 
+/** Ein Satzzeichen direkt hinter einer Formel bleibt an ihr hängen: Die Zeile bricht nicht dazwischen um. */
+const TRAILING_PUNCTUATION_PATTERN = /^[.,;:!?)]+/
+
 /**
  * Zeichnet einen Text mit Auszeichnung: fett, kursiv, Links und Formeln mitten im Satz. Kein HTML wird eingesetzt, jedes
  * Stück ist ein eigenes Element. Ein Link innerhalb der App bleibt in der App, ein Link nach außen öffnet ein neues
  * Fenster und gibt die Herkunft nicht weiter.
  */
 export function InlineTextView({ nodes }: InlineTextViewProps) {
-  function renderNode(node: InlineNode, nodeIndex: number): ReactNode {
+  function renderNode(node: InlineNode, nodeIndex: number, siblingNodes: InlineNode[]): ReactNode {
     switch (node.type) {
-      case 'TEXT':
+      case 'TEXT': {
+        // das Satzzeichen am Anfang hat die Formel davor schon mitgenommen
+        const previousNode = nodeIndex > 0 ? siblingNodes[nodeIndex - 1] : null
+        if (previousNode !== null && previousNode.type === 'FORMULA') {
+          return node.text.replace(TRAILING_PUNCTUATION_PATTERN, '')
+        }
         return node.text
+      }
       case 'BOLD':
         return <strong key={nodeIndex}>{node.children.map(renderNode)}</strong>
       case 'ITALIC':
@@ -46,18 +54,22 @@ export function InlineTextView({ nodes }: InlineTextViewProps) {
         }
         return <span key={nodeIndex}>{label}</span>
       }
-      case 'FORMULA':
+      case 'FORMULA': {
+        let trailingPunctuation = ''
+        const followingNode = nodeIndex + 1 < siblingNodes.length ? siblingNodes[nodeIndex + 1] : null
+        if (followingNode !== null && followingNode.type === 'TEXT') {
+          const punctuationMatch = TRAILING_PUNCTUATION_PATTERN.exec(followingNode.text)
+          if (punctuationMatch !== null) {
+            trailingPunctuation = punctuationMatch[0]
+          }
+        }
         return (
-          <span key={nodeIndex} className="math blockcontent-inline-formula">
-            <MathTermView term={node.term} />
+          <span key={nodeIndex} className="blockcontent-inline-formula">
+            <FormulaView latex={node.latex} displayMode="INLINE" />
+            {trailingPunctuation}
           </span>
         )
-      case 'PROBLEM':
-        return (
-          <Hoverlay key={nodeIndex} text={node.message}>
-            <span className="blockcontent-inline-problem">{node.text}</span>
-          </Hoverlay>
-        )
+      }
     }
   }
 

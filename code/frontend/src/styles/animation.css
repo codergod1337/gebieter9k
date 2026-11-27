@@ -1,0 +1,232 @@
+/*
+ * ALLES, was mit Animation zu tun hat (Paket blockcontent/animation), steht in dieser Datei und nirgends sonst (Nutzer
+ * 2026-11-27: „alles was mit animation zu tun hat bitte in eine eigene animation.css, das will ich weder in base noch
+ * in default css haben“): Lage und Maße UND Farben. Die Farben greifen auf die Töne des Themes zu (z. B. --paper,
+ * --signal-danger), damit ein anderes Theme auch hier wirkt.
+ *
+ * Im Layer „base“ wie base.css: So kann ein Theme einzelne Regeln überschreiben, ohne dass diese Datei es kennt.
+ */
+@layer base {
+  :root {
+    /* So lange wandert ein Teil bei einer Animation an seine neue Stelle, in Millisekunden; 0 schaltet das Wandern ab */
+    --animation-flight-milliseconds: 1400;
+    /* Das Plättchen unter der wandernden Kopie */
+    --animation-ghost-bg: var(--paper);
+    /* Der Strich durch einen gekürzten Teil: die Signalfarbe für „weg damit“, und seine halbe Dicke */
+    --animation-cancel-color: var(--signal-danger);
+    --animation-cancel-stroke-half-width: 0.035em;
+  }
+
+  /*
+   * Ein Teil mit id ist ein eigenes Kästchen: So lässt er sich ausmessen, bewegen und durchstreichen, ohne dass sich
+   * beim Durchstreichen etwas verschiebt.
+   */
+  .formula [data-id] {
+    position: relative;
+    display: inline-block;
+  }
+
+  /*
+   * Ein gekürzter Teil: ein schräger Strich von links unten nach rechts oben, etwas über den Teil hinaus. Der Strich
+   * ist ein eigenes Stück (::after), damit ihn der Animator beim Abspielen aufdecken kann; danach bleibt er stehen.
+   */
+  .formula [data-cancelled] > * {
+    opacity: 0.5;
+  }
+
+  .formula [data-cancelled]::after {
+    position: absolute;
+    inset: -0.04em -0.2em;
+    background: linear-gradient(
+      to bottom right,
+      transparent calc(50% - var(--animation-cancel-stroke-half-width)),
+      var(--animation-cancel-color) calc(50% - var(--animation-cancel-stroke-half-width)),
+      var(--animation-cancel-color) calc(50% + var(--animation-cancel-stroke-half-width)),
+      transparent calc(50% + var(--animation-cancel-stroke-half-width))
+    );
+    content: '';
+    pointer-events: none;
+  }
+
+  /*
+   * ===== Animation (blockcontent/animation): die Ebene, in der die Teile wandern; die Notiz der Umformung mit ihrem
+   * Abspiel-Knopf am Ende der Zeile einer Gleichung; das Popup zum Festlegen. =====
+   */
+  .equation-animation-layer {
+    position: relative;
+  }
+
+  .equation-animation {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .equation-animation-note {
+    display: inline-flex;
+    align-items: baseline;
+  }
+
+  .equation-animation-note .formula-block,
+  .equation-animation-bar {
+    font-size: calc(var(--formula-font-size) * 0.9);
+  }
+
+  .equation-animation-bar {
+    margin-right: 0.45em;
+  }
+
+  /*
+   * Ein wandernder Teil: Der Träger liegt über dem Inhalt und bewegt sich zur Seite, die Kopie darin bewegt sich in der
+   * Höhe (so entsteht der Bogen beim Seitenwechsel). Lage und Größe setzt der Animator.
+   */
+  .animation-flight-carrier {
+    position: absolute;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  .animation-flight-ghost {
+    display: block;
+    width: 100%;
+    height: 100%;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .animation-flight-copy {
+    position: relative;
+    display: inline-block;
+  }
+
+  .equation-animation-popup {
+    display: grid;
+    grid-template-columns: minmax(12rem, 20rem) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 991.98px) {
+    .equation-animation-popup {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .equation-animation-popup-equations {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .equation-animation-popup-equation {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    overflow: auto hidden;
+    text-align: left;
+  }
+
+  .equation-animation-popup-number {
+    flex: 0 0 auto;
+    font-size: 0.85rem;
+  }
+
+  .equation-animation-popup-mark {
+    margin-left: auto;
+  }
+
+  .equation-animation-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    min-width: 0;
+  }
+
+  .equation-animation-editor-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+
+  .equation-animation-editor-equation {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    overflow-x: auto;
+  }
+
+  .equation-animation-editor-label {
+    flex: 0 0 auto;
+    font-size: 0.8rem;
+  }
+
+  .equation-animation-editor-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  /* ein Knopf in einem Abschnitt ist so breit wie sein Text, nicht wie der Abschnitt */
+  .equation-animation-editor-section > .btn {
+    align-self: flex-start;
+  }
+
+  .equation-animation-editor-part {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 18rem);
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .equation-animation-editor-id {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.9rem;
+  }
+
+  .equation-animation-editor-hint,
+  .equation-animation-editor-fixed {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+
+  /* Die Kopie eines wandernden Teils: ein angehobenes Plättchen, damit man ihr mit dem Auge folgen kann */
+  .animation-flight-ghost {
+    border-radius: 0.3em;
+    background: var(--animation-ghost-bg);
+    box-shadow:
+      0 0 0 0.2em var(--animation-ghost-bg),
+      0 0.35em 0.9em 0.15em var(--bordeaux-shadow);
+  }
+
+  /* die Notiz der Umformung gedämpft */
+  .equation-animation-note {
+    color: var(--ink-muted);
+  }
+
+  /* Popup „Animationen“: die Gleichungen als wählbare Zeilen, die gewählte in Bordeaux gefasst */
+  .equation-animation-popup-equation {
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background: var(--bs-body-bg);
+    color: inherit;
+  }
+
+  .equation-animation-popup-equation-selected {
+    border-color: var(--bordeaux-500);
+    background: var(--bs-tertiary-bg);
+  }
+
+  .equation-animation-popup-number,
+  .equation-animation-editor-label,
+  .equation-animation-editor-hint,
+  .equation-animation-editor-fixed {
+    color: var(--bs-secondary-color);
+  }
+
+  .equation-animation-popup-mark {
+    color: var(--bordeaux-600);
+  }
+}

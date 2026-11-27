@@ -13,7 +13,7 @@ type SketchAngleProps = {
   label: string
   /** Was im Hoverlay steht: welcher Winkel das ist, z. B. „Winkel φ zwischen der x-Achse und der Strecke r“. */
   hintText: string
-  /** Die CSS-Klasse der Farbe, in der die Größe überall steht (`getMathHighlightClassName`). */
+  /** Die CSS-Klasse der Farbe des Elements (`getSketchHighlightClassName`); leer ohne Farbe. */
   highlightClassName: string
 }
 

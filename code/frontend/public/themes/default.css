@@ -2368,97 +2368,84 @@ body {
 /* ================================================================================================ Wissensdatenbank */
 
 :root {
-  /* Die Schrift der Formeln und Skizzen: eine Serifenschrift mit guten Formelzeichen, je nachdem, was das System hat */
-  --math-font-family:
+  /* Die Schrift in Skizzen: eine Serifenschrift mit guten Formelzeichen, je nachdem, was das System hat */
+  --sketch-font-family:
     'STIX Two Math', 'STIX Two Text', 'Cambria Math', 'Latin Modern Math', 'Latin Modern Roman', 'Times New Roman', Times, serif;
-  --math-text-color: var(--ink);
   /*
-   * Die Palette für hervorgehobene Größen einer Formel (MathHighlightKey FIRST bis FIFTH): fünf Töne, die auf hellem
-   * Papier lesbar und klar zu unterscheiden sind. Welche Größe welchen Platz bekommt, legt die Seite fest.
+   * Die Palette für hervorgehobene Strecken und Winkel einer Skizze (SketchHighlightKey FIRST bis FIFTH): fünf Töne,
+   * die auf hellem Papier lesbar und klar zu unterscheiden sind.
    */
-  --math-highlight-first: #1d4ed8;
-  --math-highlight-second: #15803d;
-  --math-highlight-third: var(--bordeaux-500);
-  --math-highlight-fourth: #b45309;
-  --math-highlight-fifth: #7c3aed;
-  /* So lange wandert ein Term bei einer Umformung an seine neue Stelle, in Millisekunden; 0 schaltet das Wandern ab */
-  --math-flight-milliseconds: 1400;
-  --math-flight-ghost-bg: var(--paper);
-  /* Der Strich durch einen gekürzten Term: die Signalfarbe für „weg damit“ */
-  --math-cancel-color: var(--signal-danger);
+  --sketch-highlight-first: #1d4ed8;
+  --sketch-highlight-second: #15803d;
+  --sketch-highlight-third: var(--bordeaux-500);
+  --sketch-highlight-fourth: #b45309;
+  --sketch-highlight-fifth: #7c3aed;
 }
 
-.math {
-  font-family: var(--math-font-family);
-  color: var(--math-text-color);
+.sketch-highlight-first {
+  color: var(--sketch-highlight-first);
 }
 
-/* Die Linie der Wurzel trägt die Farbe des Wurzelzeichens, der Radikand darunter steht wieder in der Schriftfarbe */
-.math-root-radicand {
-  color: var(--math-text-color);
+.sketch-highlight-second {
+  color: var(--sketch-highlight-second);
 }
 
-/* Nach .math, damit die Farbe einer Hervorhebung auch am Element mit beiden Klassen gewinnt (die wandernde Kopie) */
-.math-highlight-first {
-  color: var(--math-highlight-first);
+.sketch-highlight-third {
+  color: var(--sketch-highlight-third);
 }
 
-.math-highlight-second {
-  color: var(--math-highlight-second);
+.sketch-highlight-fourth {
+  color: var(--sketch-highlight-fourth);
 }
 
-.math-highlight-third {
-  color: var(--math-highlight-third);
+.sketch-highlight-fifth {
+  color: var(--sketch-highlight-fifth);
 }
 
-.math-highlight-fourth {
-  color: var(--math-highlight-fourth);
-}
-
-.math-highlight-fifth {
-  color: var(--math-highlight-fifth);
-}
-
-/* Die Kopie eines wandernden Terms: ein angehobenes Plättchen, damit man ihr mit dem Auge folgen kann */
-.math-flight-ghost {
-  border-radius: 0.3em;
-  background: var(--math-flight-ghost-bg);
-  box-shadow:
-    0 0 0 0.2em var(--math-flight-ghost-bg),
-    0 0.35em 0.9em 0.15em var(--bordeaux-shadow);
-}
-
-/* Herleitung: Beschriftung, Umformung am Zeilenende, Erklärung und Zahl der Umformungen gedämpft; die Größe in der
-   Umformung behält ihre Farbe */
-.derivation-step-label,
-.derivation-operation,
-.derivation-step-explanation,
-.derivation-gap-dots,
-.derivation-count {
+/* Gleichung: ihre Nummer gedämpft */
+.blockcontent-equation-number {
   color: var(--ink-muted);
 }
 
-/* Eine Zeile des Rechenwegs erscheint beim Einblenden: kurz von oben eingeblendet */
-.derivation-step-between {
-  animation: derivation-step-appear 0.35s ease-out;
+/* ein Aufklapper: sein Inhalt mit einer zarten Linie am Rand als zusammengehörig erkennbar */
+.blockcontent-collapsible-content {
+  border-left: 2px solid var(--line);
 }
 
-@keyframes derivation-step-appear {
-  from {
-    opacity: 0;
-    transform: translateY(-0.4rem);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ein LaTeX, das sich nicht setzen ließ: als Fehler erkennbar */
+.formula-problem {
+  color: var(--bs-danger-text-emphasis);
+  text-decoration: underline wavy;
+  cursor: help;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .derivation-step-between {
-    animation: none;
-  }
+/* Formelfeld: die ids der Formel als kleine Marken; Hinweise und Fehler zurückgenommen bzw. in der Fehlerfarbe */
+.formula-field-id {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg);
+}
+
+.formula-field-id-remove {
+  color: var(--bs-secondary-color);
+}
+
+.formula-field-id-remove:hover {
+  color: var(--bs-danger-text-emphasis);
+}
+
+.formula-field-ids-label,
+.formula-field-state {
+  color: var(--bs-secondary-color);
+}
+
+.formula-field-problem {
+  color: var(--bs-danger-text-emphasis);
+}
+
+/* Editor: die Zahl der Gleichungen neben den Reitern zurückgenommen */
+.blockcontent-editor-equation-count {
+  color: var(--bs-secondary-color);
 }
 
 /* Abspiel-Knopf (PlayButton): Bordeaux auf hell, beim Hover gefüllt, das Dreieck hüpft */
@@ -2489,7 +2476,7 @@ body {
 
 /* Skizze: Raster ganz zart, Achsen und Hilfslinien gedämpft, Punkte in Schriftfarbe, jede Größe in ihrer Farbe */
 .sketch text {
-  font-family: var(--math-font-family);
+  font-family: var(--sketch-font-family);
 }
 
 .sketch-grid-line {
@@ -2598,7 +2585,7 @@ body {
   color: var(--bs-secondary-color);
 }
 
-/* Editor für Inhalte aus Bausteinen: Karten mit zartem Rahmen, ihr Kopf abgesetzt; Hilfetexte und Arten zurückgenommen */
+/* Editor für Inhalte: Karten mit zartem Rahmen, ihr Kopf abgesetzt; Hilfetexte und Arten zurückgenommen */
 .blockcontent-editor-card {
   border: 1px solid var(--bs-border-color);
   border-radius: var(--bs-border-radius);
@@ -2612,25 +2599,8 @@ body {
 }
 
 .blockcontent-editor-card-kind,
-.blockcontent-editor-part-kind,
 .blockcontent-editor-help {
   color: var(--bs-secondary-color);
-}
-
-.blockcontent-editor-operation {
-  padding-top: 0.35rem;
-  border-top: 1px dashed var(--bs-border-color);
-}
-
-.blockcontent-editor-problem {
-  color: var(--bs-danger-text-emphasis);
-}
-
-/* eine Formel im Satz, die sich nicht lesen ließ: ihr getippter Text, als Fehler erkennbar */
-.blockcontent-inline-problem {
-  color: var(--bs-danger-text-emphasis);
-  text-decoration: underline wavy;
-  cursor: help;
 }
 
 /* Skizze im Editor: ihre Elemente als zart getrennte Zeilen, die Namen der Felder zurückgenommen */

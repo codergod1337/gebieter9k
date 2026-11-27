@@ -4379,265 +4379,110 @@
   }
 
   /*
-   * ===== Formeln (blockcontent/math): der Satz. Jeder Term ist ein eigenes Element (MathTermReactRenderer), deshalb lässt
-   * er sich einzeln färben und bewegen. Hier stehen nur Lage und Maße; Schrift und Farben setzt das Theme. =====
+   * ===== Formeln (blockcontent/formula): gesetzt von der Bibliothek MathLive, die ihr eigenes CSS mitbringt. Hier steht
+   * nur, was wir dazutun: die Größe. Was mit Animation zu tun hat (Teile mit id ausmessen, durchstreichen, wandern), steht
+   * in animation.css. =====
    */
   :root {
-    /* Schriftgröße einer Formel */
-    --math-font-size: 1.5rem;
-    /* Dicke von Bruchstrich, Wurzellinie und den Zeichen, die mit ihrem Inhalt wachsen */
-    --math-stroke-width: 0.06em;
-    /* halbe Dicke des Strichs durch einen gekürzten Term */
-    --math-cancel-stroke-half-width: 0.035em;
+    /* Schriftgröße einer Formel in ihrer eigenen Zeile */
+    --formula-font-size: 1.35rem;
+    /* die Bildschirmtastatur des Formelfelds liegt über jedem Popup */
+    --keyboard-zindex: 2000;
   }
 
-  .math {
-    display: inline-block;
-    font-size: var(--math-font-size);
-    line-height: 1.25;
+  .formula-block {
+    font-size: var(--formula-font-size);
+  }
+
+  /* mitten im Satz: so groß, dass die Buchstaben der Formel zu denen des Texts passen, mit etwas Luft zu den Wörtern */
+  .formula-inline {
+    margin: 0 0.1em;
+    font-size: 1.15em;
+  }
+
+  /* eine Formel im Satz samt dem Satzzeichen direkt dahinter: Dazwischen bricht die Zeile nicht um */
+  .blockcontent-inline-formula {
     white-space: nowrap;
   }
 
-  .math-symbol {
-    font-style: italic;
+  /* ein LaTeX, das sich nicht setzen ließ: sein Text, wie getippt */
+  .formula-problem {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.85em;
   }
 
-  .math-operator {
-    margin-inline: 0.3em;
-  }
-
-  .math-relation {
-    margin-inline: 0.5em;
-  }
-
-  /* Bruch: Zähler über Nenner, der Strich ist die Oberkante des Nenners; die Mitte steht auf Höhe der Rechenzeichen */
-  .math-fraction {
-    display: inline-flex;
+  /*
+   * ===== Formelfeld (blockcontent/formula/FormulaField): das Eingabefeld der Bibliothek, darunter „id vergeben“, die
+   * ids der Formel und auf Wunsch das LaTeX als Text. =====
+   */
+  .formula-field {
+    display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
-    align-items: center;
-    vertical-align: middle;
-    margin-inline: 0.12em;
+    gap: 0.35rem;
+    min-width: 0;
   }
 
-  .math-fraction-numerator {
-    padding: 0 0.3em 0.06em;
-  }
-
-  .math-fraction-denominator {
-    align-self: stretch;
-    padding: 0.06em 0.3em 0;
-    border-top: var(--math-stroke-width) solid currentColor;
-    text-align: center;
-  }
-
-  /* Exponent: Bootstrap stellt sup schon hoch, ohne die Zeile höher zu machen; hier nur Größe und Höhe */
-  .math-power-exponent {
-    top: -0.62em;
-    margin-left: 0.06em;
-    font-size: 0.68em;
-  }
-
-  /*
-   * Wurzel: links das Zeichen, daneben der Radikand in einer Hülle, deren Oberkante die Linie der Wurzel ist. Die Hülle
-   * gibt die Grundlinie der ganzen Wurzel vor (align-self: baseline), das Zeichen wird so hoch wie sie.
-   */
-  .math-root {
-    display: inline-flex;
-    align-items: stretch;
-    margin-inline: 0.1em;
-  }
-
-  .math-root-sign {
-    position: relative;
-    flex: none;
-    width: 0.62em;
-  }
-
-  .math-root-line {
-    align-self: baseline;
-    padding: 0.2em 0.14em 0 0.08em;
-    border-top: var(--math-stroke-width) solid currentColor;
-  }
-
-  /* Runde Klammern, die mit ihrem Inhalt wachsen; der Inhalt gibt die Grundlinie vor */
-  .math-group {
-    display: inline-flex;
-    align-items: stretch;
-  }
-
-  .math-group-sign {
-    position: relative;
-    flex: none;
-    width: 0.36em;
-  }
-
-  .math-group-content {
-    align-self: baseline;
-    padding-inline: 0.04em;
-  }
-
-  /* Wurzelzeichen und Klammern als SVG: füllen ihr Element; der Strich bleibt gleich dick, egal wie hoch gezogen */
-  .math-stretchy-sign {
-    position: absolute;
-    inset: 0;
+  .formula-field-input {
+    display: block;
     width: 100%;
-    height: 100%;
-    overflow: visible;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: var(--math-stroke-width);
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    font-size: 1.2rem;
   }
 
-  .math-stretchy-sign path {
-    vector-effect: non-scaling-stroke;
-  }
-
-  /* Funktion: zwischen Name und Argument ein schmaler Abstand, vor einer Klammer fast keiner */
-  .math-function-argument {
-    margin-left: 0.16em;
-  }
-
-  .math-function-argument:has(> .math-group) {
-    margin-left: 0.04em;
-  }
-
-  /*
-   * ===== Herleitung (blockcontent/derivation): die Schritte untereinander, die Gleichheitszeichen in einer Spalte
-   * (Beschriftung, linke Seite, „=“, rechte Seite, Umformung). Der Bereich ist zugleich die Ebene, in der die
-   * wandernden Terme fliegen (TermFlightAnimator). =====
-   */
-  .derivation-steps {
-    position: relative;
-    display: grid;
-    grid-template-columns: max-content max-content max-content max-content 1fr;
-    row-gap: 1.5rem;
-    padding-block: 0.5rem;
-    overflow-x: auto;
-  }
-
-  .derivation-step {
-    display: grid;
-    grid-template-columns: subgrid;
-    grid-column: 1 / -1;
-    align-items: center;
-  }
-
-  /* „Ausgang“ und „Ergebnis“ vor ihrer Zeile */
-  .derivation-step-label {
-    margin-right: 1.5rem;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .derivation-step-left {
-    justify-self: end;
-  }
-
-  .derivation-step-operation {
-    margin-left: 2.5rem;
-  }
-
-  /* Die Notiz der Umformung und daneben ihr Abspiel-Knopf */
-  .derivation-operation-note {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  /* Ausgeblendeter Rechenweg: drei Punkte unter dem Gleichheitszeichen, zwischen Ausgang und Ergebnis */
-  .derivation-gap {
-    display: grid;
-    grid-template-columns: subgrid;
-    grid-column: 1 / -1;
-  }
-
-  .derivation-gap-dots {
-    grid-column: 3;
-    justify-self: center;
-    font-size: 1.25rem;
-    line-height: 1;
-  }
-
-  .derivation-operation {
-    font-size: calc(var(--math-font-size) * 0.8);
-  }
-
-  .derivation-operation-bar {
-    margin-right: 0.45em;
-  }
-
-  .derivation-operation-notation {
-    margin-right: 0.25em;
-  }
-
-  .derivation-step-explanation {
-    grid-column: 2 / -1;
-    max-width: 46rem;
-    margin: 0.6rem 0 0;
-    font-size: 0.95rem;
-  }
-
-  .derivation-controls {
+  .formula-field-tools {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
   }
 
-  .derivation-controls .btn {
-    white-space: nowrap;
+  .formula-field-id-form {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
   }
 
-  .derivation-count {
-    margin-right: auto;
+  .formula-field-id-input {
+    width: 8rem;
   }
 
-  /*
-   * Ein wandernder Term: Der Träger liegt über den Zeilen und bewegt sich zur Seite, die Kopie darin bewegt sich in der
-   * Höhe (so entsteht der Bogen beim Seitenwechsel). Lage und Größe setzt der Animator.
-   */
-  .math-flight-carrier {
-    position: absolute;
-    z-index: 1;
-    pointer-events: none;
+  .formula-field-ids {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.85rem;
   }
 
-  .math-flight-ghost {
-    display: block;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    text-align: center;
+  .formula-field-id {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.05rem 0.2rem 0.05rem 0.5rem;
+    font-family: var(--bs-font-monospace);
   }
 
-  /*
-   * Ein gekürzter Term: ein schräger Strich von links unten nach rechts oben, etwas über den Term hinaus. Der Strich
-   * ist ein eigenes Stück (::after), damit ihn der Animator beim Abspielen aufdecken kann; danach bleibt er stehen.
-   */
-  .math-cancelled {
-    position: relative;
+  .formula-field-id-remove {
+    padding: 0;
+    border: 0;
+    background: none;
+    line-height: 1;
   }
 
-  /* Der gekürzte Term selbst tritt zurück, der Strich bleibt kräftig */
-  .math-cancelled > * {
-    opacity: 0.5;
+  .formula-field-latex-switch {
+    margin: 0 0 0 auto;
+    font-size: 0.85rem;
   }
 
-  .math-cancelled::after {
-    position: absolute;
-    inset: -0.04em -0.2em;
-    background: linear-gradient(
-      to bottom right,
-      transparent calc(50% - var(--math-cancel-stroke-half-width)),
-      var(--math-cancel-color) calc(50% - var(--math-cancel-stroke-half-width)),
-      var(--math-cancel-color) calc(50% + var(--math-cancel-stroke-half-width)),
-      transparent calc(50% + var(--math-cancel-stroke-half-width))
-    );
-    content: '';
-    pointer-events: none;
+  .formula-field-latex {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.8rem;
+  }
+
+  .formula-field-state,
+  .formula-field-problem {
+    font-size: 0.8rem;
   }
 
   /* ===== Wissensmanager, Reiter „Gliederung“: der erklärende Satz über den drei Boxen ===== */
@@ -4680,19 +4525,6 @@
     font-weight: 600;
   }
 
-  .blockcontent-box-with-sketch {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(14rem, 22rem);
-    align-items: center;
-    gap: 1.5rem 2.5rem;
-  }
-
-  @media (max-width: 767.98px) {
-    .blockcontent-box-with-sketch {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
   /*
    * ===== Wissensmanager, Editor einer Seite (knowledgemanager/page): oben die Felder, darunter der Inhalt als JSON-Text
    * neben seiner Vorschau; auf schmalen Schirmen untereinander. =====
@@ -4721,8 +4553,8 @@
   }
 
   /*
-   * ===== Editor für Inhalte aus Bausteinen (blockcontent/editor), allgemein: links bearbeiten (Karten oder JSON), rechts
-   * die Vorschau; beide Hälften gleich hoch, jede rollt für sich. Auf schmalen Schirmen untereinander. =====
+   * ===== Editor für Inhalte (blockcontent/editor), allgemein: links bearbeiten (Elemente oder JSON), rechts die
+   * Vorschau; beide Hälften gleich hoch, jede rollt für sich. Auf schmalen Schirmen untereinander. =====
    */
   .blockcontent-editor {
     --blockcontent-editor-pane-height: 72vh;
@@ -4747,6 +4579,19 @@
     margin-bottom: 0.75rem;
   }
 
+  /* rechts neben den Reitern: wie viele Gleichungen der Inhalt hat und der Weg zu den Animationen */
+  .blockcontent-editor-views-extra {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+    padding-bottom: 0.3rem;
+  }
+
+  .blockcontent-editor-equation-count {
+    font-size: 0.85rem;
+  }
+
   /* die Zeile über der Vorschau ist so hoch wie die Reiter links: So beginnen beide Hälften auf derselben Höhe */
   .blockcontent-editor-preview-label {
     display: flex;
@@ -4761,15 +4606,6 @@
     height: var(--blockcontent-editor-pane-height);
     overflow-y: auto;
     padding-right: 0.5rem;
-    /* die Vorschau richtet sich nach IHRER Breite, nicht nach der des Fensters (Text neben Skizze, siehe unten) */
-    container-type: inline-size;
-  }
-
-  /* in einer schmalen Hälfte steht die Skizze unter dem Text statt daneben */
-  @container (max-width: 44rem) {
-    .blockcontent-box-with-sketch {
-      grid-template-columns: minmax(0, 1fr);
-    }
   }
 
   .blockcontent-editor-textarea {
@@ -4782,22 +4618,32 @@
     resize: none;
   }
 
-  .blockcontent-editor-cards {
+  .blockcontent-editor-elements {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+  }
+
+  /* eine Liste von Elementen: ihre Karten untereinander, darunter der Knopf für ein neues Element */
+  .blockcontent-editor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .blockcontent-editor-list > .dropdown {
+    align-self: flex-start;
   }
 
   .blockcontent-editor-card-header {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.4rem 0.6rem;
+    padding: 0.3rem 0.6rem;
   }
 
   .blockcontent-editor-card-kind {
     flex: 0 0 auto;
-    min-width: 5.5rem;
     font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -4830,60 +4676,15 @@
     gap: 0.5rem;
   }
 
-  .blockcontent-editor-row-top {
-    align-items: flex-start;
-  }
-
-  /* eingerückt unter die Art des Teils, damit die Felder einer Gruppe untereinander stehen */
-  .blockcontent-editor-row-indented {
-    padding-left: 6rem;
-  }
-
-  .blockcontent-editor-part-kind {
-    flex: 0 0 5.5rem;
-    font-size: 0.8rem;
-  }
-
   .blockcontent-editor-row-buttons {
     display: flex;
     flex: 0 0 auto;
     gap: 0.25rem;
   }
 
-  .blockcontent-editor-formula {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .blockcontent-editor-formula-input,
-  .blockcontent-editor-code {
-    font-family: var(--bs-font-monospace);
-    font-size: 0.85rem;
-  }
-
   .blockcontent-editor-short-input {
     flex: 0 0 6.5rem;
     width: 6.5rem;
-  }
-
-  .blockcontent-editor-key-input {
-    flex: 0 0 9rem;
-    width: 9rem;
-    font-family: var(--bs-font-monospace);
-  }
-
-  .blockcontent-editor-quantity-key {
-    flex: 0 0 9rem;
-  }
-
-  .blockcontent-editor-quantity-sample {
-    flex: 0 0 2rem;
-    font-size: 1.2rem;
-    text-align: center;
-  }
-
-  .blockcontent-editor-problem {
-    font-size: 0.8rem;
   }
 
   /* Skizze im Editor: Zahlenfelder klein, je Ort ein Paar mit seinem Namen davor; lange Zeilen brechen um */
@@ -4936,27 +4737,8 @@
   }
 
   .blockcontent-editor-check {
-    flex: 1 1 auto;
     margin: 0;
     font-size: 0.85rem;
-  }
-
-  /* ein Minus direkt vor seinem Term (−b, x^−1): ohne den Abstand eines Rechenzeichens */
-  .math-sign-unary {
-    margin-right: 0.05em;
-  }
-
-  /* eine Formel mitten im Satz: auf der Zeile, in der Größe des Texts */
-  .blockcontent-inline-formula {
-    display: inline-block;
-    margin: 0 0.15em;
-    font-size: 1.05em;
-    vertical-align: middle;
-  }
-
-  .blockcontent-text > ul:last-child,
-  .blockcontent-text > ol:last-child {
-    margin-bottom: 0;
   }
 
   .blockcontent-editor-help {
@@ -4980,41 +4762,111 @@
     margin-right: auto;
   }
 
-  /* die Teile eines Kastens untereinander (Textblöcke, Gleichungsgruppen, Hinweise), mit Abstand dazwischen */
-  .blockcontent-parts {
+  /*
+   * ===== Elemente eines Inhalts (blockcontent/elements): von oben nach unten, mit Abstand dazwischen; in einem Kasten
+   * genauso wie zwischen den Kästen. =====
+   */
+  .blockcontent-elements {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1rem;
     min-width: 0;
   }
 
-  .blockcontent-text {
-    max-width: 46rem;
-  }
-
-  .blockcontent-text > p:last-child {
+  /* den Abstand zwischen den Kästen macht die Liste, nicht der Kasten */
+  .blockcontent-elements > .contentbox {
     margin-bottom: 0;
   }
 
-  .blockcontent-equations {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-    gap: 1.5rem 2.5rem;
-  }
-
-  .blockcontent-equations-heading {
-    margin: 0 0 0.75rem;
-    font-size: 1rem;
+  .blockcontent-heading {
+    margin: 0.5rem 0 0;
+    font-size: 1.15rem;
     font-weight: 600;
   }
 
-  .blockcontent-equation {
-    margin-bottom: 0.75rem;
+  .blockcontent-paragraph,
+  .blockcontent-list {
+    max-width: 46rem;
+    margin: 0;
   }
 
   .blockcontent-hint {
-    margin-bottom: 0;
+    margin: 0;
   }
+
+  .blockcontent-sketch {
+    align-self: center;
+    width: 100%;
+    max-width: 24rem;
+  }
+
+  /* ein Aufklapper: sein Knopf, darunter eingerückt sein Inhalt */
+  .blockcontent-collapsible {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  /*
+   * Der Inhalt eines Aufklappers ist genauso breit wie alles um ihn herum: So stehen die Relationszeichen seiner
+   * Gleichungen unter denen davor und danach. Die Linie an seinem Rand (Theme) steht deshalb links außerhalb.
+   */
+  .blockcontent-collapsible-content {
+    align-self: stretch;
+    margin-left: -0.75rem;
+    padding-left: calc(0.75rem - 2px);
+  }
+
+  /*
+   * Eine Gleichung in ihrer Zeile: linke Seite, Relationszeichen, rechte Seite, ganz rechts die Nummer. Die beiden
+   * Seiten bekommen gleich viel Platz, deshalb steht das Zeichen in jeder Zeile an derselben Stelle. Hinter der rechten
+   * Seite steht, was ein anderes Paket anhängt (die Notiz einer Umformung mit ihrem Abspiel-Knopf).
+   */
+  .blockcontent-equation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+    align-items: baseline;
+    padding-block: 0.35rem;
+  }
+
+  .blockcontent-equation-left {
+    justify-self: end;
+  }
+
+  /* das Zeichen steht für sich und bekommt deshalb hier den Abstand, den es mitten in einer Formel hätte */
+  .blockcontent-equation-relation {
+    padding-inline: 0.28em;
+    font-size: var(--formula-font-size);
+  }
+
+  .blockcontent-equation-relation .formula-block {
+    font-size: inherit;
+  }
+
+  .blockcontent-equation-right,
+  .blockcontent-equation-whole {
+    display: flex;
+    align-items: baseline;
+    gap: 1.75rem;
+  }
+
+  .blockcontent-equation-right {
+    justify-self: start;
+  }
+
+  /* eine Zeile ohne Relationszeichen steht als Ganzes in der Mitte */
+  .blockcontent-equation-whole {
+    grid-column: 1 / 4;
+    justify-content: center;
+  }
+
+  .blockcontent-equation-number {
+    grid-column: 4;
+    margin-left: 1rem;
+    font-size: 0.95rem;
+  }
+
 
   /*
    * ===== Skizze (blockcontent/sketch): ein SVG aus Bausteinen (Achsen, Punkte, Strecken, Winkel). Strichstärken und

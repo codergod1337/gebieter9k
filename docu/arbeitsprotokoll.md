@@ -25,6 +25,150 @@ Nach dem 2026-12-03 diesen Abschnitt löschen (ebenso die Regel `interruptions-u
 3. Danach den Dateizugriff besprechen, an echten Datensätzen und konkreten Fällen; dann wird noch einmal umgebaut.
 4. Die Suche kommt nach dem Markt (`konzept-file-kern.md`, Abschnitt 14).
 
+## 2026-11-27 14:30 – BAUEN: Inhalt Fassung 2 (Elemente, Formeln über MathLive, Animationen als eigenes Modul)
+
+- Ansage: „ja bau es endlich, wir haben lang und breit übefr die anforderungen geredet, und deinen dreck sehe ich erst
+  wenn der editor funktioniert, also ob dein neuer vorschlag brauchbar ist“
+- Gebaut wird der Vorschlag aus dem Eintrag 14:25 (dort steht das Format). Stücke:
+  1. `mathlive` 0.111.4 ins Frontend; Paket `blockcontent/formula/` (setzen, Formelfeld, id vergeben). Kompiliert für sich.
+  2. Umbau in einem Zug (dazwischen kompiliert es NICHT): Format 2, Leser, Anzeige je Element, `animation/`, Editor je
+     Element, Popup „Animationen“; `math/`, `formulatext/`, `derivation/`, Karten „Größen“ und „Rechnung“ löschen.
+  3. Demoseite in Fassung 2 schreiben (Skript im Scratchpad), lokal im Firefox gegen das nachgestellte Backend ansehen:
+     Seite, Editor, Popup, Abspielen.
+  4. Backend `content-format-version: 2`; Doku (`blockcontent.md`, `KNOWLEDGE.md`, Konzept), Regeln.
+  5. Nach dem Push des Nutzers: Pi bauen (backend + frontend), Seite auf dem Pi in Fassung 2 schreiben.
+- Stück 1 fertig (14:36), `npx tsc -b` grün: `mathlive` 0.111.4 in `package.json`/`package-lock.json`; neu
+  `blockcontent/formula/`: `FormulaRenderer.ts`, `MathLiveFormulaRenderer.ts`, `useFormulaRenderer.ts`,
+  `FormulaView.tsx`, `formulaIds.ts`, `splitLatexAtRelation.ts`, `MathLiveFormulaFieldModule.ts`, `FormulaField.tsx`,
+  `formulaTexts.ts`. Noch von nichts benutzt. Stand im Git davor: `d1abbf5`.
+- Stück 2 fertig (14:50), `npx tsc -b --force` GRÜN: Format 2 (`BlockContentJson.ts`: `elements` + `animations`),
+  `elements/` (JSON, Modell, `ElementReader`, je Element eine Anzeige, Liste `elementViews.ts`), `sketch/` (eigener
+  Leser, eigene Farbwahl statt „Größen“), `animation/` (Modell, Leser, `FlightAnimator`, Abspieler, Notiz + Knopf an
+  der Gleichung über `EquationAddition`, Popup), `editor/` (je Element ein Bearbeiten-Teil, Liste `elementKinds.ts`,
+  `ElementListEditor`, Knopf „Animationen“), `formula/FormulaPopup.tsx` für die Formel im Satz. Gelöscht: `math/`,
+  `formulatext/`, `derivation/`, `BoxBlockView.tsx`, Karten „Größen“/„Rechnung“/„Kasten“, `FormulaInput.tsx`.
+  CSS in `base.css` und `default.css` umgestellt. Noch NICHT im Browser gesehen.
+- Zwischenansage des Nutzers (während Stück 3): „alles was mit animation zu tun hat bitte in eine eigene animation.css,
+  das will ich weder in base noch in default css haben!“ Erledigt: `code/frontend/src/styles/animation.css` (Maße UND
+  Farben des Animations-Moduls, im Layer `base`), eingebunden von `EquationAnimationProvider.tsx` und
+  `EquationAnimationPopup.tsx`; in `base.css` und `default.css` steht nichts mehr dazu.
+- Stück 3 fertig (15:00): `npm run build` grün. Demoseite Fassung 2 aus `…/scratchpad/tools/build_koordinatentransformation_v2.py`
+  (6 Kästen, 2 Zwischenüberschriften, 18 Gleichungen, 4 Aufklapper, 10 Animationen, 8 393 Zeichen). Im Firefox ohne
+  Fenster gegen das nachgestellte Backend gesehen: Seite (Nummern (1)…(18), Relationszeichen untereinander, Aufklapper
+  in der Adresse `?open=c1`), Abspielen (aus der Notiz, Durchstreichen, Wandern, Bogen beim Seitentausch), Editor (42
+  Karten, 18 Formelfelder, id vergeben, mit echten Tasten getippt, neues Element), Popup „Animationen“ (19 Gleichungen,
+  Verhalten gewählt, Notiz getippt), JSON-Ansicht, Speichern (PUT). Keine Fehler in der Konsole.
+- Stück 4 fertig (15:02): `application.yaml` `gebiter.knowledge.content-format-version: 2` (das Backend trägt sie bei
+  jeder Änderung des Inhalts ein, sonst kein Backend-Code geändert); `docu/blockcontent.md` neu geschrieben,
+  `docu/solr-cores/KNOWLEDGE.md` und `docu/konzept-wissensdatenbank.md` nachgezogen; Regeln `css-base-and-theme`
+  (Ausnahme `animation.css`), `frontend-structure`, `knowledge-base-module`, `MEMORY.md`.
+- **Stand 15:02: lokal fertig, `npx tsc -b` und `npm run build` grün, NICHT committet (macht der Nutzer). Als Nächstes
+  Stück 5, sobald er gepusht hat:** Pi `git pull`, backend UND frontend bauen und starten; DANN sofort die Seite
+  „Koordinatentransformation“ auf dem Pi in Fassung 2 schreiben (PUT unter seinem Konto, Inhalt aus
+  `…/scratchpad/seiten/koordinatentransformation-v2-content.json`; ist das Scratchpad weg: Skript
+  `build_koordinatentransformation_v2.py` neu schreiben nach `docu/blockcontent.md`). Bis dahin zeigt die Seite auf
+  dem Pi nach dem Bau „… älteres Format (Fassung 1) …“ statt ihres Inhalts.
+
+## 2026-11-27 14:25 – Vorschlag statt Bau: Editor nur Elemente und ids, Animationen als eigenes Modul mit Popup
+
+- Ansage (während ich das Paket las, noch nichts gebaut): „was an dem editor nun so kompliziert sein soll erschliesst
+  sich mir nicht, wir haben formeln und eine hand voll html elemente die animationen benötigen wir ja in einem
+  separaten modul. sprich wir müssen ja nur die gleichungsnummer angeben und dann welches element mit welcher id sich
+  wie in der nächsten gleichungsnummer verhält, das hat aber nichts im editor zu suchen, dort definiere ich nur die ids
+  der elemente und animationen stelle ich mir in einem popup vor“ und „mach einfach einen vernünftigen SOLID vorschlag
+  […]“
+- Heißt: NICHT weiterbauen wie im Eintrag 14:21 geplant (dort steckte die Rechnung mit Schritten und Umformungen im
+  Editor). Erst Vorschlag, dann sein Ja.
+- Vorschlag (an den Nutzer gegeben 14:25), Fassung 2 des Inhalts, alles in EINEM Dokument:
+  - `elements`: eine Handvoll Elemente, jedes mit genau einer Anzeige und einem Bearbeiten-Teil: Kasten (enthält
+    wieder Elemente), Überschrift, Absatz, Liste, Hinweis, Gleichung (LaTeX, laufende Nummer, feste Kennung),
+    Aufklapper (z. B. „Rechenweg“), Skizze (vorerst wie heute).
+  - `animations`: getrennt davon, je Gleichung der Übergang zur nächsten: Notiz der Umformung und je id, was mit dem
+    Teil geschieht (wandert zu id, wird gestrichen, kommt dazu). Bearbeitet in einem Popup, nicht in den Elementen.
+  - Pakete: `blockcontent/` (Format, Leser, Anzeige je Element), `blockcontent/formula/` (MathLive dahinter:
+    `FormulaView`, `FormulaField` mit „id vergeben“), `blockcontent/editor/` (nur Elemente), `blockcontent/animation/`
+    (Modell, Abspieler = heutiger `TermFlightAnimator`, Popup).
+  - Fliegt raus: `math/`, `formulatext/`, die Klassen der Rechnung in `derivation/`, Karte „Größen“, Karte „Rechnung“.
+- **Stand 14:25: warte auf die Antwort (Frage 1: so bauen ja/nein/anders). Im Projekt kein Code geändert, MathLive noch
+  nicht im Projekt installiert (nur im Scratchpad).** Nicht committet: `docu/arbeitsprotokoll.md`,
+  `docu/blockcontent.md`, `docu/konzept-wissensdatenbank.md`.
+
+## 2026-11-27 14:21 – Bauen: Formeln über MathLive, Namen an Teilen, ganze Seite (Kästen, Zwischenabschnitte) im Inhalt
+
+- Ansage: „und ganz wichtig wir definieren immer die ganze seite in einem solr wissens dokument! sprich contentboxen
+  und zwischen abschnitte oder sonstiges muss auch im richtext abbildbar sein! dann bau mal dss ich testen kann“
+- Heißt: Vorschlag MathLive angenommen („dann bau mal“). Neu als Vorgabe: Die ganze Seite steht in EINEM Dokument;
+  Kästen (ContentBox), Abschnitte dazwischen und Sonstiges gehören in den Inhalt und in den Editor.
+- Plan in Stücken, nach jedem läuft `npx tsc -b`:
+  1. Lesen, was da ist (`blockcontent/`), Format Fassung 2 festlegen.
+  2. MathLive 0.111.4 einbauen: Anzeige einer Formel (`FormulaView`), Formelfeld mit Benennen (`FormulaField`).
+  3. Format 2 lesen und anzeigen: Blöcke = Kasten ODER Element direkt auf der Seite; Elemente = Zwischenüberschrift,
+     Absatz, Liste, Gleichung, Rechnung, Hinweis, Skizze. Rechnung und Animation an den Namen. `math/` und
+     `formulatext/` löschen.
+  4. Editor auf Format 2.
+  5. Demoseite in Format 2 schreiben, lokal im Firefox ansehen (nachgestelltes Backend).
+  6. Backend: `content-format-version` 2. Doku (`blockcontent.md`, `KNOWLEDGE.md`, Konzept), Regeln.
+  7. Nach dem Push des Nutzers: Pi bauen, Seite auf dem Pi in Format 2 schreiben.
+- Stück 1 angefangen 14:21 (nur gelesen), dann vom Nutzer umgelenkt, siehe Eintrag darüber. Nichts gebaut.
+
+## 2026-11-27 14:15 – Vorschlag: fertiger Formel-Editor im Editor, Namen an Teilen der Formel für die Animation
+
+- Ansage: „normales latex hilf uns nichts, denn wir sollten jedem element eine id mitgeben KÖNNEN, genau dann wenn es
+  in eine animation muss, kannst du […] nun etwas vorschlagen mit dem wir das umsetzen können. ich will das rad auch
+  nciht neu erfinden müssen. ich stelle mir vielleicht einen formeleditor innerhalb vom richtexteditor vor. dann haben
+  wir auch eine übersicht wie viele gleichungen wir auf einer seite haben, latex style“
+- Plan: NUR Vorschlag, nichts im Projekt bauen. (1) nachsehen, worauf der heutige Rich-Text-Editor der Plattform
+  aufsetzt; (2) im Scratchpad (nicht im Projekt) einen fertigen Formel-Editor ausprobieren: neueste Version, Lizenz,
+  bleiben Namen an Teilen beim Setzen und beim Bearbeiten erhalten, gehen Maxwell, Integral mit Grenzen, Bra/Ket,
+  Matrix; (3) Vorschlag in einer Nachricht, Frage nummeriert; Konzept nachziehen.
+- Schritt 1 fertig (14:15): Der Rich-Text-Editor der Plattform (`components/RichTextEditor.tsx`) ist Eigenbau
+  (`contentEditable` + `execCommand`), keine Bibliothek im Projekt.
+- Schritt 2 fertig (14:18), nur im Scratchpad (`…/scratchpad/formelcheck`), nichts im Projekt: MathLive 0.111.4
+  (neueste Version laut npm, 2026-10-31, MIT, keine Abhängigkeiten). Gesetzt in Node und im Firefox ohne Fenster:
+  Name an einem Teil (`\cssId{r1}{…}` → `id`, `\htmlData{mark=r1}{…}` → `data-mark`) steht im gesetzten Bild als
+  eigenes Element mit Lage; im Eingabefeld `<math-field>` bleibt er beim Laden und beim Weitertippen erhalten; eine
+  Auswahl bekommt per `insert('\cssId{name}{#@}')` einen Namen; ohne Fehler gesetzt: Maxwell, Integral mit Grenzen,
+  Ket, Bra-Ket, Matrix, Indizes, `\cancel`. Größe: Editor 847 kB (gepackt 229 kB), nur Anzeige 401 kB (113 kB),
+  Schriften 260 kB. NICHT ausprobiert: Einbau in die React-App, das Wandern zwischen zwei Zeilen.
+  Bild: `…/scratchpad/shots/200-formelcheck.png`.
+- Schritt 3 fertig (14:18): Vorschlag an den Nutzer (MathLive als Formelfeld im Editor, Namen per Markieren, Baustein
+  „Gleichung“ mit Nummer, Liste der Gleichungen), Konzept und Regel nachgezogen.
+- **Stand 14:18: warte auf die Antwort des Nutzers (Frage 1: MathLive ja/nein/anders). Kein Code geändert.** Nicht
+  committet: `docu/arbeitsprotokoll.md`, `docu/blockcontent.md`, `docu/konzept-wissensdatenbank.md`.
+
+## 2026-11-27 14:09 – Kritik des Nutzers: Format und Formel-Eingabe sind aus dem Inhalt der Demoseite abgeleitet
+
+- Ansage (nach dem Ansehen des Editors auf dem Pi): „du sollst nicht ein modell anhand des inhalts entwerfen […]“ und
+  „wir wollen da später formaln und herleitungen aus der elektrodynamik und quantenmechanik abbilden, da funktioniert
+  das mit deiner […] eingabe so nicht mehr“.
+- Was stimmt: Der Term-Baum (`blockcontent/math/`: Summe, Produkt, Bruch, Potenz, Wurzel, Funktion, Klammer, Minus) und
+  die getippte Schreibweise (`blockcontent/formulatext/`) kennen genau das, was die Koordinatentransformation braucht.
+  `∇ × E = −∂B/∂t`, `∮`, Indizes, Matrizen, `Ĥ|ψ⟩` lassen sich weder eingeben noch ablegen.
+- Plan: NICHT bauen, bevor er ja sagt. Eine Nachricht: was, Auswirkung, Ansatz (Formeln als LaTeX getippt und so
+  abgelegt, Teile für die Animation benannt; Term-Baum und eigene Schreibweise fliegen raus), Frage 1 ja/nein/anders.
+- Festgehalten 14:09: Regel `model-not-from-content` (neu), `knowledge-base-module` und `MEMORY.md` nachgezogen,
+  `docu/konzept-wissensdatenbank.md` (Entscheidungen), `docu/blockcontent.md` (Offen).
+- **Stand 14:09: warte auf die Antwort des Nutzers. Kein Code geändert.** Nicht committet: `docu/arbeitsprotokoll.md`,
+  `docu/blockcontent.md`, `docu/konzept-wissensdatenbank.md`.
+
+## 2026-11-27 14:02 – Push `d1abbf5` auf den Pi bringen (Editor mit Karten, Auszeichnung, Minus, Skizze, neue Seite)
+
+- Ansage: „hab gepusht“
+- Geprüft 14:02: lokal = `origin/main` = `d1abbf5`; seit dem Stand des Pi (`b972d64`) nur Frontend und Doku, Backend und
+  Compose unverändert; kein geheimer Wert aus `code/.env` im Diff (8 geprüft, 0 Treffer).
+- Plan: (1) Pi: `git pull`, `frontend` bauen und starten; (2) von außen und angemeldet im Browser ansehen (Seite,
+  Link „Seite bearbeiten“, Editor mit Karten, „neue Seite“ nur öffnen, nichts anlegen); (3) `setup.md`, Protokoll.
+- Schritt 1 fertig (14:02): Pi von `b972d64` auf `d1abbf5`, `frontend` gebaut (7 s) und gestartet, altes Image
+  `:vorher` (`1c442a1411aa`), nginx ok, `/solr/` weiter da, `/tmp` leer, Verbindung zu.
+- Schritt 2 fertig (14:04): im Firefox von außen. Ohne Anmeldung: Seite mit 6 Kästen, kein Bearbeiten-Link. Angemeldet
+  unter dem Konto des Nutzers, nur angesehen, abgemeldet (204): Link „Seite bearbeiten“ → Editor („Zurück zu
+  Koordinatentransformation“), 7 Karten, 28 Formelfelder ohne Fehler, 4 Leisten, Skizze als 8 Elementzeilen, Vorschau
+  6 Kästen, Ansicht JSON 23 014 Zeichen; Popup „neue Seite“ öffnet mit Rubrik „Mathe“. Keine Fehler.
+- Schritt 3 fertig (14:04): `setup.md` (Bau 14:02), `docu/blockcontent.md` (Test auf dem Pi).
+- **FERTIG 14:04.** Nicht committet (macht der Nutzer): `docu/arbeitsprotokoll.md`, `docu/blockcontent.md`. Auf dem Pi
+  NICHT ausprobiert: im Editor ändern und speichern, „neue Seite“ wirklich anlegen. Nächste offene Stücke: Seite
+  verschieben, Reihenfolge der Seiten, Indizes/Vektoren/Integrale, Überschriften/Bilder/Tabellen, HTML-Editor ablösen.
+
 ## 2026-11-27 13:37 – Die fehlenden Stücke des Editors einbauen
 
 - Ansage, wörtlich (auf meine Liste „Noch nicht drin“): „dann mach es rein du fauler sack“

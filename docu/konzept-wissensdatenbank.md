@@ -30,6 +30,8 @@ Nicht verwechseln: Jupyter-Notebooks kommen nicht in die App (Entscheidung vom 2
 | Erstes Kapitel „Grundlagen“ | Nutzer, 2026-11-24 | Koordinatensysteme und die Bewegung eines Körpers. |
 | Inhalte kommen in einen **eigenen Solr-Kern** | Nutzer, 2026-11-26 | „ein solr wissens kern dokument pro seite“; wie fein eine Seite geschnitten ist (je Unterpunkt, gröber, feiner), ist bewusst offen. Dazu Referenzen (bei uns der Name für die Hooks der Vorlage), Status und Schlagwörter. Löst „Inhalte stehen im Code“ und „kein Backend“ vom 2026-11-24 ab. |
 | **Kein Rich-Text** als Format des Inhalts | Nutzer, 2026-11-26 | „maximale freiheit“ für Formeln, „maybe auch mini svg“, damit sich Äquivalenzumformungen eindeutig animieren lassen („wo welcher wert hingeht“). Wie genau abgelegt wird, ist offen. |
+| Das Format **nicht aus dem Inhalt einer Seite ableiten** | Nutzer, 2026-11-27 | „du sollst nicht ein modell anhand des inhalts entwerfen“; „wir wollen da später formaln und herleitungen aus der elektrodynamik und quantenmechanik abbilden, da funktioniert das mit deiner […] eingabe so nicht mehr“. Trifft Fassung 1: Der Term-Baum (`blockcontent/math/`) und die getippte Schreibweise (`blockcontent/formulatext/`) kennen nur, was die Koordinatentransformation braucht. Dazu am selben Tag: „normales latex hilf uns nichts, denn wir sollten jedem element eine id mitgeben KÖNNEN, genau dann wenn es in eine animation muss […] ich will das rad auch nciht neu erfinden müssen. ich stelle mir vielleicht einen formeleditor innerhalb vom richtexteditor vor. dann haben wir auch eine übersicht wie viele gleichungen wir auf einer seite haben, latex style“. Gebaut am 2026-11-27 mit dem Formel-Editor MathLive (0.111.4, MIT): abgelegt wird LaTeX, ein Teil bekommt per Markieren seine id (`\htmlData{id=…}{…}`), jede Gleichung hat ihre laufende Nummer; siehe [`blockcontent.md`](blockcontent.md). |
+| **Die ganze Seite in EINEM Dokument; Editor nur Elemente und ids; Animationen als eigenes Modul** | Nutzer, 2026-11-27 | „wir definieren immer die ganze seite in einem solr wissens dokument! sprich contentboxen und zwischen abschnitte oder sonstiges muss auch im richtext abbildbar sein“; „wir haben formeln und eine hand voll html elemente die animationen benötigen wir ja in einem separaten modul. sprich wir müssen ja nur die gleichungsnummer angeben und dann welches element mit welcher id sich wie in der nächsten gleichungsnummer verhält, das hat aber nichts im editor zu suchen, dort definiere ich nur die ids der elemente und animationen stelle ich mir in einem popup vor“. Gebaut am 2026-11-27 (Antwort des Nutzers: „ja bau es endlich […] deinen dreck sehe ich erst wenn der editor funktioniert, also ob dein neuer vorschlag brauchbar ist“): Fassung 2, `elements` und getrennt `animations` im selben Dokument, Formeln über MathLive, Ordner `formula/`, `elements/`, `editor/`, `animation/`; siehe [`blockcontent.md`](blockcontent.md). Dazu: „alles was mit animation zu tun hat bitte in eine eigene animation.css, das will ich weder in base noch in default css haben“. Ob der Vorschlag brauchbar ist, sagt der Nutzer nach dem Testen. |
 | **Ansehen auch ohne Anmeldung, Schreiben nur über Admin-Endpunkte** | Nutzer, 2026-11-27 | „wissensdatenbank soll auch für anonym verfügbar sein zum ANSEHEN schreiben erst mal nur über admin endpunkte. schreiben machen wir aber erst wenn wir alle feinheiten am dummy test modul dafür geklärt haben!“ Also: Lesen über `/api/share/…`, Schreiben über `/api/admin/…` (nur ADMIN), und das Schreiben wird erst gebaut, wenn am Demo-Modul alles geklärt ist. |
 | Erst ein **Demo ohne Solr-Kern** | Nutzer, 2026-11-26 | „ein wissensdatenbank modul […] noch ohne solr kern einfach mit einem demokapitel und zwar grundlagen/ koordinaten transformation“. Gebaut, siehe Abschnitt 3. |
 
@@ -46,72 +48,41 @@ kein Recht nötig), für Besucher ohne Konto dieselbe Kachel auf der Login-Seite
 (`home/VisitorTiles`). Beide kommen aus einer Liste: `home/homeTiles.ts`, dort trägt die Kachel
 `visibleWithoutLogin: true`.
 
-**Die Seite „Koordinatentransformation“:** Einleitung mit Skizze, vier Rechnungen (x und y aus r und φ; r und φ aus x
-und y), Zusammenfassung mit dem Hinweis zu `atan2`. Jede Größe hat auf der ganzen Seite eine Farbe, in der Skizze wie
-in den Formeln.
+**Die Seite „Koordinatentransformation“ (seit 2026-11-27 in Fassung 2 des Inhalts):** ein Kasten Einleitung mit Skizze,
+Zwischenüberschrift „Von polar nach kartesisch“, zwei Kästen (x und y aus r und φ), Zwischenüberschrift „Von kartesisch
+nach polar“, zwei Kästen (r und φ aus x und y), ein Kasten Zusammenfassung mit dem Hinweis zu `atan2`. 18 nummerierte
+Gleichungen, 4 Aufklapper „Rechenweg“, 10 Animationen. Alles steht in EINEM Dokument.
 
-**Eine Rechnung (Stand 2026-11-27, nach der Rückmeldung in 3a):**
+**Eine Rechnung** ist kein eigener Baustein mehr, sondern Gleichungen untereinander: der Ausgang, ein Aufklapper
+„Rechenweg“ mit den Zeilen dazwischen, das Ergebnis. Was der Nutzer dazu festgelegt hat, gilt weiter:
 
-- Immer zu sehen sind **Ausgang und Ergebnis**. „Rechenweg einblenden“ zeigt alle Umformungen dazwischen, jede in ihrer
-  eigenen Zeile mit Erklärung, „Rechenweg ausblenden“ nimmt sie wieder weg. Der Zustand steht in der Adresse
-  (`?xCoordinatePath=shown`). Eingeblendet bleibt alles stehen: Man schaut zwei Zeilen zurück und liest weiter.
-- Am Ende jeder Zeile steht die Umformung zur nächsten („| · r“) mit einem **Abspiel-Knopf**: Er zeigt, wie aus dieser
-  Zeile die nächste wird, beliebig oft und in beliebiger Reihenfolge.
-- **Die Bewegung zeigt die Rechenregel:**
-  - Auf beiden Seiten dasselbe tun: Was dazukommt, wandert sichtbar aus der Notiz der Umformung an beide Seiten.
-    Beispiel „· r“: aus `cos φ = x / r` wird `r · cos φ = r · x / r`, beide `r` kommen aus dem „· r“.
-  - Kürzen und Aufheben ist ein EIGENER Schritt (Nutzer 2026-11-27: „erst wurzelziehen über beide seiten, und erst
-    danach kürzen“): Eine Zeile entsteht ohne Strich. Erst beim Abspielen der Umformung, die kürzt, wird durch das
-    gestrichen, was wegfällt, dann entsteht die nächste Zeile; der Strich bleibt danach stehen wie auf dem Papier, bis
-    die Zeile neu entsteht oder der Rechenweg ausgeblendet wird. Beispiel: `r · cos φ = r · x / r` steht erst ohne
-    Strich da; „kürzen“ streicht rechts den Faktor `r` und das `r` im Nenner, die nächste Zeile ist `r · cos φ = x`.
-    Ebenso heben sich in `√(r²)` Wurzel und Quadrat auf und in `arctan(tan φ)` Arkustangens und Tangens.
-  - Nicht ausformulieren (Nutzer 2026-11-27: „ich will kein kürzen und seite tauschen lesen“, „wortbeschreibungen
-    lassen wir optional aber nicht für solche PILLEPALLE OPERATIONEN“): Worte sind je Schritt FREIWILLIG, in der Notiz
-    wie als Satz darunter, und gedacht für schwierige Schritte (ein Integral mit Grenzen). Einfache Schritte bekommen
-    keine: Die Notiz ist dann nur Rechenschreibweise („| · r“, „| √“, „| arctan“), Kürzen und Seiten tauschen haben gar
-    keine Notiz, nur den Abspiel-Knopf. Eine Beschreibung je Schritt gibt es nur, wo sie nötig ist: woher der Ausgang kommt, oder was an einer
-    schwierigeren Umformung zu beachten ist (ein Integral mit Grenzen; auf der Demoseite nur „r ist nie negativ“).
-  - Seitenwechsel: Ein Term, der die Seite der Gleichung wechselt, wandert auf einem Bogen hinüber (z. B. bei „Seiten
-    tauschen“); alles andere gleitet gerade an seinen neuen Platz.
-- Die vier Rechnungen: x und y je drei Umformungen („· r“ → „kürzen“ → „Seiten tauschen“), r und φ je zwei („√“ bzw.
-  „arctan“ auf beiden Seiten → „hebt sich auf“).
+- Immer zu sehen sind Ausgang und Ergebnis, der Rechenweg ist einblendbar; der Zustand steht in der Adresse (`?open=c1`).
+- Am Ende einer Zeile steht die Notiz der Umformung („| · r“) mit einem Abspiel-Knopf: Er zeigt, wie aus dieser Gleichung
+  die nächste wird, beliebig oft.
+- Die Bewegung zeigt die Rechenregel: Was auf beiden Seiten dazukommt, wandert aus der Notiz; Kürzen ist ein EIGENER
+  Schritt („erst wurzelziehen über beide seiten, und erst danach kürzen“), der Strich bleibt danach stehen; ein Teil, der
+  die Seite der Gleichung wechselt, wandert auf einem Bogen.
+- Nicht ausformulieren („ich will kein kürzen und seite tauschen lesen“, „wortbeschreibungen lassen wir optional aber
+  nicht für solche PILLEPALLE OPERATIONEN“): Worte nur für schwierige Schritte, als Absatz zwischen den Gleichungen oder
+  in der Notiz; Kürzen und Seiten tauschen haben keine Notiz, nur den Abspiel-Knopf.
 
-**Die Skizze (Stand 2026-11-27):** jede Skizze aus denselben Bausteinen (`knowledge/sketch/`). Ein Achsenkreuz mit
-feinem Raster, dem **Nullpunkt „0“ und der „1“ an beiden Achsen**; **jeder Punkt** nennt beim Zeigen seine Koordinaten
-im Hoverlay (P zusätzlich seine Polarkoordinaten: „P (4 | 3)“, „polar: r = 5, φ ≈ 36,87°“); **ein Winkel** hebt beim
-Zeigen seine beiden Schenkel hervor, alles andere tritt zurück, und das Hoverlay sagt, welcher Winkel es ist.
+**Die Skizze:** ein Achsenkreuz mit feinem Raster, dem Nullpunkt „0“ und der „1“ an beiden Achsen; jeder Punkt nennt beim
+Zeigen seine Koordinaten im Hoverlay; ein Winkel hebt beim Zeigen seine Schenkel hervor.
 
-**Aufbau des Pakets `code/frontend/src/knowledge/`:**
+**Aufbau im Frontend:**
 
 | Ordner | Inhalt |
 |---|---|
-| `knowledge/` | Das Modul: `Knowledge.tsx` (Subheader, je Rubrik ein Reiter; lädt Gliederung, Feldnamen und die Liste der Seiten), `KnowledgeBase.ts`, `KnowledgeStartPage`, `KnowledgeRubricPage`, `KnowledgeChapterPage`, `KnowledgeChapterBox` (ein Kapitel mit seinen Seiten), `KnowledgePageView` (holt die Seite zur Adresse und zeichnet sie), `knowledgePaths.ts`, `knowledgeTexts.ts`, `knowledgeIcon.ts`. |
+| `knowledge/` | Das Modul: `Knowledge.tsx` (Subheader, je Rubrik ein Reiter; lädt Gliederung, Feldnamen und die Liste der Seiten), `KnowledgeBase.ts`, `KnowledgeStartPage`, `KnowledgeRubricPage`, `KnowledgeChapterPage`, `KnowledgeChapterBox`, `KnowledgePageView` (holt die Seite zur Adresse und zeichnet ihren Inhalt), `knowledgePaths.ts`, `knowledgeTexts.ts`. |
 | `knowledge/page/` | Die Seiten vom Backend: `KnowledgePageDocument.ts` (die Feld-Map eines Dokuments, die Feldnamen), `useKnowledgePage.ts`. |
-| `blockcontent/` (global, NICHT mehr unter `knowledge/`, seit 2026-11-27) | Der Inhalt einer Seite ist ein „Inhalt aus Bausteinen“: Format, Leser, Anzeige, Formeln (`math/`), Rechnungen (`derivation/`), Skizzen (`sketch/`), getippte Formeln (`formulatext/`) und der Editor (`editor/`). Alles dazu in [`blockcontent.md`](blockcontent.md). |
 | `knowledge/section/` | Die Gliederung: Typ, Hook, `knowledgeSectionTree.ts`. |
-| `blockcontent/math/` | Eine Formel als Baum aus Termen, je Klasse eine Datei, ohne React: `MathTerm` (Basis), `SymbolTerm`, `NumberTerm`, `SumTerm`, `ProductTerm`, `FractionTerm`, `PowerTerm`, `RootTerm`, `FunctionTerm`, `GroupTerm`, `MarkedTerm`, dazu `TermMark` (Kennung + Farbe), `TermRoles` (welche Terme einer Zeile gekürzt bzw. von der Umformung gebracht sind), `Equation`. Gezeichnet wird über den Visitor `MathTermReactRenderer` (`MathTermView`, `EquationView`); Wurzelzeichen und Klammern sind kleine SVGs, die mit dem Inhalt wachsen (`MathStretchySign`). |
-| `blockcontent/derivation/` | Eine Rechnung: `Derivation`, `DerivationStep`, `DerivationOperation` (das „\| · r“ am Zeilenende samt dem, was die Umformung bringt und kürzt). Anzeige: `DerivationBox`, `DerivationStepRow`, `DerivationOperationNote`. Ob der Rechenweg eingeblendet ist: `useDerivationPathVisibility`; welche Zeile zeigt, was gekürzt wird: `useDerivationCancellations`; das Abspielen einer Umformung: `useDerivationFlight` mit `TermFlightAnimator` (reines DOM). |
-| `blockcontent/sketch/` | Die Bausteine jeder Skizze: `SketchCoordinateSystem` (Nullpunkt und Maßstab), `Sketch` (Rahmen), `SketchAxes`, `SketchPoint`, `SketchSegment`, `SketchAngle`, `SketchRightAngle`, `formatSketchNumber`, `SketchPosition`. |
+| `blockcontent/` (global) | Der Inhalt einer Seite: Elemente, Formeln (MathLive), Animationen, Skizze, Editor. Alles dazu, auch das Format, in [`blockcontent.md`](blockcontent.md). |
 
 Global dazugekommen: `components/PlayButton` (der Abspiel-Knopf).
 
-**So liest der Animator, was zu tun ist:** an Attributen, die der Zeichner an die Elemente der Terme schreibt.
-`data-tracking-key`: die Kennung der Marke; dieselbe Kennung in zwei aufeinanderfolgenden Zeilen ist derselbe Term.
-`data-cancelled`: Der Term wird mit der nächsten Umformung gekürzt. `data-flight-origin="cause"`: Die Umformung hat ihn
-in diese Zeile gebracht, er kommt aus ihrer Notiz. `data-flight-scope="left|right"` an den beiden Seiten der Gleichung:
-daran erkennt der Animator einen Seitenwechsel.
-
-**CSS:** der Satz der Formeln (Bruch, Exponent, Wurzel, Klammern, der Strich durch Gekürztes), die Zeilen der Rechnung
-und die Skizze stehen in `src/styles/base.css`; Schrift, die fünf Farben der Hervorhebung (`--math-highlight-first` bis
-`-fifth`), die Farbe des Strichs (`--math-cancel-color`), die Dauer des Wanderns (`--math-flight-milliseconds`, 0
-schaltet es ab) und das Hervorheben in der Skizze stehen im Theme.
-
-**Ein neues Kapitel oder eine neue Seite:** Rubrik, Kapitel und Unterkapitel legt der Admin im Wissensmanager an
-(Reiter „Gliederung“). Eine Seite ist ein Dokument im Kern: angelegt über `POST /api/admin/knowledge-page` (vorerst von
-Claude unter dem Konto des Nutzers; der Editor im Wissensmanager ist noch nicht gebaut). Reiter, Übersichten und
-Adressen entstehen daraus von selbst. Eine neue Schreibweise in Formeln oder ein neuer Baustein heißt: eine Klasse im
-Frontend, ein Fall im `KnowledgeContentReader`, und das Format in `solr-cores/KNOWLEDGE.md` nachtragen.
+**Ein neues Kapitel oder eine neue Seite:** Rubrik, Kapitel und Unterkapitel legt der Admin im Wissensmanager an (Reiter
+„Gliederung“), eine Seite im Reiter „Seiten“ („neue Seite“), ihren Inhalt im Editor der Seite. Reiter, Übersichten und
+Adressen entstehen daraus von selbst.
 
 **Von Claude festgelegt, weil der Nutzer bauen statt antworten wollte (alles leicht zu ändern):**
 
@@ -268,7 +239,7 @@ Später, eigener Gang (Nutzer): die aus `content` aufbereiteten Schlagwörter f�
 
 1. Erledigt am 2026-11-27: der Kern, die Seiten aus dem Kern statt aus dem Code.
 2. Der Nutzer sieht sich die Seite aus dem Kern an; daran wird besprochen, was noch anders soll.
-3. Gebaut am 2026-11-27: der allgemeine Editor für Inhalte aus Bausteinen (Karten mit Feldern, Formeln getippt, JSON als
+3. Gebaut am 2026-11-27: der allgemeine Editor für Inhalte (Elemente, Formelfeld, Popup „Animationen“, JSON als
    zweite Ansicht; Wunsch des Nutzers: „als allgemeinen richtext editor nutzen“), siehe [`blockcontent.md`](blockcontent.md).
    Davor am selben Tag: Wissensmanager, Reiter „Seiten“ mit der Liste und dem
    Editor einer Seite (Felder per Klick, der Inhalt als JSON-Text mit Vorschau daneben). Anlass (Nutzer): „ausserdem

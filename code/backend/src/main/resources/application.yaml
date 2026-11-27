@@ -448,9 +448,11 @@ gebiter:
     # Der Solr-Kern der Wissensseiten, er muss in gebiter.solr.core-keys stehen. Ein Dokument ist eine Seite in einer
     # Sprache (docu/solr-cores/KNOWLEDGE.md).
     solr-core-key: KNOWLEDGE
-    # Die Fassung des Formats, in dem der Inhalt einer Seite (Feld content, JSON aus Bausteinen) geschrieben ist. Das
-    # Backend trägt sie beim Anlegen und Ändern ein; das Frontend liest daran, wie es den Inhalt zu lesen hat.
-    content-format-version: 1
+    # Die Fassung des Formats, in dem der Inhalt einer Seite (Feld content, JSON) geschrieben ist. Das Backend trägt sie
+    # beim Anlegen und beim Ändern des Inhalts ein; das Frontend liest daran, ob es den Inhalt lesen kann. Fassung 2 seit
+    # 2026-11-27: Elemente und Animationen, Formeln als LaTeX (docu/blockcontent.md); muss zu
+    # BLOCK_CONTENT_FORMAT_VERSION im Frontend passen.
+    content-format-version: 2
     # Höchstens so viele Zeichen darf der Inhalt einer Seite haben.
     content-max-characters: 1000000
     # Höchstens so viele Seiten liefert ein Auflösen (Übersicht der Wissensdatenbank, Liste im Wissensmanager).

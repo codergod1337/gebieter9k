@@ -12,7 +12,7 @@ type SketchSegmentProps = {
    * `RIGHT`.
    */
   labelSide: 'LEFT' | 'RIGHT'
-  /** Die CSS-Klasse der Farbe, in der die Größe überall steht (`getMathHighlightClassName`). */
+  /** Die CSS-Klasse der Farbe des Elements (`getSketchHighlightClassName`); leer ohne Farbe. */
   highlightClassName: string
 }
 
